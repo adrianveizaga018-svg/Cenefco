@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Application\InscripcionesDiplomado\DTOs;
+
+final readonly class InscripcionDiplomadoDTO
+{
+    public function __construct(
+        public int     $id,
+        public ?int    $programa_id,
+        public string  $nombre,
+        public ?string $apellido_paterno,
+        public ?string $apellido_materno,
+        public string  $nombre_completo,
+        public ?string $fecha_nacimiento,
+        public string  $email,
+        public ?string $ci,
+        public ?int    $expedido_id,
+        public ?string $expedido_nombre,
+        public ?string $telefono_grupo_inscritos,
+        public ?string $archivo_ci,
+        public ?string $archivo_titulo,
+        public ?string $archivo_cv,
+        public ?string $archivo_foto_3x3,
+        public ?int    $ciudad_residencia_id,
+        public ?string $ciudad_residencia_nombre,
+        public ?string $provincia_especificar,
+        public ?string $medio_pago,
+        public ?int    $medio_pago_id,
+        public ?string $medio_pago_nombre,
+        public ?float  $monto_pagado,
+        public ?string $archivo_comprobante_pago,
+        public ?string $sugerencia_curso,
+        public bool    $recomendar_docente,
+        public ?string $detalle_docente,
+        public string  $estado,
+        public bool    $notificado,
+        public ?string $origen,
+        public ?string $ip_origen,
+        public ?string $created_at,
+        public ?string $updated_at,
+        public ?string $nombre_programa,
+    ) {}
+
+    public static function fromRow(object $row): self
+    {
+        return new self(
+            id:                        $row->id,
+            programa_id:               $row->programa_id ?? null,
+            nombre:                    $row->nombre,
+            apellido_paterno:          $row->apellido_paterno ?? null,
+            apellido_materno:          $row->apellido_materno ?? null,
+            nombre_completo:           trim(implode(' ', array_filter([$row->nombre, $row->apellido_paterno ?? null, $row->apellido_materno ?? null]))),
+            fecha_nacimiento:          $row->fecha_nacimiento ?? null,
+            email:                     $row->email,
+            ci:                        $row->ci ?? null,
+            expedido_id:               $row->expedido_id ?? null,
+            expedido_nombre:           $row->expedido_nombre ?? null,
+            telefono_grupo_inscritos:  $row->telefono_grupo_inscritos ?? null,
+            archivo_ci:                $row->archivo_ci ?? null,
+            archivo_titulo:            $row->archivo_titulo ?? null,
+            archivo_cv:                $row->archivo_cv ?? null,
+            archivo_foto_3x3:          $row->archivo_foto_3x3 ?? null,
+            ciudad_residencia_id:      $row->ciudad_residencia_id ?? null,
+            ciudad_residencia_nombre:  $row->ciudad_residencia_nombre ?? null,
+            provincia_especificar:     $row->provincia_especificar ?? null,
+            medio_pago:                $row->medio_pago ?? null,
+            medio_pago_id:             $row->medio_pago_id ?? null,
+            medio_pago_nombre:         $row->medio_pago_nombre ?? null,
+            monto_pagado:              isset($row->monto_pagado) ? (float) $row->monto_pagado : null,
+            archivo_comprobante_pago:  $row->archivo_comprobante_pago ?? null,
+            sugerencia_curso:          $row->sugerencia_curso ?? null,
+            recomendar_docente:        (bool) ($row->recomendar_docente ?? false),
+            detalle_docente:           $row->detalle_docente ?? null,
+            estado:                    $row->estado,
+            notificado:                (bool) ($row->notificado ?? false),
+            origen:                    $row->origen ?? null,
+            ip_origen:                 $row->ip_origen ?? null,
+            created_at:                isset($row->created_at) ? (string) $row->created_at : null,
+            updated_at:                isset($row->updated_at) ? (string) $row->updated_at : null,
+            nombre_programa:           $row->nombre_programa ?? null,
+        );
+    }
+}
