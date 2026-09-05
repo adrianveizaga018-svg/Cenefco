@@ -1,0 +1,86 @@
+<ul class="side-nav p-3 hs-accordion-group">
+  @for (menu of menus(); track menu) {
+
+  @if (menu.type === 'title') {
+  <li class="menu-title">
+    <span>{{ menu.label }}</span>
+  </li>
+  }
+
+  @if (menu.type === 'item') {
+  <li class="menu-item" [class.active]="isItemActive(menu)">
+    <a class="menu-link" [routerLink]="menu.link" [class.active]="isItemActive(menu)" [target]="menu.target">
+      @if (menu.icon) {
+      <span class="menu-icon" [ngClass]="menu.color"><ng-icon [name]="menu.icon"></ng-icon></span>
+      }
+      <div class="menu-text">{{ menu.label }}</div>
+    </a>
+  </li>
+  }
+
+  @if (menu.type === 'accordion') {
+  <li class="menu-item hs-accordion" [class.active]="isItemActive(menu)">
+    <a [routerLink]="[]" class="hs-accordion-toggle menu-link" [class.active]="isItemActive(menu)">
+      @if (menu.icon) {
+      <span class="menu-icon" [ngClass]="menu.color"><ng-icon [name]="menu.icon"></ng-icon></span>
+      }
+      <span class="menu-text">{{ menu.label }}</span>
+      <span class="menu-arrow">
+        <div class="size-4">
+          <ng-icon name="tablerChevronRight"></ng-icon>
+        </div>
+      </span>
+    </a>
+
+    <ul class="sub-menu hs-accordion-content hs-accordion-group"
+      [class.block]="isItemActive(menu)"
+      [class.hidden]="!isItemActive(menu)"
+    >
+      @for (child of menu.children; track child) {
+      @if (child.type === 'item') {
+      <li class="menu-item" [class.active]="isItemActive(child)">
+        <a class="menu-link" [routerLink]="child.link" [class.active]="isItemActive(child)" [target]="child.target">
+          @if (child.icon) {
+          <span class="menu-icon" [ngClass]="child.color"><ng-icon [name]="child.icon"></ng-icon></span>
+          }
+          <span class="menu-text">{{ child.label }}</span>
+          @if (child.badge) {
+          <span class="badge rounded-full bg-red-500 text-white">{{ child.badge }}</span>
+          }
+        </a>
+      </li>
+      }
+
+      @if (child.type === 'accordion') {
+      <li class="menu-item hs-accordion" [class.active]="isItemActive(child)">
+        <a [routerLink]="[]" class="hs-accordion-toggle menu-link" [class.active]="isItemActive(child)">
+          <span class="menu-text">{{ child.label }}</span>
+          <span class="menu-arrow">
+            <div class="size-4">
+              <ng-icon name="tablerChevronRight"></ng-icon>
+            </div>
+          </span>
+        </a>
+        <ul class="sub-menu hs-accordion-content hs-accordion-group"
+          [class.block]="isItemActive(child)"
+          [class.hidden]="!isItemActive(child)"
+        >
+          @for (subChild of child.children; track subChild) {
+          <li class="menu-item" [class.active]="isItemActive(subChild)">
+            <a class="menu-link" [routerLink]="subChild.link" [class.active]="isItemActive(subChild)">
+              @if (subChild.icon) {
+              <span class="menu-icon" [ngClass]="subChild.color"><ng-icon [name]="subChild.icon"></ng-icon></span>
+              }
+              <span class="menu-text">{{ subChild.label }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+      }
+    </ul>
+  </li>
+  }
+  }
+</ul>

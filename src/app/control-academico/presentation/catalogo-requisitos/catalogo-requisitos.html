@@ -1,0 +1,194 @@
+<main>
+  <app-page-title title="Catálogo de Requisitos" subtitle="Control Académico" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <p class="text-sm text-default-500">
+          Crea las plantillas de requisitos académicos que se pueden asignar a los cursos (Diplomados, Maestrías, etc.).
+        </p>
+        <button type="button" class="btn btn-sm bg-primary text-white" (click)="openCreateForm()">
+          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+          Nuevo Requisito
+        </button>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando requisitos...
+                </div>
+              } @else if (isError()) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo cargar la lista. Intente nuevamente.
+                </div>
+              } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+                  <table class="min-w-full divide-y divide-default-200 relative z-10">
+                    <thead class="bg-default-150">
+                      <tr class="text-sm font-normal text-default-700">
+                        <th scope="col" class="px-3.5 py-3 text-start">#</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Título</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Requiere Evidencia</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Estado</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default-200">
+
+                      @for (item of items(); track item.id) {
+                        <tr class="text-default-800 font-normal">
+                          <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ item.id }}</td>
+                          <td class="px-3.5 py-2.5 text-sm font-medium">{{ item.titulo }}</td>
+                          <td class="px-3.5 py-2.5 text-sm">
+                            @if (item.requiere_archivo) {
+                              <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                                <ng-icon name="lucidePaperclip" class="size-3"></ng-icon> Sí
+                              </span>
+                            } @else {
+                              <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                                <ng-icon name="lucideCheck" class="size-3"></ng-icon> Solo Check
+                              </span>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5 text-sm">
+                            @if (item.estado) {
+                              <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Activo</span>
+                            } @else {
+                              <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Inactivo</span>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5">
+                            <div class="flex items-center gap-1.5">
+                              <button type="button"
+                                class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                                title="Editar"
+                                (click)="openEditForm(item)">
+                                <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                              </button>
+                              <button type="button"
+                                class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                                title="Eliminar"
+                                (click)="delete(item)">
+                                <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+
+                      @empty {
+                        <tr>
+                          <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                            No hay requisitos configurados. Crea uno nuevo con el botón de arriba.
+                          </td>
+                        </tr>
+                      }
+
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Total: <b>{{ items().length }}</b> plantilla(s) de requisito
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal crear / editar -->
+  @if (showModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center">
+      <!-- overlay -->
+      <div class="absolute inset-0 bg-black/40" (click)="closeModal()"></div>
+
+      <!-- dialog -->
+      <div class="relative bg-white dark:bg-default-50 rounded-xl shadow-xl w-full max-w-md mx-4 z-10">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-default-200">
+          <h5 class="font-semibold text-default-800">
+            {{ isEditing ? 'Editar Requisito' : 'Nuevo Requisito' }}
+          </h5>
+          <button type="button" class="btn size-7 bg-default-100 hover:bg-default-200 text-default-500"
+            (click)="closeModal()">
+            <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+          </button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="save()" class="px-5 py-4 space-y-4">
+          <!-- Título -->
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">
+              Título del requisito <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-input w-full"
+              formControlName="titulo"
+              placeholder="Ej: Aprobación Rectoral, Monografía...">
+            @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+              <p class="mt-1 text-xs text-danger">El título es obligatorio.</p>
+            }
+          </div>
+
+          <!-- Requiere Archivo -->
+          <div class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="req_archivo"
+              class="form-checkbox mt-0.5"
+              formControlName="requiere_archivo">
+            <label for="req_archivo" class="text-sm text-default-700 cursor-pointer">
+              <span class="font-medium">Requiere subir evidencia (archivo)</span><br>
+              <span class="text-xs text-default-500">Si está marcado, el área académica deberá adjuntar un documento PDF o imagen.</span>
+            </label>
+          </div>
+
+          <!-- Estado -->
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="req_estado"
+              class="form-checkbox"
+              formControlName="estado">
+            <label for="req_estado" class="text-sm font-medium text-default-700 cursor-pointer">Activo</label>
+          </div>
+
+          <!-- Botones -->
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-default-200">
+            <button type="button" class="btn btn-sm bg-default-200 text-default-700" (click)="closeModal()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-sm bg-primary text-white" [disabled]="saving()">
+              @if (saving()) {
+                <div class="size-4 me-1.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1.5"><ng-icon name="lucideSave"></ng-icon></div>
+                {{ isEditing ? 'Actualizar' : 'Guardar' }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+</main>

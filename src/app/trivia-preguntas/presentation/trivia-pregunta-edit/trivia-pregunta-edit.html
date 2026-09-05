@@ -1,0 +1,151 @@
+<main>
+  <app-page-title title="Editar Pregunta de Trivia" subtitle="Juego de Trivia" />
+
+  @if (loadingPregunta()) {
+    <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+      <ng-icon name="lucideLoader" class="size-6 animate-spin"></ng-icon>
+      Cargando pregunta...
+    </div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos de la Pregunta</h6></div>
+          <div class="card-body space-y-4">
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Categoría <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" formControlName="categoria_id">
+                  @for (categoria of categorias(); track categoria.id) {
+                    <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Nivel <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" formControlName="nivel_id">
+                  <option [ngValue]="null" disabled>— Seleccionar —</option>
+                  @for (nivel of niveles(); track nivel.id) {
+                    <option [ngValue]="nivel.id">{{ nivel.nombre }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Enunciado <span class="text-danger">*</span>
+              </label>
+              <textarea class="form-input" formControlName="enunciado" rows="3"></textarea>
+              @if (form.get('enunciado')?.invalid && form.get('enunciado')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Imagen (opcional)</label>
+              @if (imgPreview()) {
+                <div class="relative inline-block">
+                  <img src="{{ imgPreview() }}" alt="Vista previa" class="h-32 rounded-lg object-cover border border-default-200">
+                  @if (uploadingImg()) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                      <div class="size-5 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                    </div>
+                  } @else {
+                    <button type="button" (click)="removeImagen()"
+                      class="absolute -top-2 -end-2 size-6 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                      title="Quitar imagen">
+                      <div class="size-3"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <label class="flex flex-col items-center justify-center w-40 h-28 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="flex flex-col items-center gap-1 text-default-400">
+                    <div class="size-6"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                    <span class="text-[10px] text-center">Subir imagen</span>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden" (change)="onImagenSelected($event)">
+                </label>
+              }
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Tiempo límite (segundos) <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-input" formControlName="tiempo_limite_segundos" min="5" max="120">
+              </div>
+              <div class="flex items-center gap-2 pt-7">
+                <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+                <label for="activo" class="text-sm font-medium text-default-800">Pregunta activa</label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title">Opciones de respuesta</h6>
+            <button type="button" (click)="agregarOpcion()" [disabled]="opciones().length >= 6"
+              class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
+              <ng-icon name="lucidePlus" class="size-4"></ng-icon>
+              Agregar opción
+            </button>
+          </div>
+          <div class="card-body space-y-2">
+            <p class="text-xs text-default-400 mb-2">Marca con el círculo cuál es la respuesta correcta.</p>
+            @for (opcion of opciones(); track $index; let i = $index) {
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correcta" class="size-4 shrink-0"
+                  [checked]="opcion.es_correcta"
+                  (change)="marcarCorrecta(i)">
+                <input type="text" class="form-input flex-1" [placeholder]="'Opción ' + (i + 1)"
+                  [value]="opcion.texto"
+                  (input)="actualizarTexto(i, $any($event.target).value)">
+                <button type="button" (click)="quitarOpcion(i)" [disabled]="opciones().length <= 2"
+                  class="btn size-8 shrink-0 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-30">
+                  <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white w-full"
+              [disabled]="form.invalid || submitting() || uploadingImg()"
+            >
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Guardar Cambios
+              }
+            </button>
+            <a routerLink="/cenefco/trivia-preguntas" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
+  }
+</main>

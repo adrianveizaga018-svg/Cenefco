@@ -1,0 +1,62 @@
+<dropzone
+  [config]="dropzoneConfig"
+  (addedFile)="onFileAdded($event)"
+>
+  <div
+    class="flex items-center justify-center bg-transparent border border-dashed rounded-md cursor-pointer border-default-300 dropzone2"
+  >
+
+    <div class="w-full py-5 text-lg text-center needsclick">
+      <div class="mb-3 flex justify-center">
+        <div class="size-12 fill-default-200 text-default-500">
+          <ng-icon name="lucideCloudUpload"></ng-icon>
+        </div>
+      </div>
+
+      <h5 class="mb-0 font-normal text-base text-default-500">
+        Drag and drop your files or
+        <a [routerLink]="[]">browse</a>
+        your files
+      </h5>
+    </div>
+  </div>
+</dropzone>
+
+@if (uploadedFiles.length > 0) {
+  <ul class="flex flex-wrap mb-0 gap-x-5" id="dropzone-preview2">
+    @for (file of uploadedFiles; track file.name; let index = $index) {
+      <li class="mt-5" id="dropzone-preview-list">
+        <div
+          class="border rounded border-default-200 dark:border-zink-500"
+        >
+          <div class="py-3 px-4 text-center">
+            <div>
+              <div
+                class="p-2 mx-auto rounded-md size-14 bg-default-200"
+              >
+               <div class="block size-7 w-full h-full rounded-md"><ng-icon name="lucideFile" ></ng-icon></div>
+
+              </div>
+            </div>
+            <div class="pt-3">
+              <h5 class="mb-1 text-15">{{ file.name }}</h5>
+              <p
+                class="mb-0 text-default-500 dark:text-zink-200"
+              >
+                <strong>{{ formatFileSize(file.size) }}</strong>
+              </p>
+            </div>
+            <div class="mt-2">
+              <button
+                (click)="removeFile(index)"
+                class="px-2 py-1.5 text-xs text-white bg-danger border-danger btn hover:text-white hover:bg-red-600 hover:border-red-600 focus:text-white focus:bg-red-600 focus:border-red-600 focus:ring focus:ring-red-100 active:text-white active:bg-red-600 active:border-red-600 active:ring active:ring-red-100 dark:ring-custom-400/20"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,376 @@
+﻿<main>
+  <app-page-title title="Generar Carta" subtitle="Cartas Generadas" />
+
+  <div class="flex gap-1 border-b border-default-200 mb-6">
+    <button type="button"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
+            [class]="vistaActiva() === 'formulario'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-default-500 hover:text-default-700'"
+            (click)="vistaActiva.set('formulario')">
+      <div class="size-4"><ng-icon name="lucideClipboardEdit"></ng-icon></div>
+      Formulario
+    </button>
+    <button type="button"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
+            [class]="vistaActiva() === 'preview'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-default-500 hover:text-default-700'"
+            (click)="vistaActiva.set('preview')">
+      <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+      Vista Previa del Documento
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    @if (vistaActiva() === 'preview') {
+      <div class="max-w-3xl mx-auto mb-6">
+
+        @if (!alumnoSeleccionado() && !form.value.textocarta) {
+          <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-3">
+            <div class="size-12 opacity-30"><ng-icon name="lucideFileText"></ng-icon></div>
+            <p class="text-sm">Selecciona un alumno y un modelo de carta para ver la vista previa.</p>
+            <button type="button" class="btn btn-sm bg-default-100 text-default-600 flex items-center gap-2"
+                    (click)="vistaActiva.set('formulario')">
+              <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Volver al formulario
+            </button>
+          </div>
+        } @else {
+          <div class="bg-white shadow-lg border border-default-200 rounded-lg overflow-hidden">
+
+            @if (form.value.usar_encabezado_pie_estandar) {
+              <div class="bg-primary px-10 py-6 text-white flex items-center gap-5">
+                <div class="size-14 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <div class="size-8"><ng-icon name="lucideBuilding2"></ng-icon></div>
+                </div>
+                <div>
+                  <p class="text-xl font-bold tracking-wide">CENEFCO</p>
+                  <p class="text-sm opacity-80">Centro de Formación Continua</p>
+                </div>
+                @if (form.value.cp_nro_contrato || form.value.cp_gestion_contrato) {
+                  <div class="ml-auto text-end text-xs opacity-70 space-y-0.5">
+                    @if (form.value.cp_nro_contrato) { <p>Contrato N° {{ form.value.cp_nro_contrato }}</p> }
+                    @if (form.value.cp_gestion_contrato) { <p>Gestión: {{ form.value.cp_gestion_contrato }}</p> }
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="px-12 py-10 space-y-6">
+
+              <div class="flex justify-between items-start">
+                <div>
+                  @if (modeloBase()) {
+                    <p class="text-xs font-semibold text-default-400 uppercase tracking-widest mb-1">{{ modeloBase()!.nombremodelo }}</p>
+                  }
+                  <p class="text-2xl font-bold text-default-900">Carta de Solicitud</p>
+                </div>
+                <p class="text-sm text-default-500">{{ fechaHoy }}</p>
+              </div>
+
+              @if (alumnoSeleccionado()) {
+                <div class="border-l-4 border-primary pl-5 py-2">
+                  <p class="text-xs font-medium text-default-400 uppercase tracking-wider mb-1">Dirigido a</p>
+                  <p class="text-xl font-bold text-default-900">
+                    {{ alumnoSeleccionado()!.nombre }} {{ alumnoSeleccionado()!.appaterno ?? '' }}
+                  </p>
+                  @if (alumnoSeleccionado()!.ci) {
+                    <p class="text-sm text-default-500">CI: {{ alumnoSeleccionado()!.ci }}</p>
+                  }
+                  @if (cursoSeleccionado()) {
+                    <p class="text-xs text-primary mt-1">{{ cursoSeleccionado()!.nombre_programa }}</p>
+                  }
+                </div>
+              }
+
+              @if (form.value.textocarta) {
+                <div class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ form.value.textocarta }}</div>
+              }
+              @if (form.value.textocarta1) {
+                <div class="bg-default-50 rounded-lg p-5 border border-default-200">
+                  <p class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ form.value.textocarta1 }}</p>
+                </div>
+              }
+              @if (form.value.textocarta3) {
+                <div class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ form.value.textocarta3 }}</div>
+              }
+
+              <div class="pt-12 flex justify-between items-end">
+                <div class="text-center">
+                  <div class="w-48 border-t-2 border-default-400 pt-2">
+                    <p class="text-sm font-medium text-default-700">
+                      {{ alumnoSeleccionado() ? (alumnoSeleccionado()!.nombre + ' ' + (alumnoSeleccionado()!.appaterno ?? '')) : '________________________________' }}
+                    </p>
+                    <p class="text-xs text-default-400">Firma del Estudiante</p>
+                  </div>
+                </div>
+                <div class="text-center">
+                  <div class="w-48 border-t-2 border-default-400 pt-2">
+                    <p class="text-sm font-medium text-default-700">Responsable</p>
+                    <p class="text-xs text-default-400">Firma y Sello</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            @if (form.value.usar_encabezado_pie_estandar) {
+              <div class="bg-default-50 border-t border-default-200 px-10 py-3 flex justify-between text-xs text-default-400">
+                <span>Vista previa — aún no guardado</span>
+                <span>CENEFCO</span>
+              </div>
+            }
+          </div>
+
+          <div class="flex items-center justify-between mt-5">
+            <button type="button" class="btn bg-default-100 text-default-700 flex items-center gap-2"
+                    (click)="vistaActiva.set('formulario')">
+              <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Editar
+            </button>
+            <button type="submit" class="btn bg-primary text-white flex items-center gap-2"
+                    [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Generando...
+              } @else {
+                <div class="size-4"><ng-icon name="lucideFilePlus"></ng-icon></div>
+                Confirmar y Generar
+              }
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (vistaActiva() === 'formulario') {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5 mb-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+              Destinatario del Documento
+            </h6>
+          </div>
+          <div class="card-body space-y-5">
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1.5">
+                Curso / Diplomado
+                <span class="text-xs font-normal text-default-400 ml-1">(opcional — filtra los alumnos inscritos)</span>
+              </label>
+              @if (cargandoCursos()) {
+                <div class="flex items-center gap-2 text-sm text-default-400 py-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando cursos...
+                </div>
+              } @else {
+                <select class="form-input w-full" (change)="onDiplomadoChange($event)">
+                  <option value="">— Sin curso específico —</option>
+                  @for (c of cursos(); track c.id_programa) {
+                    <option [value]="c.id_programa"
+                            [selected]="cursoSeleccionado()?.id_programa === c.id_programa">
+                      {{ c.nombre_programa }}
+                    </option>
+                  }
+                </select>
+              }
+              @if (cargandoInscritos()) {
+                <p class="text-xs text-default-400 mt-1.5 flex items-center gap-1">
+                  <span class="size-3 animate-spin inline-block"><ng-icon name="lucideLoader"></ng-icon></span>
+                  Cargando alumnos inscritos...
+                </p>
+              } @else if (cursoSeleccionado()) {
+                <p class="text-xs text-primary mt-1.5 flex items-center gap-1">
+                  <span class="size-3.5"><ng-icon name="lucideUsers"></ng-icon></span>
+                  {{ alumnosFiltrados().length }} alumno(s) inscrito(s) en este curso
+                </p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1.5">
+                Alumno <span class="text-danger">*</span>
+              </label>
+              @if (cargandoAlumnos()) {
+                <div class="flex items-center gap-2 text-sm text-default-400 py-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando alumnos...
+                </div>
+              } @else {
+                <select class="form-input w-full"
+                        (change)="onAlumnoChange($event)">
+                  <option value="">— Seleccionar alumno —</option>
+                  @for (a of alumnosFiltrados(); track a.id_us) {
+                    <option [value]="a.id_us"
+                            [selected]="alumnoSeleccionado()?.id_us === a.id_us">
+                      {{ alumnoLabel(a) }}
+                    </option>
+                  }
+                </select>
+                @if (form.get('id_us')?.invalid && form.get('id_us')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Seleccione un alumno</p>
+                }
+              }
+            </div>
+
+            @if (alumnoSeleccionado(); as alumno) {
+              <div class="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                <div class="size-12 rounded-full bg-primary/15 text-primary flex items-center justify-center text-lg font-bold shrink-0">
+                  {{ alumno.nombre[0] }}{{ alumno.appaterno ? alumno.appaterno[0] : '' }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-default-800">{{ alumno.nombre }} {{ alumno.appaterno ?? '' }}</p>
+                  @if (alumno.ci) {
+                    <p class="text-xs text-default-400">CI: {{ alumno.ci }}</p>
+                  }
+                  @if (cursoSeleccionado()) {
+                    <p class="text-xs text-primary mt-0.5 flex items-center gap-1">
+                      <span class="size-3"><ng-icon name="lucideBookOpen"></ng-icon></span>
+                      {{ cursoSeleccionado()!.nombre_programa }}
+                    </p>
+                  }
+                </div>
+                <div class="shrink-0">
+                  <span class="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-medium">
+                    Seleccionado
+                  </span>
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideFileText"></ng-icon></div>
+              Contenido del Documento
+            </h6>
+          </div>
+          <div class="card-body space-y-5">
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1.5">
+                Modelo de Carta <span class="text-danger">*</span>
+              </label>
+              <select formControlName="id_cartamod" class="form-input w-full" (change)="onModeloChange($event)">
+                <option [ngValue]="null">— Seleccionar modelo —</option>
+                @for (m of modelos(); track m.id_cartamod) {
+                  <option [value]="m.id_cartamod">{{ m.nombremodelo }}</option>
+                }
+              </select>
+              @if (form.get('id_cartamod')?.invalid && form.get('id_cartamod')?.touched) {
+                <p class="mt-1 text-danger text-xs">Seleccione un modelo de carta</p>
+              }
+              @if (modeloBase()) {
+                <p class="text-xs text-default-400 mt-1.5">
+                  Los textos se auto-rellenan desde el modelo. Usa
+                  <code class="bg-default-100 px-1 rounded text-default-600">{{ '{{nombre}}' }}</code> y
+                  <code class="bg-default-100 px-1 rounded text-default-600">{{ '{{curso}}' }}</code>
+                  en la plantilla para insertar los datos del alumno y el curso.
+                </p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Texto Principal</label>
+              <textarea formControlName="textocarta" rows="6" class="form-input w-full font-mono text-sm"
+                        placeholder="Contenido principal de la carta..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 1</label>
+              <textarea formControlName="textocarta1" rows="4" class="form-input w-full font-mono text-sm"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 3</label>
+              <textarea formControlName="textocarta3" rows="4" class="form-input w-full font-mono text-sm"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideSettings2"></ng-icon></div>
+              Opciones
+            </h6>
+          </div>
+          <div class="card-body space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">N° de Contrato</label>
+              <input type="number" formControlName="cp_nro_contrato" class="form-input w-full" placeholder="Opcional">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Gestión</label>
+              <input type="text" formControlName="cp_gestion_contrato" class="form-input w-full" placeholder="Ej: 2025-I">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+              <select formControlName="estado" class="form-input w-full">
+                <option [value]="1">Activo</option>
+                <option [value]="0">Inactivo</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <input type="checkbox" formControlName="usar_encabezado_pie_estandar" id="encabezado" class="form-checkbox">
+              <label for="encabezado" class="text-sm text-default-700">Encabezado y pie estándar</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body flex flex-col gap-3">
+            <button type="button"
+                    class="btn border border-primary text-primary w-full justify-center flex items-center gap-2"
+                    (click)="vistaActiva.set('preview')">
+              <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+              Vista Previa
+            </button>
+            <button type="submit" class="btn bg-primary text-white w-full justify-center flex items-center gap-2"
+                    [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Generando...
+              } @else {
+                <div class="size-4"><ng-icon name="lucideFilePlus"></ng-icon></div>
+                Generar Carta
+              }
+            </button>
+            <a routerLink="/cenefco/cartas-generadas"
+               class="btn bg-default-100 text-default-700 w-full justify-center flex items-center gap-2">
+              <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Cancelar
+            </a>
+          </div>
+        </div>
+
+        <div class="card border border-amber-200 bg-amber-50/40">
+          <div class="card-body space-y-2">
+            <p class="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+              <span class="size-3.5 inline-flex"><ng-icon name="lucideInfo"></ng-icon></span>
+              Placeholders disponibles
+            </p>
+            <div class="space-y-1 text-xs text-amber-700">
+              <p><code class="bg-amber-100 px-1 rounded">{{ '{{nombre}}' }}</code> — Nombre completo del alumno</p>
+              <p><code class="bg-amber-100 px-1 rounded">{{ '{{curso}}' }}</code> — Nombre del curso/diplomado</p>
+            </div>
+            <p class="text-xs text-amber-600 mt-1">Usa estos códigos en los modelos de carta para que se reemplacen automáticamente al generar.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    } 
+
+  </form>
+</main>

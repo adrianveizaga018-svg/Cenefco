@@ -1,0 +1,149 @@
+<main>
+  <app-page-title title="Correos Enviados" subtitle="Ventas" />
+
+  <div class="grid grid-cols-3 gap-4 mb-5">
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <ng-icon name="lucideMail" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Total en página</p>
+          <p class="text-xl font-bold text-default-800">{{ total }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-success/10 flex items-center justify-center text-success shrink-0">
+          <ng-icon name="lucideCheckCircle" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Enviados (página)</p>
+          <p class="text-xl font-bold text-success">{{ totalEnviados }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-danger/10 flex items-center justify-center text-danger shrink-0">
+          <ng-icon name="lucideXCircle" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Fallidos (página)</p>
+          <p class="text-xl font-bold text-danger">{{ totalFallidos }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h4 class="card-title">Bandeja de Correos Enviados</h4>
+        <p class="text-xs text-default-400 mt-0.5">
+          Registro de comprobantes y demás correos enviados a estudiantes desde el sistema.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <input
+          type="text"
+          class="form-input text-sm w-56"
+          placeholder="Buscar por destinatario o asunto…"
+          [ngModel]="query()"
+          (ngModelChange)="onQueryChange($event)" />
+
+        <span class="text-xs text-default-500">Filtrar:</span>
+        @for (opt of [['todos','Todos','bg-default-200 text-default-700'],['enviado','Enviados','bg-success/15 text-success'],['fallido','Fallidos','bg-danger/15 text-danger']]; track opt[0]) {
+          <button
+            class="btn btn-sm text-xs"
+            [ngClass]="filtro() === opt[0] ? opt[2] : 'bg-default-100 text-default-500 hover:bg-default-200'"
+            (click)="setFiltro($any(opt[0]))">
+            {{ opt[1] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading) {
+        <div class="flex items-center justify-center py-16 text-default-400 gap-2 text-sm">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando correos…
+        </div>
+      } @else if (isError) {
+        <div class="flex items-center justify-center py-16 text-danger gap-2 text-sm">
+          <ng-icon name="lucideCircleX" /> Error al cargar los registros.
+        </div>
+      } @else if (items.length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-2">
+          <div class="size-10 opacity-30"><ng-icon name="lucideMail" /></div>
+          <p class="text-sm">Sin correos registrados</p>
+          <p class="text-xs">Cuando se envíe un comprobante por correo, aparecerá aquí.</p>
+        </div>
+      } @else {
+        <table class="min-w-full divide-y divide-default-200 text-sm">
+          <thead class="bg-default-100">
+            <tr class="text-xs font-medium text-default-500 uppercase tracking-wide">
+              <th class="px-4 py-3 text-start">Fecha</th>
+              <th class="px-4 py-3 text-start">Destinatario</th>
+              <th class="px-4 py-3 text-start">Asunto</th>
+              <th class="px-4 py-3 text-start">Tipo</th>
+              <th class="px-4 py-3 text-start">Estado</th>
+              <th class="px-4 py-3 text-start">Referencia</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-default-200">
+            @for (item of items; track item.id) {
+              <tr class="hover:bg-default-50 transition-colors">
+                <td class="px-4 py-3 text-default-600 whitespace-nowrap">
+                  {{ formatFecha(item.created_at) }}
+                </td>
+                <td class="px-4 py-3 text-default-700">
+                  {{ item.destinatario }}
+                </td>
+                <td class="px-4 py-3 text-default-500">
+                  {{ item.asunto }}
+                </td>
+                <td class="px-4 py-3 text-default-500 text-xs">
+                  {{ tipoLabel(item.tipo) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="item.estado === 'enviado'
+                      ? 'bg-success/15 text-success'
+                      : 'bg-danger/15 text-danger'"
+                    [title]="item.error ?? ''">
+                    <ng-icon
+                      [name]="item.estado === 'enviado' ? 'lucideCheckCircle' : 'lucideXCircle'"
+                      class="size-3" />
+                    {{ item.estado === 'enviado' ? 'Enviado' : 'Fallido' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-xs">
+                  @if (referenciaLink(item.referencia_tipo, item.referencia_id); as link) {
+                    <a [routerLink]="link" class="text-primary hover:underline">
+                      Inscripción #{{ item.referencia_id }}
+                    </a>
+                  } @else {
+                    <span class="text-default-400">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div class="card-footer">
+      <p class="text-xs text-default-400">{{ total }} correos en total</p>
+      <app-pagination
+        [currentPage]="pageIndex()"
+        [pageSize]="pageSize()"
+        [total]="total"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

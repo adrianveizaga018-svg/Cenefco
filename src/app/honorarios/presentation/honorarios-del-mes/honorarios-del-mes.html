@@ -1,0 +1,165 @@
+<main>
+  <app-page-title title="Honorarios del mes" subtitle="Honorarios docentes" />
+
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap items-end justify-between gap-3">
+      <div class="flex items-end gap-3">
+        <div>
+          <label class="block mb-1.5 text-xs font-medium text-default-600">Mes</label>
+          <select class="form-select w-40" [ngModel]="mes()" (ngModelChange)="mes.set(+$event); onCambiarPeriodo()">
+            @for (m of [1,2,3,4,5,6,7,8,9,10,11,12]; track m) {
+              <option [value]="m">{{ ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m] }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1.5 text-xs font-medium text-default-600">Año</label>
+          <select class="form-select w-28" [ngModel]="anio()" (ngModelChange)="anio.set(+$event); onCambiarPeriodo()">
+            @for (a of [hoy.getFullYear()-1, hoy.getFullYear(), hoy.getFullYear()+1]; track a) {
+              <option [value]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <a routerLink="/cenefco/config-honorarios" class="btn btn-sm border border-default-300 text-default-600 hover:bg-default-100">
+        <div class="size-4 me-1"><ng-icon name="lucideSettings"></ng-icon></div>
+        Configurar programas
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="card">
+      <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+        <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+        Calculando honorarios sugeridos...
+      </div>
+    </div>
+  } @else {
+    <div class="card mb-5">
+      <div class="card-body">
+        <label class="block mb-1.5 text-sm font-medium text-default-800">Curso</label>
+        @if (cursos().length === 0) {
+          <p class="text-sm text-default-400">No hay cursos con honorario configurado y activo.</p>
+        } @else {
+          <select class="form-select w-full md:w-96" [ngModel]="cursoSeleccionado()" (ngModelChange)="onCambiarCurso(+$event)">
+            @for (c of cursos(); track c.id_programa) {
+              <option [value]="c.id_programa">{{ c.nombre_curso }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+
+    @if (cursoSeleccionado() != null) {
+      <div class="card">
+        <div class="card-header">
+          <p class="text-sm text-default-500">
+            Docentes asignados a este curso. Los montos son sugerencias — revísalos antes de registrar el pago.
+          </p>
+        </div>
+        <div class="card-body flex flex-col gap-3">
+          @for (item of docentesDelCurso(); track item.id_us) {
+            <div class="flex items-center justify-between gap-4 p-3 rounded-lg border border-default-200">
+              <div class="flex items-center gap-3 flex-1">
+                <div class="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium text-sm shrink-0">
+                  {{ item.docente_nombre.charAt(0) }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-default-800">{{ item.docente_nombre }}</p>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">
+                      {{ etiquetaTipo(item.tipo_honorario) }}
+                    </span>
+                    @if (item.tipo_honorario !== 'diplomado_fijo') {
+                      <span class="text-xs text-default-500">{{ item.dias_dictados }} días</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-end shrink-0">
+                <p class="text-sm font-semibold text-default-800">Bs. {{ item.monto_sugerido }}</p>
+              </div>
+
+              <div class="shrink-0">
+                @if (item.ya_registrado) {
+                  <span class="badge bg-success/10 text-success text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                    <div class="size-3.5"><ng-icon name="lucideCircleCheck"></ng-icon></div>
+                    Ya registrado
+                  </span>
+                } @else {
+                  <button type="button" class="btn btn-sm bg-primary text-white" (click)="abrirModal(item)">
+                    <div class="size-4 me-1"><ng-icon name="lucideCheck"></ng-icon></div>
+                    Registrar pago
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          @empty {
+            <p class="text-sm text-default-400 text-center py-8">Este curso no tiene docentes activos con honorario configurado.</p>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  @if (modalAbierto()) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-lg">
+        <div class="card-header">
+          <h6 class="card-title">Registrar pago de honorario</h6>
+          <button type="button" (click)="cerrarModal()"
+                  class="btn size-7.5 bg-default-200 hover:bg-danger text-default-500 hover:text-white">
+            <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+          </button>
+        </div>
+
+        <div class="card-body space-y-4">
+          @if (itemActivo(); as item) {
+            <div class="text-sm text-default-600">
+              <p><span class="font-medium text-default-800">{{ item.docente_nombre }}</span></p>
+              <p class="text-default-500">{{ item.nombre_curso }} — {{ mes() }}/{{ anio() }}</p>
+            </div>
+          }
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Monto a pagar (Bs.)</label>
+            <input type="number" class="form-input" min="0.01" step="0.01"
+                   [ngModel]="montoForm()" (ngModelChange)="montoForm.set(+$event)" />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de pago</label>
+            <input type="date" class="form-input"
+                   [ngModel]="fechaPagoForm()" (ngModelChange)="fechaPagoForm.set($event)" />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Nro. de comprobante / boleta</label>
+            <input type="text" class="form-input" placeholder="Opcional"
+                   [ngModel]="nroComprobanteForm()" (ngModelChange)="nroComprobanteForm.set($event)" />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Comprobante de pago (PDF o imagen)</label>
+            <input type="file" class="form-input" accept=".pdf,image/*" (change)="onArchivoSeleccionado($event)" />
+          </div>
+
+          <button type="button" (click)="confirmarRegistro()" [disabled]="guardando()" class="btn bg-primary text-white w-full">
+            @if (guardando()) {
+              <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Guardando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucideUpload"></ng-icon></div>
+              Registrar y anexar comprobante
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

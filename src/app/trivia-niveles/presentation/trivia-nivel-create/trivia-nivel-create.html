@@ -1,0 +1,84 @@
+<main>
+  <app-page-title title="Nuevo Nivel de Trivia" subtitle="Juego de Trivia" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos del Nivel</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Categoría <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" formControlName="categoria_id">
+                <option [ngValue]="null" disabled>— Seleccionar categoría —</option>
+                @for (categoria of categorias(); track categoria.id) {
+                  <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+                }
+              </select>
+              @if (form.get('categoria_id')?.invalid && form.get('categoria_id')?.touched) {
+                <p class="mt-1 text-danger text-xs">Debes seleccionar una categoría</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-input" placeholder="Ej: Fácil" formControlName="nombre">
+              @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido (máximo 100 caracteres)</p>
+              }
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+                <input type="number" class="form-input" formControlName="orden" min="0">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Puntaje base <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-input" formControlName="puntaje_base" min="1">
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+              <label for="activo" class="text-sm font-medium text-default-800">Nivel activo</label>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white w-full"
+              [disabled]="form.invalid || submitting()"
+            >
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Crear Nivel
+              }
+            </button>
+            <a routerLink="/cenefco/trivia-niveles" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</main>

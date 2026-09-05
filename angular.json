@@ -1,0 +1,114 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "tailwick": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "css"
+        }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "css",
+            "assets": [
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "src/assets"
+              }
+            ],
+            "styles": [
+              "src/styles.css",
+              "node_modules/flatpickr/dist/flatpickr.css",
+              "node_modules/simplebar/dist/simplebar.min.css"
+            ],
+            "scripts": [
+              "node_modules/preline/dist/index.js",
+              "node_modules/apexcharts/dist/apexcharts.min.js"
+            ],
+            "stylePreprocessorOptions": {
+              "sass": {
+                "silenceDeprecations": [
+                  "color-functions",
+                  "global-builtin",
+                  "mixed-decls"
+                ]
+              }
+            },
+            "polyfills": ["@angular/localize/init"],
+            "allowedCommonJsDependencies": ["dropzone", "sweetalert2", "onscan.js"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "6MB",
+                  "maximumError": "10MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "tailwick:build:production"
+            },
+            "development": {
+              "buildTarget": "tailwick:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "inlineStyleLanguage": "css",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": ["src/styles.css"],
+            "polyfills": ["@angular/localize/init"]
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": "dd59cc52-d05c-4151-9a51-4ed4b409aa3a"
+  }
+}

@@ -1,0 +1,153 @@
+﻿<main>
+  <app-page-title title="Editar Vendedor" subtitle="Gestión Comercial" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando vendedor...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 gap-5">
+
+        <div class="lg:col-span-2 space-y-5">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos Personales</h6></div>
+            <div class="card-body space-y-4">
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+                  <input type="text" formControlName="nombre" class="form-input w-full">
+                  @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                    <p class="text-danger text-xs mt-1">El nombre es requerido</p>
+                  }
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Apellido <span class="text-danger">*</span></label>
+                  <input type="text" formControlName="apellido" class="form-input w-full">
+                  @if (form.get('apellido')?.invalid && form.get('apellido')?.touched) {
+                    <p class="text-danger text-xs mt-1">El apellido es requerido</p>
+                  }
+                </div>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">CI / Documento</label>
+                  <input type="text" formControlName="ci" class="form-input w-full">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Teléfono / Celular</label>
+                  <input type="text" formControlName="telefono" class="form-input w-full">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Email</label>
+                <input type="email" formControlName="email" class="form-input w-full">
+                @if (form.get('email')?.invalid && form.get('email')?.touched) {
+                  <p class="text-danger text-xs mt-1">El email no es válido</p>
+                }
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos Comerciales</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Página / Plataforma asignada</label>
+                <input type="text" formControlName="pagina" class="form-input w-full" placeholder="Ej: FORMET, VIRTUALTECH, TESLA CAMPUS">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Meta de Ventas Mensual (Bs.)</label>
+                <input type="number" formControlName="meta_ventas" class="form-input w-full" min="0" step="0.01">
+              </div>
+              <p class="text-xs text-default-400">
+                La comisión ahora se define por categoría de programa, no por vendedor — ver
+                <a routerLink="/cenefco/categorias-programa" class="text-primary hover:underline">Categorías de Programa</a>.
+              </p>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Acceso al Sistema</h6></div>
+            <div class="card-body">
+              <label class="block text-sm font-medium text-default-700 mb-1">Vincular con usuario del sistema</label>
+              @if (usuariosLoading()) {
+                <div class="form-input w-full text-default-400 text-sm">Cargando usuarios...</div>
+              } @else {
+                <select formControlName="usuario_id" class="form-input w-full">
+                  <option [ngValue]="null">— Sin usuario vinculado —</option>
+                  @for (u of usuarios(); track u.id) {
+                    <option [ngValue]="u.id">{{ u.nombre }} {{ u.apellido }}</option>
+                  }
+                </select>
+              }
+              <p class="text-xs text-default-400 mt-1">Si el vendedor tiene acceso al sistema, vinculalo con su cuenta de usuario.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="space-y-5 self-start">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Fotografía</h6></div>
+            <div class="card-body space-y-3">
+
+              <div class="flex justify-center">
+                @if (fotoPreview()) {
+                  <img [src]="fotoPreview()!" alt="Foto del vendedor"
+                    class="size-28 rounded-full object-cover border-2 border-default-200 shadow">
+                } @else {
+                  <div class="size-28 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-3xl border-2 border-dashed border-primary/30">
+                    <div class="size-10"><ng-icon name="lucideUser"></ng-icon></div>
+                  </div>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Cambiar foto</label>
+                <input type="file" accept="image/*" class="form-input w-full text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-primary/10 file:text-primary"
+                  (change)="onFotoSelected($event)" [disabled]="uploadingFoto()">
+                @if (uploadingFoto()) {
+                  <div class="flex items-center gap-1.5 text-xs text-default-400 mt-1">
+                    <div class="size-3 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Subiendo...
+                  </div>
+                }
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Estado</h6></div>
+            <div class="card-body">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" formControlName="activo" class="form-checkbox">
+                <div>
+                  <p class="text-sm font-medium text-default-700">Vendedor activo</p>
+                  <p class="text-xs text-default-400">Los vendedores inactivos no aparecen en los selectores del cronograma.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <button type="submit" class="btn bg-primary text-white w-full disabled:opacity-60" [disabled]="submitting() || uploadingFoto()">
+              @if (submitting()) { Guardando... } @else { Guardar Cambios }
+            </button>
+            <a routerLink="/cenefco/vendedores" class="btn btn-outline-default w-full text-center">Cancelar</a>
+          </div>
+
+        </div>
+      </div>
+    </form>
+  }
+</main>

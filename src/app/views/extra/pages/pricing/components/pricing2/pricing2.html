@@ -1,0 +1,49 @@
+﻿<div class="grid lg:grid-cols-2 gap-5">
+  @for (plan of plans; track plan.name) {
+    <div class="card">
+      <div class="card-body">
+        <h5 class="text-lg mb-2 font-semibold text-default-800">{{ plan.name }}</h5>
+
+        <div class="grid lg:grid-cols-3 gap-5">
+          
+          <div class="lg:col-span-2">
+            <p class="relative before:content-[''] before:absolute before:border-b before:border-default-200 before:bottom-2 before:start-0 before:end-0">
+              <span class="pe-2 bg-card relative text-default-500 text-sm">Everything Includes</span>
+            </p>
+
+            <div class="grid md:grid-cols-2 md:gap-5">
+              @for (col of plan.features; track col) {
+                <div>
+                  <ul class="mt-5 flex flex-col gap-3 text-sm">
+                    @for (feature of col; track feature) {
+                      <li class="flex items-center gap-2">
+                        <div class="size-4 text-success">
+                          <ng-icon name="lucideSquareCheck"></ng-icon>
+                        </div>
+                        <span class="text-default-900" [innerHTML]="feature"></span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="lg:col-span-1">
+            <div class="p-5 rounded-lg" [class]="plan.color">
+              <p class="text-sm mb-4" [class]="plan.textColor">{{ plan.period }}</p>
+              <p class="text-2xl font-bold mb-4" [class]="plan.textColor === 'text-primary' ? 'text-primary' : 'text-default-800'">
+                ${{ plan.price }}
+              </p>
+              <button type="button"
+                class="py-1.5 px-4 w-full rounded-md"
+                [class]="plan.textColor === 'text-primary' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'">
+                Buy Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

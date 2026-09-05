@@ -1,0 +1,67 @@
+<main>
+  <app-page-title title="Nuevo Menú" subtitle="Menús del Portal" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos del Menú</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-input" placeholder="Ej: menu-principal, menu-footer..." formControlName="nombre">
+              @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido (máx. 80 caracteres)</p>
+              }
+              <p class="mt-1 text-default-400 text-xs">Identificador único del menú. Se usa para cargarlo en el portal.</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción</label>
+              <input type="text" class="form-input" placeholder="Descripción breve del menú..." formControlName="descripcion">
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Configuración</h6></div>
+          <div class="card-body space-y-4">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+              <label for="activo" class="text-sm font-medium text-default-800">Activo</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white w-full"
+              [disabled]="form.invalid || submitting()"
+            >
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Crear Menú
+              }
+            </button>
+            <a routerLink="/cenefco/menus" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</main>

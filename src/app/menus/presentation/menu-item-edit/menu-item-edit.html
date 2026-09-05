@@ -1,0 +1,96 @@
+<main>
+  <app-page-title title="Editar Ítem de Menú" subtitle="Menús del Portal" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando ítem...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+        <div class="lg:col-span-2">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos del Ítem</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Etiqueta <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-input" placeholder="Ej: Inicio, Nosotros, Servicios..." formControlName="etiqueta">
+                @if (form.get('etiqueta')?.invalid && form.get('etiqueta')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Este campo es requerido (máx. 120 caracteres)</p>
+                }
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">URL</label>
+                <input type="text" class="form-input" placeholder="Ej: /cursos, https://..." formControlName="url">
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Ícono</label>
+                <input type="text" class="form-input" placeholder="Clase CSS del ícono (opcional)..." formControlName="icono">
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Ítem padre</label>
+                <select class="form-input" formControlName="parent_id">
+                  <option [ngValue]="null">— Sin padre (ítem raíz) —</option>
+                  @for (s of siblings(); track s.id) {
+                    <option [ngValue]="s.id">{{ s.etiqueta }}</option>
+                  }
+                </select>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Configuración</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+                <input type="number" class="form-input" formControlName="orden" min="0">
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+                <label for="activo" class="text-sm font-medium text-default-800">Activo</label>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="nueva_ventana" class="form-checkbox" formControlName="abrir_nueva_ventana">
+                <label for="nueva_ventana" class="text-sm font-medium text-default-800">Abrir en nueva ventana</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+            <div class="card-body flex flex-col gap-2">
+              <button
+                type="submit"
+                class="btn bg-primary text-white w-full"
+                [disabled]="form.invalid || submitting()"
+              >
+                @if (submitting()) {
+                  <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  Guardar Cambios
+                }
+              </button>
+              <a [routerLink]="['/cenefco/menu-items', menuId]" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+                Cancelar
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  }
+</main>

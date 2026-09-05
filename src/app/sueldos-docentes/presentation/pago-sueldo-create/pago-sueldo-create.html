@@ -1,0 +1,186 @@
+﻿<main>
+  <app-page-title title="Registrar Pago" subtitle="Sueldos Docentes" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else if (hasError() || !sueldo()) {
+    <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+      <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+      No se encontró el sueldo.
+    </div>
+  } @else {
+
+    <div class="flex items-center gap-1.5 text-sm text-default-500 mb-5">
+      <a routerLink="/cenefco/sueldos-docentes" class="hover:text-primary">Sueldos Docentes</a>
+      <div class="size-3.5 text-default-300"><ng-icon name="lucideChevronRight"></ng-icon></div>
+      <a [routerLink]="['/cenefco/sueldos-docentes', sueldo()!.id]" class="hover:text-primary">
+        {{ sueldo()!.concepto }}
+      </a>
+      <div class="size-3.5 text-default-300"><ng-icon name="lucideChevronRight"></ng-icon></div>
+      <span class="text-default-700 font-medium">Registrar Pago</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+              <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Docente</h6>
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <img [src]="sueldo()!.docente_foto || '/assets/images/logo-sm.png'"
+                   (error)="$any($event.target).src='/assets/images/logo-sm.png'"
+                   class="size-12 rounded-full object-cover shrink-0 bg-default-100" />
+              <div>
+                <p class="font-bold text-default-900 leading-tight">{{ sueldo()!.docente_nombre || '—' }}</p>
+                <p class="text-xs text-default-400 font-mono">CI: {{ sueldo()!.docente_ci || '—' }}</p>
+              </div>
+            </div>
+            <div class="space-y-2.5 text-sm">
+              <div>
+                <p class="text-xs text-default-400 mb-0.5">Concepto</p>
+                <p class="font-semibold text-default-800 leading-tight">{{ sueldo()!.concepto }}</p>
+              </div>
+              @if (sueldo()!.nombre_curso) {
+                <div>
+                  <p class="text-xs text-default-400 mb-0.5">Curso</p>
+                  <p class="text-sm text-default-700">{{ sueldo()!.nombre_curso }}</p>
+                </div>
+              }
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-default-100">
+                <div>
+                  <p class="text-xs text-default-400">Período</p>
+                  <p class="font-medium text-default-700 text-sm">{{ sueldo()!.periodo || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-default-400">Gestión</p>
+                  <p class="font-medium text-default-700 text-sm">{{ sueldo()!.gestion || '—' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideCreditCard"></ng-icon></div>
+              <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Estado del Sueldo</h6>
+            </div>
+          </div>
+          <div class="p-5 space-y-3 text-sm">
+            <div class="flex justify-between items-center pb-2.5 border-b border-default-100">
+              <span class="text-default-500">Monto total</span>
+              <span class="font-bold text-default-800 font-mono">Bs. {{ sueldo()!.monto_total | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2.5 border-b border-default-100">
+              <span class="text-default-500">Total pagado</span>
+              <span class="font-bold text-success font-mono">Bs. {{ sueldo()!.total_pagado | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-default-700">Saldo pendiente</span>
+              <span class="font-bold font-mono text-lg"
+                    [class.text-danger]="sueldo()!.saldo_pendiente > 0"
+                    [class.text-success]="sueldo()!.saldo_pendiente === 0">
+                Bs. {{ sueldo()!.saldo_pendiente | number:'1.2-2' }}
+              </span>
+            </div>
+            <div class="pt-2 border-t border-default-100 text-center">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+                    [class]="badgeClass(sueldo()!.estado_pago)">
+                {{ badgeLabel(sueldo()!.estado_pago) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="lg:col-span-2">
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-success"><ng-icon name="lucideBanknote"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Datos del Pago</h6>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+              <div>
+                <label class="block text-sm font-semibold text-default-700 mb-2">
+                  Monto Pagado (Bs.) <span class="text-danger">*</span>
+                </label>
+                <input type="number" [(ngModel)]="form.monto_pagado"
+                       min="0.01" step="0.01" placeholder="0.00"
+                       class="form-input w-full text-lg font-mono" />
+                @if (sueldo()!.saldo_pendiente > 0) {
+                  <p class="text-xs text-default-400 mt-1.5">
+                    Saldo pendiente: <span class="font-semibold text-danger">Bs. {{ sueldo()!.saldo_pendiente | number:'1.2-2' }}</span>
+                  </p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-default-700 mb-2">
+                  Fecha de Pago <span class="text-danger">*</span>
+                </label>
+                <input type="date" [(ngModel)]="form.fecha_pago" class="form-input w-full" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-default-700 mb-2">
+                  N° Comprobante / Boleta
+                  <span class="font-normal text-default-400 text-xs ms-1">(opcional)</span>
+                </label>
+                <input type="text" [(ngModel)]="form.nro_comprobante"
+                       placeholder="Ej: BOL-001, REC-2026-001..."
+                       class="form-input w-full" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-default-700 mb-2">
+                  Observación
+                  <span class="font-normal text-default-400 text-xs ms-1">(opcional)</span>
+                </label>
+                <input type="text" [(ngModel)]="form.observacion"
+                       placeholder="Notas adicionales sobre el pago..."
+                       class="form-input w-full" />
+              </div>
+
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6 pt-5 border-t border-default-100">
+              <button type="button" (click)="cancelar()"
+                      class="btn bg-default-200 text-default-600 flex items-center gap-1.5">
+                <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+                Cancelar
+              </button>
+              <button type="button" (click)="guardar()" [disabled]="saving()"
+                      class="btn bg-success text-white flex items-center gap-1.5 disabled:opacity-60">
+                @if (saving()) {
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+                  Registrar Pago
+                }
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  }
+</main>

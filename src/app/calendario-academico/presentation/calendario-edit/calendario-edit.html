@@ -1,0 +1,194 @@
+﻿<main>
+  <app-page-title title="Editar Registro" subtitle="Cronograma Académico" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando registro...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 gap-5">
+
+        <div class="lg:col-span-2 space-y-5">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos del Curso</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Título <span class="text-danger">*</span></label>
+                <input type="text" formControlName="titulo" class="form-input w-full">
+                @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+                  <p class="text-danger text-xs mt-1">El título es requerido</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Curso / Programa</label>
+                @if (programasLoading()) {
+                  <div class="form-input w-full text-default-400 text-sm">Cargando cursos...</div>
+                } @else {
+                  <select formControlName="programa_id" class="form-input w-full">
+                    <option [ngValue]="null">— Sin programa específico —</option>
+                    @for (p of programas(); track p.id_programa) {
+                      <option [value]="p.id_programa">{{ p.nombre_programa }}</option>
+                    }
+                  </select>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Descripción del Curso</label>
+                <textarea formControlName="descripcion" rows="3" class="form-input w-full" placeholder="Contenido temático, módulos, temas del curso..."></textarea>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Tipo de evento</label>
+                  <select formControlName="tipo" class="form-input w-full">
+                    <option [ngValue]="null">— Sin tipo —</option>
+                    @for (t of tipos; track t.value) {
+                      <option [value]="t.value">{{ t.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Color del evento</label>
+                  <div class="flex items-center gap-3">
+                    <input type="color" formControlName="color" class="h-10 w-14 rounded border border-default-200 cursor-pointer p-0.5">
+                    <span class="text-sm text-default-500">{{ form.value.color }}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Vendedor y Plataforma</h6></div>
+            <div class="card-body space-y-4">
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Vendedor</label>
+                  @if (vendedoresLoading()) {
+                    <div class="form-input w-full text-default-400 text-sm">Cargando vendedores...</div>
+                  } @else {
+                    <select formControlName="vendedor_id" class="form-input w-full">
+                      <option [ngValue]="null">— Sin vendedor asignado —</option>
+                      @for (v of vendedores(); track v.id) {
+                        <option [value]="v.id">{{ v.nombre }} {{ v.apellido }}</option>
+                      }
+                    </select>
+                  }
+                  <p class="text-xs text-default-400 mt-1">Usuario responsable de la venta del curso.</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Página / Plataforma</label>
+                  <input type="text" formControlName="pagina" class="form-input w-full" placeholder="Ej: FORMET, VIRTUALTECH, TESLA CAMPUS">
+                  <p class="text-xs text-default-400 mt-1">Nombre de la plataforma o página donde se ofrece.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h6 class="card-title">Precios y Descuentos</h6>
+            </div>
+            <div class="card-body space-y-4">
+
+              <div class="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Costo Inflado (Bs.)</label>
+                  <input type="number" formControlName="costo_inflado" class="form-input w-full" placeholder="280" min="0" step="0.01">
+                  <p class="text-xs text-default-400 mt-1">Precio de referencia o inflado.</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Descuento (Bs.)</label>
+                  <input type="number" formControlName="descuento" class="form-input w-full" placeholder="170" min="0" step="0.01">
+                  <p class="text-xs text-default-400 mt-1">Precio real de venta o precio con descuento.</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">
+                    <span class="inline-flex items-center gap-1">
+                      <span class="text-amber-500">★</span> Precio VIP (Bs.)
+                    </span>
+                  </label>
+                  <input type="number" formControlName="precio_vip" class="form-input w-full" placeholder="150" min="0" step="0.01">
+                  <p class="text-xs text-default-400 mt-1">Precio especial para clientes VIP.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="space-y-5 self-start">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title flex items-center gap-2"><ng-icon name="lucideCalendarDays" class="size-4 text-primary" /> Fechas</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Fecha de inicio <span class="text-danger">*</span></label>
+                <input type="date" formControlName="fecha_inicio" class="form-input w-full">
+                @if (form.get('fecha_inicio')?.invalid && form.get('fecha_inicio')?.touched) {
+                  <p class="text-danger text-xs mt-1">La fecha de inicio es requerida</p>
+                }
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Fecha de fin</label>
+                <input type="date" formControlName="fecha_fin" class="form-input w-full">
+                <p class="text-xs text-default-400 mt-1">Déjala vacía si es un evento de un solo día.</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Duración (días)</label>
+                <input type="number" formControlName="duracion_dias" class="form-input w-full" placeholder="7" min="1">
+                <p class="text-xs text-default-400 mt-1">Ej: 5 DÍAS, 7 DÍAS.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="todo_el_dia" formControlName="todo_el_dia" class="form-checkbox">
+                <label for="todo_el_dia" class="text-sm font-medium text-default-700">Todo el día</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Observaciones y Estado</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Observaciones</label>
+                <input type="text" formControlName="observaciones" class="form-input w-full" placeholder="Ej: COMPLETO, CANCELADO, LLENO...">
+                <p class="text-xs text-default-400 mt-1">Estado o nota visible en la tabla.</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" formControlName="destacado" class="form-checkbox">
+                <div>
+                  <p class="text-sm font-medium text-default-700">Evento destacado</p>
+                  <p class="text-xs text-default-400">Se resalta en el calendario.</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" formControlName="publico" class="form-checkbox">
+                <div>
+                  <p class="text-sm font-medium text-default-700">Visible al público</p>
+                  <p class="text-xs text-default-400">Aparece en el sitio web.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <button type="submit" class="btn bg-primary text-white w-full disabled:opacity-60" [disabled]="submitting()">
+              @if (submitting()) { Guardando... } @else { Guardar Cambios }
+            </button>
+            <a routerLink="/cenefco/calendario-academico" class="btn btn-outline-default w-full text-center">Cancelar</a>
+          </div>
+
+        </div>
+      </div>
+    </form>
+  }
+</main>

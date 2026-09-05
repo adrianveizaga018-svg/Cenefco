@@ -1,0 +1,26 @@
+<div class="card h-full">
+  <div class="card-header">
+    <h6 class="card-title flex items-center gap-2">
+      <div class="size-4 text-primary"><ng-icon name="lucideLayoutGrid" /></div>
+      Accesos Rápidos
+    </h6>
+  </div>
+
+  <div class="card-body">
+    <div class="grid grid-cols-2 gap-2">
+      @for (acceso of accesos; track acceso.ruta) {
+        <a [routerLink]="acceso.ruta"
+           class="flex items-center gap-2.5 p-3 rounded-xl border border-transparent hover:border-default-200 hover:bg-default-50 transition-all duration-150 group">
+          <div class="size-9 rounded-lg flex items-center justify-center shrink-0 {{ acceso.bgClass }} group-hover:scale-105 transition-transform">
+            <div class="size-4 {{ acceso.textClass }}">
+              <ng-icon [name]="acceso.icon" />
+            </div>
+          </div>
+          <span class="text-xs font-medium text-default-700 group-hover:text-default-900 leading-tight">
+            {{ acceso.label }}
+          </span>
+        </a>
+      }
+    </div>
+  </div>
+</div>

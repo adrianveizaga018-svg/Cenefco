@@ -1,0 +1,55 @@
+<app-page-title title="Universidades" subtitle="Catálogo" />
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="input-group" style="max-width:320px">
+      <input type="text" class="form-control" placeholder="Buscar universidad..."
+        [value]="search()" (input)="onSearch($any($event.target).value)" />
+    </div>
+    <a routerLink="/cenefco/universidades/create" class="btn btn-primary btn-sm">
+      + Nueva
+    </a>
+  </div>
+  <div class="card-body p-0">
+    @if (isLoading) {
+      <div class="text-center py-4">Cargando...</div>
+    } @else if (items.length === 0) {
+      <div class="text-center py-4 text-muted">Sin resultados</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items; track item.id_universidad) {
+              <tr>
+                <td>{{ item.id_universidad }}</td>
+                <td>{{ item.nombre_universidad }}</td>
+                <td>
+                  @if (item.estado === 1) {
+                    <span class="badge bg-success">Activo</span>
+                  } @else {
+                    <span class="badge bg-secondary">Inactivo</span>
+                  }
+                </td>
+                <td class="text-end">
+                  <a [routerLink]="['/cenefco/universidades/edit', item.id_universidad]" class="btn btn-sm btn-outline-secondary me-1">Editar</a>
+                  <button class="btn btn-sm btn-outline-danger" (click)="delete(item.id_universidad)">Eliminar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  <div class="card-footer">
+    <app-pagination [currentPage]="pageIndex()" [pageSize]="pageSize()" [total]="total" (pageChange)="onPageChange($event)" />
+  </div>
+</div>

@@ -1,0 +1,175 @@
+<main>
+  <app-page-title title="Nuevo Artículo" subtitle="Blog" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Contenido</h6></div>
+          <div class="card-body space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Título <span class="text-danger">*</span></label>
+              <input type="text" formControlName="titulo" class="form-input w-full" placeholder="Título del artículo">
+              @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+                <p class="text-danger text-xs mt-1">El título es requerido</p>
+              }
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Slug</label>
+              <input type="text" formControlName="slug" class="form-input w-full bg-default-50 text-default-400 cursor-not-allowed" readonly placeholder="Se genera automáticamente desde el título">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Entradilla</label>
+              <textarea formControlName="entradilla" rows="2" class="form-input w-full" placeholder="Resumen breve visible en la lista..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Contenido</label>
+              <ckeditor
+                [editor]="Editor"
+                [data]="form.get('contenido')?.value ?? ''"
+                (ready)="onEditorReady($event)">
+              </ckeditor>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title flex items-center gap-2">
+              <ng-icon name="lucideImage" class="size-4 text-primary" /> Imagen Principal
+            </h6>
+          </div>
+          <div class="card-body space-y-4">
+
+            @if (imagePreview()) {
+            <div class="relative rounded-xl overflow-hidden border border-default-200 bg-default-50">
+              <img [src]="imagePreview()!" alt="Preview" class="w-full max-h-64 object-cover">
+              @if (uploading()) {
+              <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                <ng-icon name="lucideLoader" class="size-8 text-white animate-spin" />
+                <span class="text-white text-sm font-medium">Subiendo imagen…</span>
+              </div>
+              } @else {
+              <button type="button"
+                class="absolute top-2 right-2 btn size-8 bg-danger text-white hover:bg-danger/80 rounded-full shadow"
+                (click)="removeImage()" title="Quitar imagen">
+                <ng-icon name="lucideX" class="size-4" />
+              </button>
+              }
+            </div>
+            } @else {
+            <label
+              class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-default-300 hover:border-primary rounded-xl p-8 cursor-pointer transition-colors group"
+              for="imagen-input">
+              <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <ng-icon name="lucideUpload" class="size-6 text-primary" />
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-medium text-default-700">Hacé clic para subir una imagen</p>
+                <p class="text-xs text-default-400 mt-0.5">PNG, JPG, WEBP, GIF — máx. 20 MB</p>
+              </div>
+            </label>
+            <input id="imagen-input" type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)">
+            }
+
+            <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg">
+              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+              <p class="text-xs text-default-600">
+                Tamaño sugerido: <strong>1200×675 px</strong> (máx. 500 KB). Una imagen muy pesada ralentiza la carga del artículo en el blog.
+              </p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">URL de imagen</label>
+                <input type="text" formControlName="imagen_principal_url" class="form-input w-full text-xs text-default-500" placeholder="Se llena al subir, o pega una URL">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Texto alternativo</label>
+                <input type="text" formControlName="imagen_alt" class="form-input w-full" placeholder="Descripción de la imagen">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title flex items-center gap-2"><ng-icon name="lucideSearch" class="size-4 text-primary" /> SEO</h6></div>
+          <div class="card-body space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Meta título</label>
+              <input type="text" formControlName="meta_titulo" class="form-input w-full" placeholder="Título para buscadores">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Meta descripción</label>
+              <textarea formControlName="meta_descripcion" rows="2" class="form-input w-full" placeholder="Descripción para buscadores..."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5 self-start">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Publicación</h6></div>
+          <div class="card-body space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+              <select formControlName="estado_web" class="form-input w-full">
+                <option value="borrador">Borrador</option>
+                <option value="publicado">Publicado</option>
+                <option value="archivado">Archivado</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de publicación</label>
+              <input type="datetime-local" formControlName="fecha_publicacion" class="form-input w-full">
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="destacada" formControlName="destacada" class="form-checkbox">
+              <label for="destacada" class="text-sm font-medium text-default-800">Artículo destacado</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title flex items-center gap-2">
+              <ng-icon name="lucideTag" class="size-4 text-primary" /> Etiquetas
+            </h6>
+          </div>
+          <div class="card-body">
+            @if (etiquetasDisponibles().length === 0) {
+              <p class="text-sm text-default-400">Sin etiquetas. <a routerLink="/cenefco/etiquetas" class="text-primary hover:underline">Crear →</a></p>
+            } @else {
+              <div class="flex flex-wrap gap-2">
+                @for (tag of etiquetasDisponibles(); track tag.id) {
+                  <button type="button"
+                    class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+                    [class]="tieneEtiqueta(tag.id)
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-default-100 text-default-600 border-default-200 hover:border-primary hover:text-primary'"
+                    (click)="toggleEtiqueta(tag.id)">
+                    @if (tieneEtiqueta(tag.id)) { <ng-icon name="lucideCheck" class="size-3" /> }
+                    {{ tag.nombre }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <button type="submit" class="btn bg-primary text-white w-full disabled:opacity-60" [disabled]="submitting()">
+            @if (submitting()) { Guardando... } @else { Guardar Artículo }
+          </button>
+          <a routerLink="/cenefco/articulos" class="btn btn-outline-default w-full text-center">Cancelar</a>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</main>

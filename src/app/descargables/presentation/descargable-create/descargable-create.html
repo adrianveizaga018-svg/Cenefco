@@ -1,0 +1,111 @@
+<main>
+  <app-page-title title="Nuevo Descargable" subtitle="Descargables" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Descargable</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Nombre del archivo">
+            @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) { <p class="text-danger text-xs mt-1">El nombre es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Tipo</label>
+            <input type="text" formControlName="tipo" class="form-input w-full" placeholder="Ej: brochure, sílabo">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+            <input type="number" formControlName="orden" class="form-input w-full" min="0">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Archivo <span class="text-danger">*</span></label>
+
+            @if (archivoNombre()) {
+              <div class="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg">
+                @if (uploadingArchivo()) {
+                  <div class="size-5 animate-spin text-primary shrink-0"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else {
+                  <div class="size-5 text-primary shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                }
+                <span class="text-sm text-default-700 truncate grow">{{ archivoNombre() }}</span>
+                @if (!uploadingArchivo()) {
+                  <button type="button" (click)="removeArchivo()" class="size-5 text-default-400 hover:text-danger shrink-0" title="Quitar archivo">
+                    <ng-icon name="lucideX"></ng-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <div class="flex flex-col items-center gap-2 text-default-400">
+                  <div class="size-8"><ng-icon name="lucideFileUp"></ng-icon></div>
+                  <span class="text-sm font-medium">Haz clic para subir el archivo</span>
+                  <span class="text-xs text-default-300">PDF, Word, Excel, ZIP, etc.</span>
+                </div>
+                <input type="file" class="hidden" (change)="onArchivoSelected($event)">
+              </label>
+            }
+
+            @if (form.get('archivo_url')?.invalid && form.get('archivo_url')?.touched) {
+              <p class="mt-1 text-danger text-xs">El archivo es obligatorio.</p>
+            }
+
+            <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
+              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+              <p class="text-xs text-default-600">
+                Tamaño sugerido: <strong>máx. 10 MB</strong>. Archivos muy pesados hacen que la descarga sea lenta para el usuario final.
+              </p>
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Imagen de Portada</label>
+
+            @if (imagenPreview()) {
+              <div class="relative inline-block w-full">
+                <img [src]="imagenPreview()" alt="Vista previa" class="w-full max-h-48 rounded-lg object-cover border border-default-200">
+                @if (uploadingImagen()) {
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                    <div class="size-6 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                  </div>
+                } @else {
+                  <button type="button" (click)="removeImagen()"
+                    class="absolute top-2 end-2 size-7 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                    title="Quitar imagen">
+                    <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+                  </button>
+                }
+              </div>
+            } @else {
+              <label class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <div class="flex flex-col items-center gap-2 text-default-400">
+                  <div class="size-8"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                  <span class="text-sm font-medium">Haz clic para subir la imagen de portada</span>
+                  <span class="text-xs text-default-300">PNG, JPG, WEBP (opcional)</span>
+                </div>
+                <input type="file" accept="image/*" class="hidden" (change)="onImagenSelected($event)">
+              </label>
+            }
+
+            <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
+              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+              <p class="text-xs text-default-600">
+                Tamaño sugerido: <strong>800×450 px</strong> (máx. 300 KB). Una imagen muy pesada ralentiza la carga de la lista de descargables.
+              </p>
+            </div>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-6">
+            <div class="flex items-center gap-2"><input type="checkbox" formControlName="requiere_datos" id="requiere_datos" class="form-checkbox"><label for="requiere_datos" class="text-sm text-default-700">Requiere datos del usuario</label></div>
+            <div class="flex items-center gap-2"><input type="checkbox" formControlName="activo" id="activo" class="form-checkbox"><label for="activo" class="text-sm text-default-700">Activo</label></div>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Guardar Descargable }
+            </button>
+            <a routerLink="/cenefco/descargables" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,463 @@
+﻿<main>
+  <app-page-title title="Cursos Migrados" subtitle="Registro histórico de cursos con participantes y QR" />
+
+  <div class="grid grid-cols-2 gap-4 mb-5">
+    <a routerLink="/cenefco/cursos-migrados" class="card hover:shadow-md transition-shadow duration-200 cursor-pointer">
+      <div class="card-body p-4">
+        <div class="flex items-start justify-between mb-3">
+          <div class="size-10 rounded-xl flex items-center justify-center bg-indigo-500/10">
+            <div class="size-5 text-indigo-500"><ng-icon name="lucideArchive"></ng-icon></div>
+          </div>
+        </div>
+        <h5 class="text-2xl font-bold text-default-800 leading-tight">
+          {{ stats()?.total_cursos ?? '—' }}
+        </h5>
+        <p class="text-xs text-default-500 mt-1">Cursos Migrados</p>
+      </div>
+    </a>
+    <a routerLink="/cenefco/cursos-migrados" class="card hover:shadow-md transition-shadow duration-200 cursor-pointer">
+      <div class="card-body p-4">
+        <div class="flex items-start justify-between mb-3">
+          <div class="size-10 rounded-xl flex items-center justify-center bg-primary/10">
+            <div class="size-5 text-primary"><ng-icon name="lucideUsers"></ng-icon></div>
+          </div>
+        </div>
+        <h5 class="text-2xl font-bold text-default-800 leading-tight">
+          {{ stats()?.total_participantes ?? '—' }}
+        </h5>
+        <p class="text-xs text-default-500 mt-1">Total Participantes</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header flex flex-wrap items-center gap-3">
+        <div class="inline-flex rounded-lg border border-default-200 p-0.5 shrink-0">
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.bg-primary]="searchMode() === 'curso'"
+            [class.text-white]="searchMode() === 'curso'"
+            (click)="setSearchMode('curso')">
+            Cursos
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.bg-primary]="searchMode() === 'estudiante'"
+            [class.text-white]="searchMode() === 'estudiante'"
+            (click)="setSearchMode('estudiante')">
+            Estudiantes
+          </button>
+        </div>
+
+        @if (searchMode() === 'curso') {
+          <div class="relative flex-1 min-w-0">
+            <input
+              type="text"
+              class="ps-11 form-input form-input-sm w-full sm:w-64"
+              placeholder="Buscar curso..."
+              (input)="onSearch($event)"
+            >
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+              <div class="size-3.5 flex items-center text-default-500">
+                <ng-icon name="lucideSearch"></ng-icon>
+              </div>
+            </div>
+          </div>
+
+          <select
+            class="form-select form-input-sm w-auto shrink-0"
+            (change)="onFiltroMes($event)">
+            <option value="0">Todos los meses</option>
+            @for (m of meses; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <input
+              type="number"
+              min="0"
+              class="form-input form-input-sm w-24"
+              placeholder="Mín. part."
+              (input)="onFiltroParticipantesMin($event)"
+            >
+            <span class="text-default-400 text-sm">–</span>
+            <input
+              type="number"
+              min="0"
+              class="form-input form-input-sm w-24"
+              placeholder="Máx. part."
+              (input)="onFiltroParticipantesMax($event)"
+            >
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <a
+              routerLink="/cenefco/curso-migrado-create"
+              class="btn btn-sm bg-primary text-white flex items-center gap-1.5">
+              <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+              Nuevo Curso
+            </a>
+            <a
+              routerLink="/cenefco/curso-migrado-importar"
+              class="btn btn-sm border border-primary text-primary hover:bg-primary hover:text-white flex items-center gap-1.5">
+              <div class="size-3.5"><ng-icon name="lucideUpload"></ng-icon></div>
+              Importar JSON
+            </a>
+            <button
+              type="button"
+              class="btn btn-sm border border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-1.5"
+              (click)="exportPdf()"
+              [disabled]="exportingPdf()"
+            >
+              @if (exportingPdf()) {
+                <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              } @else {
+                <div class="size-3.5"><ng-icon name="lucideFileText"></ng-icon></div>
+              }
+              PDF
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm border border-green-300 text-green-700 hover:bg-green-50 flex items-center gap-1.5"
+              (click)="exportExcel()"
+              [disabled]="exportingExcel()"
+            >
+              @if (exportingExcel()) {
+                <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              } @else {
+                <div class="size-3.5"><ng-icon name="lucideSheet"></ng-icon></div>
+              }
+              Excel
+            </button>
+          </div>
+        } @else {
+          <div class="relative flex-1 min-w-0">
+            <input
+              type="text"
+              class="ps-11 form-input form-input-sm w-full sm:w-80"
+              placeholder="Buscar estudiante por nombre..."
+              (input)="onSearchEstudiante($event)"
+            >
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+              <div class="size-3.5 flex items-center text-default-500">
+                <ng-icon name="lucideSearch"></ng-icon>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (searchMode() === 'curso') {
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando cursos migrados...
+                </div>
+              } @else if (forbidden) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (error) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo cargar la lista. Intente nuevamente.
+                </div>
+              } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+                  <table class="min-w-full divide-y divide-default-200 relative z-10">
+                    <thead class="bg-default-150">
+                      <tr class="text-sm font-normal text-default-700">
+                        <th scope="col" class="px-3.5 py-3 text-start">#</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Imagen</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Curso</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Período</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Horas</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Participantes</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">QR</th>
+                        <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default-200">
+                      @for (curso of cursos; track curso.id) {
+                        <tr class="text-default-800 font-normal">
+                          <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ curso.id }}</td>
+                          <td class="px-3.5 py-2.5">
+                            @if (curso.imagen_path) {
+                              <img [src]="'/storage/' + curso.imagen_path" [alt]="curso.nombre"
+                                   class="w-12 h-12 rounded-lg object-cover border border-default-200 shadow-sm" />
+                            } @else {
+                              <div class="w-12 h-12 rounded-lg bg-default-100 border border-default-200 flex items-center justify-center text-default-300">
+                                <div class="size-5"><ng-icon name="lucideImage"></ng-icon></div>
+                              </div>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5">
+                            <div class="text-sm font-medium text-default-800 leading-tight">{{ curso.nombre }}</div>
+                            <a [href]="curso.url" target="_blank"
+                               class="text-xs text-primary/70 hover:text-primary hover:underline truncate block max-w-xs">
+                              {{ curso.url }}
+                            </a>
+                          </td>
+                          <td class="px-3.5 py-2.5 text-sm">
+                            @if (curso.periodo) {
+                              <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                                {{ curso.periodo }}
+                              </span>
+                            } @else {
+                              <span class="text-default-400">—</span>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5 text-sm">
+                            @if (curso.carga_horaria) {
+                              <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                                {{ curso.carga_horaria }}h
+                              </span>
+                            } @else {
+                              <span class="text-default-300">—</span>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5 text-sm">
+                            <span class="font-semibold text-default-700">{{ curso.participantes_count ?? 0 }}</span>
+                            <span class="text-default-400 text-xs ml-1">personas</span>
+                          </td>
+                          <td class="px-3.5 py-2.5">
+                            @if (curso.qr_path) {
+                              <button type="button" (click)="abrirQR(curso)" title="Ver QR">
+                                <img [src]="'/storage/' + curso.qr_path" [alt]="'QR ' + curso.nombre"
+                                     class="w-10 h-10 rounded border border-default-200 hover:scale-150 transition-transform cursor-zoom-in" />
+                              </button>
+                            } @else {
+                              <span class="text-default-300 text-xs">—</span>
+                            }
+                          </td>
+                          <td class="px-3.5 py-2.5">
+                            <div class="flex items-center gap-1.5">
+                              <a
+                                [routerLink]="['/cenefco/curso-migrado', curso.id]"
+                                class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                                title="Ver detalle">
+                                <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                              </a>
+                              <button
+                                type="button"
+                                (click)="descargarPdfCurso(curso)"
+                                [disabled]="descargandoPdfCurso() === curso.id"
+                                class="btn size-7.5 bg-default-200 hover:bg-danger text-default-500 hover:text-white"
+                                title="Reporte PDF de participantes">
+                                @if (descargandoPdfCurso() === curso.id) {
+                                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                                } @else {
+                                  <div class="size-4"><ng-icon name="lucideFileText"></ng-icon></div>
+                                }
+                              </button>
+                              <button
+                                type="button"
+                                (click)="descargarExcelCurso(curso)"
+                                [disabled]="descargandoExcelCurso() === curso.id"
+                                class="btn size-7.5 bg-default-200 hover:bg-success text-default-500 hover:text-white"
+                                title="Reporte Excel de participantes">
+                                @if (descargandoExcelCurso() === curso.id) {
+                                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                                } @else {
+                                  <div class="size-4"><ng-icon name="lucideSheet"></ng-icon></div>
+                                }
+                              </button>
+                              <button
+                                type="button"
+                                (click)="confirmarEliminar(curso)"
+                                [disabled]="eliminando() === curso.id"
+                                class="btn size-7.5 bg-default-200 hover:bg-danger text-default-500 hover:text-white"
+                                title="Eliminar curso">
+                                @if (eliminando() === curso.id) {
+                                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                                } @else {
+                                  <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                                }
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+
+                      @empty {
+                        <tr>
+                          <td colspan="8" class="px-3.5 py-12 text-center text-sm text-default-400">
+                            No se encontraron cursos migrados.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ cursos.length }}</b> de <b>{{ total }}</b> cursos
+          </p>
+          <app-pagination
+            [total]="total"
+            [pageSize]="pageSize"
+            [currentPage]="pageIndex()"
+            (pageChange)="onPageChange($event)"
+          />
+        </div>
+      </div>
+      } @else {
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isIdleEstudiante) {
+                <div class="flex items-center justify-center py-16 text-default-400 text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideSearch"></ng-icon></div>
+                  Escribe un nombre para buscar estudiantes en todos los cursos migrados.
+                </div>
+              } @else if (isLoadingEstudiante) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Buscando estudiantes...
+                </div>
+              } @else if (forbiddenEstudiante) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (errorEstudiante) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo realizar la búsqueda. Intente nuevamente.
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">#</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Nombre completo</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Curso</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Período</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Gestión</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (p of participantes; track p.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ p.id }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-medium text-default-800">{{ p.nombre_completo }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-700">{{ p.curso?.nombre ?? '—' }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          @if (p.curso?.periodo) {
+                            <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                              {{ p.curso?.periodo }}
+                            </span>
+                          } @else {
+                            <span class="text-default-400">—</span>
+                          }
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-700">{{ p.curso?.gestion ?? '—' }}</td>
+                        <td class="px-3.5 py-2.5">
+                          @if (p.curso) {
+                            <a
+                              [routerLink]="['/cenefco/curso-migrado', p.curso.id]"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Ver curso">
+                              <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                            </a>
+                          }
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No se encontraron estudiantes con ese nombre.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (!isIdleEstudiante) {
+          <div class="card-footer">
+            <p class="text-default-500 text-sm">
+              Mostrando <b>{{ participantes.length }}</b> de <b>{{ totalEstudiantes }}</b> estudiantes
+            </p>
+            <app-pagination
+              [total]="totalEstudiantes"
+              [pageSize]="pageSize"
+              [currentPage]="estudiantePageIndex()"
+              (pageChange)="onPageChangeEstudiante($event)"
+            />
+          </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</main>
+
+@if (qrCurso()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" (click)="cerrarQR()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between w-full">
+        <h3 class="text-base font-semibold text-default-800 truncate pr-2">
+          {{ qrCurso()!.nombre }}
+        </h3>
+        <button class="text-default-400 hover:text-default-600 shrink-0" (click)="cerrarQR()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      @if (qrCurso()!.qr_path) {
+        <img [src]="'/storage/' + qrCurso()!.qr_path" alt="QR Code"
+             class="rounded-xl border border-default-200 w-64 h-64" />
+      }
+
+      <p class="text-xs text-default-400 text-center">
+        Escanea el código para abrir la página del curso en cenefco.com
+      </p>
+
+      <div class="flex gap-3 w-full">
+        <button class="btn btn-outline-default flex-1 gap-1.5" (click)="cerrarQR()">
+          <ng-icon name="lucideX" class="size-4" />
+          Cerrar
+        </button>
+        <a
+          [href]="'/storage/' + qrCurso()!.qr_path"
+          download
+          class="btn btn-primary flex-1 gap-1.5 text-center">
+          <ng-icon name="lucideDownload" class="size-4" />
+          Descargar
+        </a>
+      </div>
+    </div>
+  </div>
+}

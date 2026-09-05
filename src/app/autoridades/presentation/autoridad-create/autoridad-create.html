@@ -1,0 +1,119 @@
+<main>
+  <app-page-title title="Nueva Autoridad" subtitle="Institución" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos de la Autoridad</h6></div>
+          <div class="card-body space-y-4">
+
+            <div class="flex items-start gap-5">
+
+              <div class="shrink-0">
+                @if (fotoPreview()) {
+                  <img [src]="fotoPreview()" alt="Foto autoridad"
+                       class="size-24 rounded-full object-cover border-2 border-default-200 shadow-sm">
+                } @else {
+                  <div class="size-24 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
+                    <ng-icon name="lucideUser" class="size-8 text-primary/50" />
+                  </div>
+                }
+              </div>
+
+              <div class="flex flex-col gap-2 pt-1">
+                <label class="cursor-pointer">
+                  <input type="file" accept="image/*" class="hidden" (change)="onFotoSelected($event)" [disabled]="uploadingFoto()">
+                  <span class="btn bg-default-100 text-default-700 text-sm flex items-center gap-2"
+                        [class.opacity-50]="uploadingFoto()">
+                    @if (uploadingFoto()) {
+                      <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+                      Subiendo...
+                    } @else {
+                      <ng-icon name="lucideUpload" class="size-4" />
+                      {{ fotoPreview() ? 'Cambiar foto' : 'Subir foto' }}
+                    }
+                  </span>
+                </label>
+
+                @if (fotoPreview()) {
+                  <button type="button" class="btn bg-danger/10 text-danger text-sm flex items-center gap-2"
+                          (click)="removeFoto()">
+                    <ng-icon name="lucideTrash2" class="size-4" />
+                    Quitar foto
+                  </button>
+                }
+              </div>
+
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-input" placeholder="Nombre" formControlName="nombre">
+              @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Apellido <span class="text-danger">*</span></label>
+              <input type="text" class="form-input" placeholder="Apellido" formControlName="apellido">
+              @if (form.get('apellido')?.invalid && form.get('apellido')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Cargo <span class="text-danger">*</span></label>
+              <input type="text" class="form-input" placeholder="Cargo o título" formControlName="cargo">
+              @if (form.get('cargo')?.invalid && form.get('cargo')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción / Perfil profesional</label>
+              <textarea class="form-input" rows="4" placeholder="Breve descripción del perfil profesional" formControlName="perfil_profesional"></textarea>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+              <input type="number" class="form-input" formControlName="orden">
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+              <label for="activo" class="text-sm font-medium text-default-800">Activo</label>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="publicado_web" class="form-checkbox" formControlName="publicado_web">
+              <label for="publicado_web" class="text-sm font-medium text-default-800">Publicado en la web</label>
+            </div>
+            <p class="text-xs text-default-500 -mt-2">Solo las autoridades marcadas como "Publicado en la web" aparecen en el portal público.</p>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button type="submit" class="btn bg-primary text-white w-full" [disabled]="form.invalid || submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Crear Autoridad
+              }
+            </button>
+            <a routerLink="/cenefco/autoridades" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">Cancelar</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</main>

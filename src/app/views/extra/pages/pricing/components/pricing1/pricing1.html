@@ -1,0 +1,48 @@
+<div class="grid lg:grid-cols-4 md:grid-cols-2 gap-5 mb-6">
+  @for (plan of plans; track plan.name) {
+    <div class="card relative overflow-hidden">
+      <div class="card-body">
+
+        @if (plan.badge) {
+          <div class="size-16 absolute top-0 end-0">
+            <div class="absolute bg-primary text-center w-42.5 text-white py-1 transform rotate-45 top-6 -end-12 font-semibold">
+              {{ plan.badge }}
+            </div>
+          </div>
+        }
+
+        <h5 class="mb-2 flex items-center gap-1.5">
+          <div class="{{ plan.color }} size-5">
+            <ng-icon [name]="plan.icon"></ng-icon>
+          </div>
+          <span class="text-lg font-semibold text-default-800">{{ plan.name }}</span>
+        </h5>
+
+        <p class="mb-4 text-default-500">{{ plan.description }}</p>
+
+        <h1 class="mb-4 text-4xl text-default-800 font-normal">
+          <span class="text-default-400">$</span>{{ plan.price }}
+          <small class="text-base text-default-500">/{{ plan.period }}</small>
+        </h1>
+
+        <button type="button"
+          class="btn border w-full border-dashed border-primary bg-transparent text-primary hover:bg-primary/20">
+          Purchase Now
+        </button>
+
+        <ul class="mt-5 flex flex-col gap-3 text-sm">
+          @for (feature of plan.features; track feature.text) {
+            <li class="flex items-center gap-2.5">
+              <div class="size-4" [class]="feature.available ? 'text-success' : 'text-danger'">
+                <ng-icon [name]="feature.available ? 'lucideCheckCheck' : 'lucideX'"></ng-icon>
+              </div>
+              <span [innerHTML]="feature.text"
+                [class]="feature.available ? 'text-default-900' : 'text-default-500 line-through'"></span>
+            </li>
+          }
+        </ul>
+
+      </div>
+    </div>
+  }
+</div>

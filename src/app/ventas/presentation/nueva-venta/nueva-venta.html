@@ -1,0 +1,338 @@
+<main>
+  <app-page-title title="Nueva Inscripción" subtitle="Inscripciones" />
+
+  <div class="max-w-3xl mx-auto">
+
+    <div class="flex items-center gap-0 mb-8">
+      @for (n of [1, 2, 3]; track n) {
+        <div class="flex items-center" [class.flex-1]="n < 3">
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="size-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors"
+                 [class.bg-primary]="paso() >= n"
+                 [class.text-white]="paso() >= n"
+                 [class.border-primary]="paso() >= n"
+                 [class.bg-white]="paso() < n"
+                 [class.text-default-400]="paso() < n"
+                 [class.border-default-200]="paso() < n">
+              @if (paso() > n) {
+                <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+              } @else {
+                {{ n }}
+              }
+            </div>
+            <span class="text-sm font-medium hidden sm:block"
+                  [class.text-primary]="paso() >= n"
+                  [class.text-default-400]="paso() < n">
+              @switch (n) {
+                @case (1) { Estudiante }
+                @case (2) { Programa }
+                @case (3) { Registro }
+              }
+            </span>
+          </div>
+          @if (n < 3) {
+            <div class="h-px flex-1 mx-3 transition-colors"
+                 [class.bg-primary]="paso() > n"
+                 [class.bg-default-200]="paso() <= n"></div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (paso() === 1) {
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+            <h6 class="text-sm font-semibold">Buscar Estudiante</h6>
+          </div>
+        </div>
+        <div class="p-5 space-y-4">
+          <p class="text-sm text-default-500">Ingresa el nombre, CI o email del estudiante existente.</p>
+
+          <form [formGroup]="formBusqueda" (ngSubmit)="buscarEstudiante()" class="flex gap-2">
+            <input
+              type="text"
+              formControlName="query"
+              class="form-input flex-1"
+              placeholder="Nombre, CI o email..."
+              (keyup.enter)="buscarEstudiante()"
+            />
+            <button type="submit" [disabled]="buscandoEst()"
+                    class="btn bg-primary text-white flex items-center gap-1.5 shrink-0">
+              @if (buscandoEst()) {
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              } @else {
+                <div class="size-4"><ng-icon name="lucideSearch"></ng-icon></div>
+              }
+              Buscar
+            </button>
+          </form>
+
+          @if (estudiantesEncontrados().length > 0) {
+            <div class="border border-default-200 rounded-xl overflow-hidden">
+              @for (est of estudiantesEncontrados(); track est.id_us) {
+                <button type="button"
+                        (click)="seleccionarEstudiante(est)"
+                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors border-b border-default-100 last:border-0 text-start">
+                  <div class="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                    {{ (est.nombre || '?')[0].toUpperCase() }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-medium text-default-800 text-sm truncate">{{ est.nombre }} {{ est.appaterno ?? '' }}</p>
+                    <p class="text-xs text-default-400 font-mono">CI: {{ est.ci || '—' }}{{ est.email ? ' · ' + est.email : '' }}</p>
+                  </div>
+                  <div class="size-4 text-default-300 shrink-0"><ng-icon name="lucideChevronRight"></ng-icon></div>
+                </button>
+              }
+            </div>
+          } @else if (!buscandoEst() && formBusqueda.get('query')?.value) {
+            <div class="text-center py-8 text-default-400">
+              <div class="size-10 mx-auto mb-2 opacity-40"><ng-icon name="lucideUserX"></ng-icon></div>
+              <p class="text-sm">No se encontraron estudiantes. Verifica los datos e intenta de nuevo.</p>
+            </div>
+          }
+
+          <div class="pt-2 border-t border-default-100">
+            <a routerLink="/cenefco/ventas" class="text-sm text-default-400 hover:text-primary flex items-center gap-1">
+              <div class="size-3.5"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Volver al listado
+            </a>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (paso() === 2) {
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucidePresentation"></ng-icon></div>
+            <h6 class="text-sm font-semibold">Programa e Inscripción</h6>
+          </div>
+          <button type="button" (click)="paso.set(1)" class="text-xs text-default-400 hover:text-primary flex items-center gap-1">
+            <div class="size-3.5"><ng-icon name="lucideArrowLeft"></ng-icon></div> Cambiar estudiante
+          </button>
+        </div>
+        <div class="p-5 space-y-4">
+
+          @if (estudianteSeleccionado(); as est) {
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div class="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                {{ (est.nombre || '?')[0].toUpperCase() }}
+              </div>
+              <div>
+                <p class="font-semibold text-default-800 text-sm">{{ est.nombre }} {{ est.appaterno ?? '' }}</p>
+                <p class="text-xs text-default-400 font-mono">CI: {{ est.ci || '—' }}</p>
+              </div>
+            </div>
+          }
+
+          <form [formGroup]="formPrograma" class="space-y-4">
+
+            <div>
+              <label class="block text-xs font-semibold text-default-700 mb-1.5">Programa / Impartición <span class="text-danger">*</span></label>
+              <select formControlName="id_imp" class="form-input" (change)="onImparticionChange($event)">
+                <option [value]="null">— Seleccionar programa —</option>
+                @for (imp of imparticiones(); track imp.id_imp) {
+                  <option [value]="imp.id_imp">{{ imparticionLabel(imp) }}</option>
+                }
+              </select>
+            </div>
+
+            @if (loadingPlanes()) {
+              <div class="flex items-center gap-2 text-sm text-default-400">
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Cargando planes...
+              </div>
+            }
+
+            @if (planes().length > 0) {
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Plan de Pago</label>
+                <select formControlName="id_plan" class="form-input">
+                  <option [value]="null">— Sin plan específico —</option>
+                  @for (plan of planes(); track plan.id_plan) {
+                    <option [value]="plan.id_plan">
+                      {{ plan.titulo }} — Bs. {{ plan.costo || '?' }} / {{ plan.nro_cuotas }} cuotas
+                    </option>
+                  }
+                </select>
+              </div>
+
+              @if (planSeleccionado(); as plan) {
+                <div class="grid grid-cols-3 gap-3 text-center">
+                  <div class="rounded-xl border border-default-200 p-3">
+                    <p class="text-base font-bold text-primary">Bs. {{ plan.costo || '0' }}</p>
+                    <p class="text-xs text-default-400">Total</p>
+                  </div>
+                  <div class="rounded-xl border border-default-200 p-3">
+                    <p class="text-base font-bold text-default-700">{{ plan.nro_cuotas }}</p>
+                    <p class="text-xs text-default-400">Cuotas</p>
+                  </div>
+                  <div class="rounded-xl border border-default-200 p-3">
+                    <p class="text-base font-bold text-default-700">Bs. {{ plan.costo_por_cuota || '—' }}</p>
+                    <p class="text-xs text-default-400">Por cuota</p>
+                  </div>
+                </div>
+              }
+            }
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Período</label>
+                <select formControlName="periodo" class="form-input">
+                  <option value="">— —</option>
+                  <option value="I">I</option>
+                  <option value="II">II</option>
+                  <option value="III">III</option>
+                  <option value="IV">IV</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Gestión</label>
+                <input type="number" formControlName="gestion" class="form-input" placeholder="2026" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Canal de Venta</label>
+                <select formControlName="canal_venta" class="form-input">
+                  <option value="admin">Presencial (Admin)</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="referido">Referido</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Asesor / Vendedor</label>
+                <select formControlName="id_vendedor" class="form-input">
+                  <option [value]="null">— Sin asignar —</option>
+                  @for (u of usuarios(); track u.id) {
+                    <option [value]="u.id">{{ u.nombre }} {{ u.apellido }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" (click)="irPaso3()"
+                      class="btn bg-primary text-white flex items-center gap-1.5">
+                Continuar
+                <div class="size-4"><ng-icon name="lucideArrowRight"></ng-icon></div>
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    }
+
+    @if (paso() === 3) {
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideBanknote"></ng-icon></div>
+            <h6 class="text-sm font-semibold">Registro de Pago (opcional)</h6>
+          </div>
+          <button type="button" (click)="paso.set(2)" class="text-xs text-default-400 hover:text-primary flex items-center gap-1">
+            <div class="size-3.5"><ng-icon name="lucideArrowLeft"></ng-icon></div> Cambiar programa
+          </button>
+        </div>
+        <div class="p-5 space-y-4">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-default-50 border border-default-200 text-sm">
+            <div>
+              <p class="text-xs text-default-400">Estudiante</p>
+              <p class="font-medium text-default-800">{{ estudianteSeleccionado()?.nombre }} {{ estudianteSeleccionado()?.appaterno ?? '' }}</p>
+            </div>
+            @if (planSeleccionado(); as plan) {
+              <div>
+                <p class="text-xs text-default-400">Plan</p>
+                <p class="font-medium text-default-800">{{ plan.titulo }} — Bs. {{ plan.costo }}</p>
+              </div>
+            }
+          </div>
+
+          <form [formGroup]="formPago" class="space-y-4">
+
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-default-200 cursor-pointer hover:bg-default-50">
+              <input type="checkbox" formControlName="registrar_pago" class="form-checkbox" />
+              <span class="text-sm font-medium text-default-700">Registrar primer pago ahora</span>
+            </label>
+
+            @if (registrarPago()) {
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-default-700 mb-1.5">Monto <span class="text-danger">*</span></label>
+                  <input type="number" formControlName="monto_pagado" class="form-input"
+                         placeholder="0.00" min="0.01" step="0.01" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-default-700 mb-1.5">Método de Pago</label>
+                  <select formControlName="metodo_pago" class="form-input">
+                    @for (m of metodosPago; track m.value) {
+                      <option [value]="m.value">{{ m.label }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              @if (metodoPago() === 'efectivo') {
+                <div>
+                  <label class="block text-xs font-semibold text-default-700 mb-1.5">Cajero <span class="text-danger">*</span></label>
+                  <select formControlName="id_us_cajero" class="form-input">
+                    <option [value]="null">— Seleccionar cajero —</option>
+                    @for (u of usuarios(); track u.id) {
+                      <option [value]="u.id">{{ u.nombre }} {{ u.apellido }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              @if (metodoPago() === 'deposito_bancario') {
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-default-700 mb-1.5">N° Boleta <span class="text-danger">*</span></label>
+                    <input type="text" formControlName="nro_boleta" class="form-input" placeholder="0000000" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-default-700 mb-1.5">Fecha Depósito</label>
+                    <input type="date" formControlName="fecha_deposito" class="form-input" />
+                  </div>
+                </div>
+              }
+
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Observación</label>
+                <input type="text" formControlName="observacion" class="form-input" placeholder="Referencia o nota opcional..." />
+              </div>
+
+            }
+
+            <div class="flex justify-between items-center pt-2 border-t border-default-100">
+              <button type="button" (click)="paso.set(2)" class="btn border border-default-300 text-default-600 flex items-center gap-1.5">
+                <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div> Atrás
+              </button>
+              <button type="button" (click)="confirmar()" [disabled]="submitting()"
+                      class="btn bg-primary text-white flex items-center gap-1.5 disabled:opacity-60">
+                @if (submitting()) {
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                }
+                @if (registrarPago()) {
+                  <div class="size-4"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Crear Inscripción y Registrar Pago
+                } @else {
+                  <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+                  Crear Inscripción
+                }
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    }
+  </div>
+</main>

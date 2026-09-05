@@ -1,0 +1,74 @@
+<main>
+  <app-page-title [title]="isNew() ? 'Nueva campaña de leads' : 'Editar campaña de leads'" subtitle="Campañas de Leads" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos de la campaña</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Nombre del curso / campaña</label>
+              <input type="text" class="form-input" [ngModel]="nombre()" (ngModelChange)="nombre.set($event)"
+                     placeholder="Ej. Diplomado en Gestión de Proyectos — Marzo 2026" />
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción (opcional)</label>
+              <textarea class="form-input" rows="3" [ngModel]="descripcion()" (ngModelChange)="descripcion.set($event)"
+                        placeholder="Notas internas sobre esta campaña de captación..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de inicio</label>
+                <input type="date" class="form-input" [ngModel]="fechaInicio()" (ngModelChange)="fechaInicio.set($event)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de fin (opcional)</label>
+                <input type="date" class="form-input" [ngModel]="fechaFin()" (ngModelChange)="fechaFin.set($event)" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Estado</label>
+              <app-searchable-select
+                [options]="estadoOptions"
+                [ngModel]="estado()" (ngModelChange)="estado.set($event)"
+                [clearable]="false" />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button type="button" (click)="save()" [disabled]="saving()" class="btn bg-primary text-white w-full">
+              @if (saving()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                Guardar campaña
+              }
+            </button>
+            <a routerLink="/cenefco/campanas-leads" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+</main>

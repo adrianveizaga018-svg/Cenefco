@@ -1,0 +1,189 @@
+<main>
+  <app-page-title title="Asesores" subtitle="Agentes de soporte WhatsApp" />
+
+  <div class="space-y-5">
+
+    <div class="flex items-center justify-between gap-4">
+      <p class="text-sm text-default-500">
+        Asesores disponibles para recibir derivaciones del bot.
+      </p>
+      <button class="btn bg-[#25d366] hover:bg-[#1da851] text-white gap-2 text-sm"
+        (click)="abrirCrear()">
+        <ng-icon name="lucidePlus" class="size-4" />
+        Nuevo asesor
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="card p-10 flex items-center justify-center gap-3 text-default-400">
+        <ng-icon name="lucideLoader" class="size-5 animate-spin" />
+        <span class="text-sm">Cargando asesores…</span>
+      </div>
+    } @else if (asesores().length === 0) {
+      <div class="card p-10 text-center text-default-400">
+        <ng-icon name="lucideUsers" class="size-10 mx-auto mb-3 text-default-200" />
+        <p class="text-sm font-medium">No hay asesores registrados</p>
+        <p class="text-xs mt-1">Creá el primero con el botón de arriba.</p>
+      </div>
+    } @else {
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (a of asesores(); track a.id) {
+          <div class="card overflow-hidden">
+
+            <div class="h-1.5"
+              [ngClass]="a.activo && a.disponible ? 'bg-[#25d366]' : a.activo ? 'bg-warning' : 'bg-default-200'">
+            </div>
+
+            <div class="p-4">
+              <div class="flex items-start gap-3">
+
+                <div class="size-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm"
+                  [ngClass]="a.activo && a.disponible ? 'bg-[#25d366]/10 text-[#25d366]' : a.activo ? 'bg-warning/10 text-warning' : 'bg-default-100 text-default-400'">
+                  {{ a.nombre.charAt(0).toUpperCase() }}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-sm font-semibold text-default-900 truncate">{{ a.nombre }}</p>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                      [ngClass]="a.activo && a.disponible ? 'bg-[#25d366]/10 text-[#25d366]' : a.activo ? 'bg-warning/10 text-warning' : 'bg-default-100 text-default-400'">
+                      {{ a.activo && a.disponible ? 'Disponible' : a.activo ? 'Ocupado' : 'Inactivo' }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-default-500 mt-0.5 flex items-center gap-1">
+                    <ng-icon name="lucidePhone" class="size-3" />
+                    {{ a.telefono }}
+                  </p>
+                  @if (a.email) {
+                    <p class="text-xs text-default-400 mt-0.5 flex items-center gap-1">
+                      <ng-icon name="lucideMail" class="size-3" />
+                      {{ a.email }}
+                    </p>
+                  }
+                  @if (a.especialidad) {
+                    <p class="text-xs text-default-400 mt-0.5 flex items-center gap-1">
+                      <ng-icon name="lucideTag" class="size-3" />
+                      {{ a.especialidad }}
+                    </p>
+                  }
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-default-100">
+                <button class="btn btn-sm bg-default-100 hover:bg-default-200 text-default-600 gap-1.5 text-xs"
+                  (click)="abrirEditar(a)">
+                  <ng-icon name="lucidePencil" class="size-3.5" />
+                  Editar
+                </button>
+                <button class="btn btn-sm bg-danger/10 hover:bg-danger/20 text-danger gap-1.5 text-xs"
+                  [disabled]="deleting() === a.id"
+                  (click)="eliminar(a)">
+                  @if (deleting() === a.id) {
+                    <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+                  } @else {
+                    <ng-icon name="lucideTrash2" class="size-3.5" />
+                  }
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</main>
+
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       (click)="cerrarModal()">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between p-5 border-b border-default-100">
+        <h5 class="font-bold text-default-900 text-base">
+          {{ editTarget() ? 'Editar asesor' : 'Nuevo asesor' }}
+        </h5>
+        <button class="size-8 rounded-lg flex items-center justify-center hover:bg-default-100 text-default-400"
+          (click)="cerrarModal()">
+          <ng-icon name="lucideX" class="size-4" />
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1.5">Nombre <span class="text-danger">*</span></label>
+          <input type="text" [(ngModel)]="form.nombre" placeholder="Nombre completo"
+            class="w-full px-3 py-2 text-sm border border-default-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1.5">Teléfono <span class="text-danger">*</span></label>
+          <input type="text" [(ngModel)]="form.telefono" placeholder="591XXXXXXXXX"
+            class="w-full px-3 py-2 text-sm border border-default-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1.5">Email</label>
+          <input type="email" [(ngModel)]="form.email" placeholder="correo@ejemplo.com"
+            class="w-full px-3 py-2 text-sm border border-default-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1.5">Especialidad</label>
+          <input type="text" [(ngModel)]="form.especialidad" placeholder="Ej: Inscripciones, Pagos..."
+            class="w-full px-3 py-2 text-sm border border-default-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+
+        <div class="flex items-center gap-6 pt-1">
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <div class="relative">
+              <input type="checkbox" class="sr-only" [(ngModel)]="form.disponible" />
+              <div class="w-10 h-5 rounded-full transition-colors"
+                [ngClass]="form.disponible ? 'bg-[#25d366]' : 'bg-default-200'">
+              </div>
+              <div class="absolute top-0.5 left-0.5 size-4 bg-white rounded-full shadow transition-transform"
+                [ngClass]="form.disponible ? 'translate-x-5' : ''">
+              </div>
+            </div>
+            <span class="text-sm text-default-700">Disponible</span>
+          </label>
+
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <div class="relative">
+              <input type="checkbox" class="sr-only" [(ngModel)]="form.activo" />
+              <div class="w-10 h-5 rounded-full transition-colors"
+                [ngClass]="form.activo ? 'bg-primary' : 'bg-default-200'">
+              </div>
+              <div class="absolute top-0.5 left-0.5 size-4 bg-white rounded-full shadow transition-transform"
+                [ngClass]="form.activo ? 'translate-x-5' : ''">
+              </div>
+            </div>
+            <span class="text-sm text-default-700">Activo</span>
+          </label>
+        </div>
+
+      </div>
+
+      <div class="flex justify-end gap-2.5 px-5 py-4 border-t border-default-100">
+        <button class="btn btn-sm btn-light" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-sm bg-[#25d366] hover:bg-[#1da851] text-white gap-1.5"
+          [disabled]="saving()"
+          (click)="guardar()">
+          @if (saving()) {
+            <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+          } @else {
+            <ng-icon name="lucideCheck" class="size-3.5" />
+          }
+          {{ editTarget() ? 'Guardar cambios' : 'Crear asesor' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

@@ -1,0 +1,60 @@
+<main>
+  <app-page-title title="Editar Entrada de Historia" subtitle="Institución" />
+
+  @if (loadingHistoriaInstitucional()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando entrada...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+        <div class="lg:col-span-2">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos de la Historia</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Título <span class="text-danger">*</span></label>
+                <input type="text" class="form-input" placeholder="Título de la entrada" formControlName="titulo">
+                @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+                }
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+                <input type="number" class="form-input" formControlName="orden">
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="activo" class="form-checkbox" formControlName="activo">
+                <label for="activo" class="text-sm font-medium text-default-800">Activo</label>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+            <div class="card-body flex flex-col gap-2">
+              <button type="submit" class="btn bg-primary text-white w-full" [disabled]="form.invalid || submitting()">
+                @if (submitting()) {
+                  <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  Actualizar Entrada
+                }
+              </button>
+              <a routerLink="/cenefco/historia-institucional" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">Cancelar</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  }
+</main>

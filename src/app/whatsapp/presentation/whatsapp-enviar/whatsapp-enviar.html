@@ -1,0 +1,175 @@
+<main>
+  <app-page-title title="Enviar Mensaje WhatsApp" subtitle="Chatbot" />
+
+  <div class="grid lg:grid-cols-2 grid-cols-1 gap-5">
+
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Tipo de envío</h6>
+      </div>
+      <div class="card-body space-y-3">
+
+        <label
+          class="flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all"
+          [class]="modo === 'individual' ? 'border-primary bg-primary/5' : 'border-default-200 hover:border-default-300'"
+        >
+          <input type="radio" name="modo" value="individual" [(ngModel)]="modo" class="mt-0.5 accent-primary" />
+          <div class="flex items-start gap-3 flex-1">
+            <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <div class="size-4.5 text-primary"><ng-icon name="lucideUser" /></div>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-default-800">Mensaje individual</p>
+              <p class="text-xs text-default-500 mt-0.5">Envía un mensaje a un número específico.</p>
+            </div>
+          </div>
+        </label>
+
+        <label
+          class="flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all"
+          [class]="modo === 'masivo' ? 'border-primary bg-primary/5' : 'border-default-200 hover:border-default-300'"
+        >
+          <input type="radio" name="modo" value="masivo" [(ngModel)]="modo" class="mt-0.5 accent-primary" />
+          <div class="flex items-start gap-3 flex-1">
+            <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <div class="size-4.5 text-primary"><ng-icon name="lucideUsers" /></div>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-default-800">Envío masivo</p>
+              <p class="text-xs text-default-500 mt-0.5">Envía el mismo mensaje a múltiples números.</p>
+            </div>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Datos del mensaje</h6>
+      </div>
+      <div class="card-body">
+
+        @if (success()) {
+          <div class="mb-4 flex items-center gap-2 rounded-md bg-success/10 border border-success/20 px-4 py-3 text-sm text-success">
+            <div class="size-4 shrink-0"><ng-icon name="lucideCheckCircle" /></div>
+            {{ success() }}
+          </div>
+        }
+
+        @if (resultadoMasivo()) {
+          <div class="mb-4 rounded-md border px-4 py-3 text-sm space-y-1"
+            [class]="resultadoMasivo()!.fallidos === 0 ? 'bg-success/10 border-success/20 text-success' : 'bg-warning/10 border-warning/20 text-warning'">
+            <p class="font-medium">Envío masivo completado</p>
+            <p>✅ Exitosos: {{ resultadoMasivo()!.exitosos }}</p>
+            <p>❌ Fallidos: {{ resultadoMasivo()!.fallidos }}</p>
+            @if (resultadoMasivo()!.detalle_fallidos.length > 0) {
+              <ul class="mt-1 space-y-0.5 text-xs">
+                @for (f of resultadoMasivo()!.detalle_fallidos; track f.phone) {
+                  <li>{{ f.phone }}: {{ f.error }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        @if (error()) {
+          <div class="mb-4 rounded-md bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger">
+            {{ error() }}
+          </div>
+        }
+
+        <form (ngSubmit)="enviar()" class="space-y-4">
+
+          @if (modo === 'individual') {
+            <div>
+              <label class="block text-sm font-medium text-default-800 mb-1.5">
+                Número de teléfono <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="591XXXXXXXX (con código de país)"
+                [(ngModel)]="phone"
+                name="phone"
+              />
+              <p class="text-xs text-default-400 mt-1">Ejemplo: 59170123456</p>
+            </div>
+          }
+
+          @if (modo === 'masivo') {
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-sm font-medium text-default-800">
+                  Números de teléfono <span class="text-danger">*</span>
+                </label>
+                <button
+                  type="button"
+                  class="btn btn-sm border border-default-200 text-default-600 text-xs gap-1.5 hover:bg-default-50"
+                  [disabled]="cargandoPhones()"
+                  (click)="cargarTodosPhones()"
+                >
+                  @if (cargandoPhones()) {
+                    <span class="size-3 animate-spin"><ng-icon name="lucideLoader" /></span>
+                    Cargando...
+                  } @else {
+                    <ng-icon name="lucideDownload" class="size-3.5" />
+                    Cargar todos los registrados
+                  }
+                </button>
+              </div>
+              <textarea
+                class="form-input min-h-28 font-mono text-xs"
+                placeholder="591XXXXXXXX&#10;591YYYYYYYY&#10;591ZZZZZZZZ"
+                [(ngModel)]="phonesTexto"
+                name="phonesTexto"
+              ></textarea>
+              <p class="text-xs text-default-400 mt-1">
+                Un número por línea, con código de país.
+                @if (contarPhones() > 0) {
+                  <span class="font-medium text-default-600 ml-1">· {{ contarPhones() }} números</span>
+                }
+              </p>
+            </div>
+          }
+
+          <div>
+            <label class="block text-sm font-medium text-default-800 mb-1.5">
+              Mensaje <span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-input min-h-28"
+              placeholder="Escribe el mensaje que deseas enviar..."
+              [(ngModel)]="mensaje"
+              name="mensaje"
+            ></textarea>
+            <p class="text-xs text-default-400 mt-1">
+              Puedes usar *negrita*, _cursiva_ y saltos de línea.
+            </p>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              type="submit"
+              class="btn bg-green-500 text-white gap-2"
+              [disabled]="loading()"
+            >
+              @if (loading()) {
+                <span class="size-4 animate-spin"><ng-icon name="lucideLoader" /></span>
+                Enviando...
+              } @else {
+                <ng-icon name="lucideSend" class="size-4" />
+                @if (modo === 'individual') { Enviar } @else { Enviar a todos }
+              }
+            </button>
+            <a routerLink="/cenefco/whatsapp-conversaciones" class="btn border border-default-200 text-default-600">
+              Cancelar
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</main>

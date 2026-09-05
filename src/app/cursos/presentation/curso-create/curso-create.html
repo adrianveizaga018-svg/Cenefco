@@ -1,0 +1,385 @@
+<main>
+  <app-page-title title="Nuevo Curso" subtitle="Gestión de Cursos" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Información del Curso</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-input" placeholder="Nombre del curso" formControlName="nombre_programa">
+              @if (form.get('nombre_programa')?.invalid && form.get('nombre_programa')?.touched) {
+                <p class="mt-1 text-danger text-xs">Este campo es requerido (máximo 200 caracteres)</p>
+              }
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Slug</label>
+              <input type="text" class="form-input bg-default-50 text-default-500 cursor-not-allowed" formControlName="slug" readonly>
+              <p class="mt-1 text-default-400 text-xs">Se genera automáticamente a partir del nombre.</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción</label>
+              <ckeditor
+                [editor]="Editor"
+                [data]="form.get('descripcion')?.value ?? ''"
+                (ready)="onEditorReady($event, 'descripcion')">
+              </ckeditor>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Objetivo</label>
+              <ckeditor
+                [editor]="Editor"
+                [data]="form.get('objetivo')?.value ?? ''"
+                (ready)="onEditorReady($event, 'objetivo')">
+              </ckeditor>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Dirigido a</label>
+              <ckeditor
+                [editor]="Editor"
+                [data]="form.get('dirigido')?.value ?? ''"
+                (ready)="onEditorReady($event, 'dirigido')">
+              </ckeditor>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Detalles Académicos</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Requisitos</label>
+              <ckeditor
+                [editor]="Editor"
+                [data]="form.get('requisitos')?.value ?? ''"
+                (ready)="onEditorReady($event, 'requisitos')">
+              </ckeditor>
+            </div>
+
+            <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Costo del curso (Bs.)</label>
+                <input type="number" min="0" step="0.01" class="form-input" placeholder="Ej. 1500.00" formControlName="costo_monto" />
+                <p class="mt-1 text-default-400 text-xs">Monto que se cobrará a las inscripciones nuevas sin plan de pagos.</p>
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Creditaje</label>
+                <input type="number" class="form-input" placeholder="Ej. 12" formControlName="creditaje" min="0" step="1">
+                @if (form.get('creditaje')?.invalid && form.get('creditaje')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Debe ser un número entero, sin decimales</p>
+                }
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Imagen Principal</h6></div>
+          <div class="card-body space-y-4">
+
+            @if (imgPreview()) {
+              <div class="relative inline-block w-full">
+                <img [src]="imgPreview()" alt="Vista previa" class="w-full max-h-64 rounded-lg object-cover border border-default-200">
+                @if (uploadingImg()) {
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                    <div class="size-6 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    (click)="removeImg()"
+                    class="absolute top-2 end-2 size-7 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                    title="Quitar imagen">
+                    <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+                  </button>
+                }
+              </div>
+            } @else {
+              <label class="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <div class="flex flex-col items-center gap-2 text-default-400">
+                  <div class="size-10"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                  <span class="text-sm font-medium">Haz clic para subir la imagen principal</span>
+                  <span class="text-xs text-default-300">PNG, JPG, WEBP — máx. 5 MB</span>
+                </div>
+                <input type="file" accept="image/*" class="hidden" (change)="onImgSelected($event)">
+              </label>
+            }
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Texto alternativo (alt)</label>
+              <input type="text" class="form-input" placeholder="Descripción accesible de la imagen" formControlName="imagen_alt">
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">URL imagen banner</label>
+              <input type="text" class="form-input" placeholder="https://... (URL de la imagen banner)" formControlName="imagen_banner_url">
+              <p class="mt-1 text-default-400 text-xs">URL opcional para imagen de encabezado/banner del curso</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Documento PDF</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Título del documento</label>
+              <input type="text" class="form-input" placeholder="Ej: Brochure del Curso, Plan de Estudios..." formControlName="titulo_documento1">
+            </div>
+
+            @if (pdfName()) {
+              <div class="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg">
+                @if (uploadingPdf()) {
+                  <div class="size-5 animate-spin text-primary shrink-0"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else {
+                  <div class="size-5 text-danger shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                }
+                <span class="text-sm text-default-700 truncate grow">{{ pdfName() }}</span>
+                @if (!uploadingPdf()) {
+                  <button type="button" (click)="removePdf()" class="size-5 text-default-400 hover:text-danger shrink-0" title="Quitar documento">
+                    <ng-icon name="lucideX"></ng-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <div class="flex flex-col items-center gap-2 text-default-400">
+                  <div class="size-8"><ng-icon name="lucideFileUp"></ng-icon></div>
+                  <span class="text-sm font-medium">Haz clic para subir el documento</span>
+                  <span class="text-xs text-default-300">Solo PDF — máx. 20 MB</span>
+                </div>
+                <input type="file" accept=".pdf" class="hidden" (change)="onPdfSelected($event)">
+              </label>
+            }
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Multimedia y Contacto</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace de Video</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <div class="size-4 text-default-400"><ng-icon name="lucideVideo"></ng-icon></div>
+                </div>
+                <input type="url" class="form-input ps-9" placeholder="https://youtube.com/watch?v=..." formControlName="url_video">
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace Grupo WhatsApp 1</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <div class="size-4 text-default-400"><ng-icon name="lucideMessageCircle"></ng-icon></div>
+                </div>
+                <input type="url" class="form-input ps-9" placeholder="https://chat.whatsapp.com/..." formControlName="url_whatsapp">
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Galería de Imágenes</h6></div>
+          <div class="card-body">
+            <p class="text-sm text-default-500 mb-3">Agrega imágenes adicionales del programa. Aparecerán en la galería del curso.</p>
+            <app-curso-imagenes
+              [urls]="form.get('imagenes')?.value"
+              (urlsChange)="form.get('imagenes')?.setValue($event)">
+            </app-curso-imagenes>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Fechas</h6></div>
+          <div class="card-body">
+            <div class="grid sm:grid-cols-3 grid-cols-1 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Actividades</label>
+                <input type="date" class="form-input" formControlName="inicio_actividades">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Finalización</label>
+                <input type="date" class="form-input" formControlName="finalizacion_actividades">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Inscripciones</label>
+                <input type="date" class="form-input" formControlName="inicio_inscripciones">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        @if (catalogoTareas().length > 0) {
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Requisitos Académicos (Tareas)</h6></div>
+            <div class="card-body">
+              <p class="text-sm text-default-500 mb-3">Selecciona los requisitos que se le exigirán a este programa en el Control Académico.</p>
+              <div class="space-y-2">
+                @for (t of catalogoTareas(); track t.id) {
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" [id]="'tarea_'+t.id" [checked]="form.get('tareas_catalogo_ids')?.value?.includes(t.id)" (change)="toggleTarea(t.id, $event)">
+                    <label class="form-check-label" [for]="'tarea_'+t.id">
+                      {{ t.titulo }} 
+                      @if (t.requiere_archivo) { <span class="text-xs text-info ml-1">(Requiere Evidencia)</span> }
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white w-full"
+              [disabled]="form.invalid || submitting() || uploadingImg() || uploadingPdf()"
+            >
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Crear Curso
+              }
+            </button>
+            <a routerLink="/cenefco/cursos" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Clasificación</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Área</label>
+              <select class="form-input" formControlName="area_id">
+                <option [ngValue]="null">— Sin área —</option>
+                @for (area of areas(); track area.id) {
+                  <option [value]="area.id">{{ area.titulo }}</option>
+                }
+              </select>
+              <p class="mt-1 text-default-400 text-xs">Área de conocimiento a la que pertenece este curso.</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Categoría</label>
+              <select class="form-input" formControlName="categoria_web_id">
+                <option [ngValue]="null">Sin categoría</option>
+                @for (cat of categorias(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.nombre }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Tipo de honorario (Aval / RM)</label>
+              <select class="form-input" formControlName="tipo_honorario">
+                <option [ngValue]="null">— Sin definir —</option>
+                <option value="diplomado_fijo">Diplomado</option>
+                <option value="rm_por_dia">RM</option>
+                <option value="aval_por_dia">Aval</option>
+              </select>
+              <p class="mt-1 text-default-400 text-xs">Determina cómo se calcula el pago de honorarios/comisión a los docentes de este curso. El monto se configura en "Configurar Honorario".</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Mes de facturación</label>
+              <input type="month" class="form-input" formControlName="mes_facturacion" />
+              <p class="mt-1 text-default-400 text-xs">Define en qué mes debe aparecer este curso en Honorarios del Mes. Sin mes asignado, aparece en todos los meses.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title">Planes por Defecto</h6>
+          </div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Convenio</label>
+              <select class="form-input" formControlName="convenio_id">
+                <option [ngValue]="null">— Sin convenio —</option>
+                @for (c of convenios(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.nombre }}{{ c.institucion ? ' (' + c.institucion + ')' : '' }}</option>
+                }
+              </select>
+              <p class="mt-1 text-default-400 text-xs">Convenio institucional asociado a este curso.</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Vendedor asignado</label>
+              <select class="form-input" formControlName="vendedor_id">
+                <option [ngValue]="null">— Sin vendedor —</option>
+                @for (v of vendedores(); track v.id) {
+                  <option [ngValue]="v.id">{{ v.nombre }} {{ v.apellido }}</option>
+                }
+              </select>
+              <p class="mt-1 text-default-400 text-xs">Vendedor responsable de las ventas de este curso. Solo aparecen vendedores con un usuario del sistema vinculado.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Publicación</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Estado</label>
+              <select class="form-input" formControlName="estado_web">
+                <option value="borrador">Borrador</option>
+                <option value="publicado">Publicado</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+              <input type="number" class="form-input" placeholder="0" formControlName="orden" min="0">
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-medium text-default-800">Destacado</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" formControlName="destacado">
+                <div class="w-11 h-6 bg-default-200 peer-checked:bg-primary rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <span class="ms-2 text-sm text-default-600">{{ form.get('destacado')?.value ? 'Sí' : 'No' }}</span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </form>
+</main>

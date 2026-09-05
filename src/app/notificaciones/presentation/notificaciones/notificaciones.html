@@ -1,0 +1,289 @@
+<app-page-title title="Notificaciones" subtitle="Bandeja de entrada" />
+
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
+  <div class="card p-4 flex items-center gap-3">
+    <div class="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+      <div class="size-5"><ng-icon name="lucideBell"></ng-icon></div>
+    </div>
+    <div>
+      <p class="text-xs text-default-400 leading-tight">Total</p>
+      <p class="text-xl font-bold text-default-800 leading-tight">{{ total() }}</p>
+    </div>
+  </div>
+
+  <div class="card p-4 flex items-center gap-3">
+    <div class="size-11 rounded-xl flex items-center justify-center shrink-0"
+         [class]="sinLeer() > 0 ? 'bg-danger/10 text-danger' : 'bg-default-150 text-default-400'">
+      <div class="size-5"><ng-icon name="lucideMailWarning"></ng-icon></div>
+    </div>
+    <div>
+      <p class="text-xs text-default-400 leading-tight">Sin leer</p>
+      <p class="text-xl font-bold leading-tight" [class]="sinLeer() > 0 ? 'text-danger' : 'text-default-800'">{{ sinLeer() }}</p>
+    </div>
+  </div>
+
+  <a routerLink="/cenefco/notificaciones/enviar"
+     class="card p-4 flex items-center gap-3 bg-primary text-white hover:opacity-95 transition-opacity">
+    <div class="size-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+      <div class="size-5"><ng-icon name="lucideSend"></ng-icon></div>
+    </div>
+    <div>
+      <p class="text-xs text-white/70 leading-tight">Acción</p>
+      <p class="text-sm font-semibold leading-tight">Enviar comunicado</p>
+    </div>
+  </a>
+
+  <a routerLink="/cenefco/notificaciones/enviados"
+     class="card p-4 flex items-center gap-3 hover:bg-default-50 transition-colors">
+    <div class="size-11 rounded-xl bg-default-150 text-default-500 flex items-center justify-center shrink-0">
+      <div class="size-5"><ng-icon name="lucideHistory"></ng-icon></div>
+    </div>
+    <div>
+      <p class="text-xs text-default-400 leading-tight">Historial</p>
+      <p class="text-sm font-semibold text-default-700 leading-tight">Ver enviados</p>
+    </div>
+  </a>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+  <div class="xl:col-span-2 space-y-4">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideFilter"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Filtros</span>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select class="form-select form-select-sm w-full"
+                  [value]="filtroLeida()"
+                  (change)="filtroLeida.set($any($event.target).value)">
+            <option value="">Todos los estados</option>
+            <option value="false">Sin leer</option>
+            <option value="true">Leídas</option>
+          </select>
+
+          <select class="form-select form-select-sm w-full"
+                  [value]="filtroPrioridad()"
+                  (change)="filtroPrioridad.set($any($event.target).value)">
+            <option value="">Toda prioridad</option>
+            <option value="critica">Crítica</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+
+          <select class="form-select form-select-sm w-full"
+                  [value]="filtroTipo()"
+                  (change)="filtroTipo.set($any($event.target).value)">
+            <option value="">Todo tipo</option>
+            @for (t of tipos; track t.tipo) {
+              <option [value]="t.tipo">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 mt-3">
+          <button class="btn btn-sm bg-primary text-white flex items-center gap-1.5" (click)="aplicarFiltros()">
+            <div class="size-3.5"><ng-icon name="lucideSearch"></ng-icon></div>
+            Filtrar
+          </button>
+          <button class="btn btn-sm bg-default-100 text-default-600" (click)="limpiarFiltros()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      @if (loading()) {
+        <div class="flex items-center justify-center py-20 text-default-400">
+          <div class="size-8 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+        </div>
+      } @else if (notificaciones().length === 0) {
+        <div class="flex flex-col items-center justify-center py-20 text-default-300 gap-3">
+          <div class="size-14"><ng-icon name="lucideBellOff"></ng-icon></div>
+          <p class="text-sm text-default-400">Sin notificaciones con estos filtros</p>
+        </div>
+      } @else {
+        @for (grupo of grupos(); track grupo.etiqueta) {
+          <div class="px-5 pt-4 pb-2 sticky top-0 bg-white dark:bg-default-50 z-10 border-b border-default-50">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-default-400">{{ grupo.etiqueta }}</p>
+          </div>
+          <ul class="divide-y divide-default-50">
+            @for (n of grupo.items; track n.id) {
+              <li class="group relative flex items-start gap-4 px-5 py-4 hover:bg-default-50 transition-colors cursor-pointer"
+                  [class.bg-primary\/5]="!n.leida"
+                  [class.ring-1]="detalle()?.id === n.id"
+                  [class.ring-primary\/30]="detalle()?.id === n.id"
+                  (click)="abrirDetalle(n)">
+
+                @if (!n.leida) {
+                  <div class="absolute inset-y-0 left-0 w-1 rounded-r-full" [style.background]="prioridadConfig(n.prioridad).color"></div>
+                }
+
+                @if (n.imagen_url) {
+                  <img [src]="n.imagen_url" [alt]="n.titulo"
+                       class="size-11 rounded-xl object-cover shrink-0 border border-default-100 mt-0.5" />
+                } @else {
+                  <div class="size-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                       [style.background]="prioridadConfig(n.prioridad).bg">
+                    <div class="size-5" [style.color]="prioridadConfig(n.prioridad).color">
+                      <ng-icon [name]="n.icono || 'lucideBell'"></ng-icon>
+                    </div>
+                  </div>
+                }
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" [class]="tipoBadgeClass(n.tipo)">
+                      {{ tipoLabel(n.tipo) }}
+                    </span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                          [style.color]="prioridadConfig(n.prioridad).color"
+                          [style.background]="prioridadConfig(n.prioridad).bg">
+                      {{ prioridadConfig(n.prioridad).label }}
+                    </span>
+                    <span class="text-[10px] text-default-400 ms-auto shrink-0">{{ tiempoRelativo(n.created_at) }}</span>
+                  </div>
+                  <p class="text-sm mt-1" [class]="!n.leida ? 'font-bold text-default-900' : 'font-medium text-default-700'">
+                    {{ n.titulo }}
+                  </p>
+                  @if (n.mensaje) {
+                    <p class="text-xs text-default-500 mt-0.5">{{ n.mensaje }}</p>
+                  }
+                  @if (n.url_accion) {
+                    <div class="text-[11px] font-medium text-primary mt-1.5 flex items-center gap-1">
+                      Ver detalle
+                      <div class="size-3"><ng-icon name="lucideArrowRight"></ng-icon></div>
+                    </div>
+                  }
+                </div>
+
+                <button class="opacity-0 group-hover:opacity-100 transition-opacity text-default-300 hover:text-red-500 shrink-0 mt-0.5"
+                        (click)="$event.stopPropagation(); eliminar(n)"
+                        title="Eliminar">
+                  <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (totalPages > 1) {
+          <div class="flex items-center justify-between px-5 py-3 border-t border-default-100">
+            <p class="text-xs text-default-400">
+              Mostrando {{ (page() - 1) * pageSize + 1 }}–{{ page() * pageSize > total() ? total() : page() * pageSize }} de {{ total() }}
+            </p>
+            <div class="flex gap-1">
+              <button class="btn btn-sm btn-icon" [disabled]="page() === 1" (click)="irPagina(page() - 1)">
+                <div class="size-4"><ng-icon name="lucideChevronLeft"></ng-icon></div>
+              </button>
+              <span class="btn btn-sm bg-primary text-white pointer-events-none">{{ page() }}</span>
+              <button class="btn btn-sm btn-icon" [disabled]="page() === totalPages" (click)="irPagina(page() + 1)">
+                <div class="size-4"><ng-icon name="lucideChevronRight"></ng-icon></div>
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="xl:col-span-1">
+    @if (detalle(); as n) {
+      <div class="card overflow-hidden sticky top-24">
+        <div class="h-1.5" [style.background]="prioridadConfig(n.prioridad).color"></div>
+
+        <div class="p-5 space-y-4">
+
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                      [style.color]="prioridadConfig(n.prioridad).color"
+                      [style.background]="prioridadConfig(n.prioridad).bg">
+                  {{ prioridadConfig(n.prioridad).label }}
+                </span>
+                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" [class]="tipoBadgeClass(n.tipo)">
+                  {{ tipoLabel(n.tipo) }}
+                </span>
+              </div>
+              <h2 class="text-base font-bold text-default-900 leading-snug">{{ n.titulo }}</h2>
+            </div>
+            <button class="text-default-400 hover:text-default-600 shrink-0" (click)="cerrarDetalle()">
+              <div class="size-5"><ng-icon name="lucideX"></ng-icon></div>
+            </button>
+          </div>
+
+          @if (n.imagen_url) {
+            <button class="w-full" (click)="abrirLightbox(n.imagen_url!)">
+              <img [src]="n.imagen_url" [alt]="n.titulo"
+                   class="w-full rounded-xl object-cover max-h-48 border border-default-100 hover:opacity-90 transition-opacity" />
+              <p class="text-[10px] text-primary mt-1 text-center">Clic para ampliar</p>
+            </button>
+          }
+
+          @if (n.mensaje) {
+            <p class="text-sm text-default-600 leading-relaxed whitespace-pre-wrap">{{ n.mensaje }}</p>
+          }
+
+          <div class="space-y-2 text-xs text-default-500 bg-default-50 rounded-xl p-3">
+            <div class="flex justify-between">
+              <span>Recibida</span>
+              <span class="font-medium text-default-700">{{ tiempoRelativo(n.created_at) }}</span>
+            </div>
+            @if (n.leida_at) {
+              <div class="flex justify-between">
+                <span>Leída</span>
+                <span class="font-medium text-default-700">{{ tiempoRelativo(n.leida_at) }}</span>
+              </div>
+            }
+            @if (n.expires_at) {
+              <div class="flex justify-between">
+                <span>Expira</span>
+                <span class="font-medium text-default-700">{{ tiempoRelativo(n.expires_at) }}</span>
+              </div>
+            }
+          </div>
+
+          @if (n.url_accion) {
+            <a [routerLink]="[n.url_accion]"
+               class="btn btn-sm bg-primary text-white w-full flex items-center justify-center gap-1.5">
+              Ver detalle
+              <div class="size-4"><ng-icon name="lucideMoveRight"></ng-icon></div>
+            </a>
+          }
+
+          <button class="btn btn-sm border border-danger/30 text-danger hover:bg-danger/10 w-full flex items-center justify-center gap-1.5" (click)="eliminar(n)">
+            <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+            Eliminar notificación
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="card p-10 flex flex-col items-center justify-center text-center gap-3 sticky top-24">
+        <div class="size-12 rounded-full bg-default-100 text-default-300 flex items-center justify-center">
+          <div class="size-6"><ng-icon name="lucideMousePointerClick"></ng-icon></div>
+        </div>
+        <p class="text-sm text-default-400 max-w-48">Selecciona una notificación de la lista para ver el detalle</p>
+      </div>
+    }
+  </div>
+</div>
+
+@if (lightbox()) {
+  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+       (click)="cerrarLightbox()">
+    <div class="relative max-w-3xl w-full" (click)="$event.stopPropagation()">
+      <img [src]="lightbox()!" class="w-full rounded-2xl object-contain max-h-[80vh]" />
+      <button class="absolute top-3 right-3 size-9 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors"
+              (click)="cerrarLightbox()">
+        <div class="size-5"><ng-icon name="lucideX"></ng-icon></div>
+      </button>
+    </div>
+  </div>
+}

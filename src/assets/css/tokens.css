@@ -1,0 +1,78 @@
+/**
+ *
+ * Para cambiar la paleta de una nueva gestion, editar solo este archivo.
+ */
+
+/* Google Fonts — incluidas aqui para que cualquier proyecto que importe
+   este archivo obtenga las fuentes sin configuracion adicional */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tourney:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+
+   /* =============================================
+     MARCA — Colores principales de la gestion
+     ============================================= */
+   --color-brand-primary: #0B4258;
+   /* azul petroleo — fondo principal, botones primarios */
+   --color-brand-primary-light: #1A6080;
+   /* azul medio — hover, variantes claras */
+   --color-brand-primary-dark: #072D3A;
+   /* azul mas oscuro — estados activos */
+
+   --color-brand-accent: #FFFFFF;
+   /* blanco — franja media de la bandera */
+   --color-brand-accent-light: #FFFFFF;
+   /* blanco puro */
+   --color-brand-accent-dark: #F0F0F0;
+   /* blanco grisaceo — texto sobre accent */
+
+   --color-brand-secondary: #B4B4BA;
+   /* gris/plata — elementos secundarios */
+
+   /* =============================================
+     SEMANTICOS — Estados del sistema
+     ============================================= */
+   --color-success: #22C55E;
+   --color-success-light: #DCFCE7;
+   --color-warning: #F59E0B;
+   --color-warning-light: #FEF3C7;
+   --color-danger: #DC2626;
+   --color-danger-light: #FEE2E2;
+   --color-info: #0EA5E9;
+   --color-info-light: #E0F2FE;
+
+   /* =============================================
+     NEUTRALES — Texto, fondos, bordes
+     ============================================= */
+   --color-dark: #010202;
+   /* texto principal (casi negro) */
+   --color-muted: #6B7280;
+   /* texto secundario */
+   --color-light: #F5F5F5;
+   /* fondo claro */
+   --color-white: #FFFFFF;
+   --color-black: #010202;
+   --color-border: #E5E7EB;
+   --color-border-dark: #D1D5DB;
+
+   /* =============================================
+     TIPOGRAFIA
+     ============================================= */
+   --font-primary: "DM Sans", sans-serif;
+   --font-display: "Tourney", sans-serif;
+
+   /* =============================================
+     ALIASES — compatibilidad con proyectos existentes
+     Estos mapean los tokens de marca a los nombres
+     que ya usan admin_cenefco y frontend_cenefco
+     ============================================= */
+
+   /* Admin (TailwindCSS) */
+   --color-primary: var(--color-brand-primary);
+   --color-secondary: var(--color-brand-secondary);
+
+   /* Frontend (Bootstrap / ztc-*) */
+   --color-primary-light: var(--color-brand-primary-light);
+   --color-accent: var(--color-brand-accent);
+}

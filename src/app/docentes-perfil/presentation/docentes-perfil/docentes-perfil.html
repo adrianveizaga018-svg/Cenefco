@@ -1,0 +1,99 @@
+﻿<main>
+  <app-page-title title="Docentes" subtitle="Gestión de Perfiles de Docentes" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header">
+        <div class="relative">
+          <input type="text" class="ps-11 form-input form-input-sm w-full sm:w-64" placeholder="Buscar docente..." (input)="onSearch($event)">
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3"><div class="size-3.5 flex items-center text-default-500"><ng-icon name="lucideSearch"></ng-icon></div></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a routerLink="/cenefco/docente-reporte-materias" class="btn btn-sm bg-default-200 text-default-700">
+            <div class="size-4 me-1"><ng-icon name="lucideBarChart2"></ng-icon></div> Reporte Materias
+          </a>
+          <a routerLink="/cenefco/docente-perfil-create" class="btn btn-sm bg-primary text-white">
+            <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div> Nuevo Docente
+          </a>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <div class="overflow-x-auto"><div class="min-w-full inline-block align-middle"><div class="overflow-visible">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+              No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (error) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2"><div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div> No se pudo cargar la lista.</div>
+          } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+            <table class="min-w-full divide-y divide-default-200 relative z-10">
+              <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
+                <th class="px-3.5 py-3 text-start">#</th>
+                <th class="px-3.5 py-3 text-start">Docente</th>
+                <th class="px-3.5 py-3 text-start">Especialidad</th>
+                <th class="px-3.5 py-3 text-start">Teléfono</th>
+                <th class="px-3.5 py-3 text-start">Email</th>
+                <th class="px-3.5 py-3 text-start">Tipo</th>
+                <th class="px-3.5 py-3 text-start">Estado</th>
+                <th class="px-3.5 py-3 text-start">Web</th>
+                <th class="px-3.5 py-3 text-start">Acciones</th>
+              </tr></thead>
+              <tbody class="divide-y divide-default-200">
+                @for (d of docentes; track d.id) {
+                  <tr class="text-default-800 font-normal">
+                    <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ d.id }}</td>
+                    <td class="px-3.5 py-2 text-sm">
+                      <div class="flex items-center gap-3">
+                        <img
+                          [src]="d.foto_url || '/assets/images/logo-sm.png'"
+                          [alt]="d.foto_alt || d.nombre_completo"
+                          class="size-9 rounded-full object-cover flex-shrink-0 bg-default-100"
+                          (error)="$any($event.target).src='/assets/images/logo-sm.png'"
+                        />
+                        <div class="min-w-0">
+                          <p class="font-medium text-default-800 truncate">{{ d.nombre_completo }}</p>
+                          @if (d.titulo_academico) {
+                            <p class="text-xs text-default-400 truncate">{{ d.titulo_academico }}</p>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.especialidad ?? '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.telefono ?? '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.email_publico ?? '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.tipo ?? '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm">
+                      @if (d.estado === 'publicado') { <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Publicado</span> }
+                      @else { <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Borrador</span> }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm">
+                      @if (d.mostrar_en_web) { <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">Visible</span> }
+                      @else { <span class="text-default-400 text-xs">Oculto</span> }
+                    </td>
+                    <td class="px-3.5 py-2.5"><div class="flex items-center gap-1.5">
+                      <a [routerLink]="['/cenefco/docente-perfil-edit', d.slug]" class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white" title="Editar"><div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div></a>
+                      <button type="button" class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white" title="Eliminar" (click)="deleteDocente(d.id)"><div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div></button>
+                    </div></td>
+                  </tr>
+                }
+                @empty { <tr><td colspan="9" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron docentes.</td></tr> }
+              </tbody>
+            </table>
+            </div>
+          }
+        </div></div></div>
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">Mostrando <b>{{ docentes.length }}</b> de <b>{{ total }}</b> docentes</p>
+          <app-pagination [total]="total" [pageSize]="pageSize()" [currentPage]="pageIndex()" (pageChange)="onPageChange($event)" />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

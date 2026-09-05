@@ -1,0 +1,105 @@
+<main>
+  <app-page-title [title]="isNew() ? 'Registrar gasto' : 'Editar gasto'" subtitle="Gastos" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos del gasto</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Categoría</label>
+              <app-searchable-select
+                [options]="categoriaOptions()"
+                [ngModel]="categoriaGastoId()" (ngModelChange)="categoriaGastoId.set($event)"
+                placeholder="Selecciona una categoría..." />
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Concepto</label>
+              <input type="text" class="form-input" [ngModel]="concepto()" (ngModelChange)="concepto.set($event)"
+                     placeholder="Ej. Alquiler de oficina julio 2026" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Monto (Bs.)</label>
+                <input type="number" class="form-input" min="0" step="0.01"
+                       [ngModel]="monto()" (ngModelChange)="monto.set(+$event)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha</label>
+                <input type="date" class="form-input"
+                       [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Responsable (opcional)</label>
+              <input type="text" class="form-input" [ngModel]="responsable()" (ngModelChange)="responsable.set($event)"
+                     placeholder="Quién autorizó o realizó el gasto" />
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Comprobante (opcional)</label>
+              @if (comprobanteActualUrl() && !comprobanteFile()) {
+                <a [href]="'/storage/' + comprobanteActualUrl()" target="_blank"
+                   class="text-sm text-primary hover:underline flex items-center gap-1.5 mb-2">
+                  <div class="size-3.5"><ng-icon name="lucideFileText"></ng-icon></div>
+                  Ver comprobante actual
+                </a>
+              }
+              <input type="file" class="form-input" accept=".pdf,.jpg,.jpeg,.png"
+                     (change)="onComprobanteSeleccionado($event)" />
+              <p class="text-xs text-default-400 mt-1">Factura o recibo escaneado (PDF, JPG o PNG, máx. 5 MB).</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Campaña publicitaria (opcional)</label>
+              <app-searchable-select
+                [options]="campanaOptions()"
+                [ngModel]="campanaPublicidadId()" (ngModelChange)="campanaPublicidadId.set($event)"
+                placeholder="Vincular a una campaña de publicidad..." />
+              <p class="text-xs text-default-400 mt-1">Si este gasto es un pago de una campaña, vincúlalo aquí para verlo reflejado en su reporte.</p>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Nota (opcional)</label>
+              <textarea class="form-input resize-none" rows="3" [ngModel]="nota()" (ngModelChange)="nota.set($event)"
+                        placeholder="Observaciones adicionales..."></textarea>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button type="button" (click)="save()" [disabled]="saving()" class="btn bg-primary text-white w-full">
+              @if (saving()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                Guardar gasto
+              }
+            </button>
+            <a routerLink="/cenefco/gastos" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Volver al listado
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+</main>

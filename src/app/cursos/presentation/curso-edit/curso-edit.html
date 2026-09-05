@@ -1,0 +1,1946 @@
+<main>
+  <app-page-title title="Editar Curso" subtitle="Gestión de Cursos" />
+
+  @if (loadingCurso()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando curso...
+    </div>
+  } @else {
+
+    <div class="mb-6 border-b border-default-200 overflow-x-auto">
+      <div class="flex items-center gap-6 min-w-max">
+        @for (tab of [
+          { key: 'datos',          label: 'Datos del Curso', icon: 'lucideBookOpen'      },
+          { key: 'docentes',       label: 'Docentes',        icon: 'lucideUserCog', count: cursoDocentes().length },
+          { key: 'reglamento',     label: 'Reglamento',      icon: 'lucideScrollText'    },
+          { key: 'inscritos',      label: 'Inscritos',       icon: 'lucideUsers', count: inscritosLoaded() ? inscritos().length : null },
+          { key: 'participantes',  label: 'Participantes',   icon: 'lucideUserCheck'     }
+        ]; track tab.key) {
+          @if (!esVendedorRestringido || (tab.key !== 'datos' && tab.key !== 'docentes')) {
+            <button
+              type="button"
+              class="relative flex items-center gap-1.5 py-3 text-sm font-medium whitespace-nowrap transition-colors"
+              [class]="activeTab() === tab.key ? 'text-primary' : 'text-default-400 hover:text-default-700'"
+              (click)="setTab($any(tab.key))">
+              <ng-icon [name]="tab.icon" class="size-4" />
+              {{ tab.label }}
+              @if (tab.count) {
+                <span class="text-xs font-semibold"
+                  [class]="activeTab() === tab.key ? 'text-primary/70' : 'text-default-300'">
+                  {{ tab.count }}
+                </span>
+              }
+              <span class="absolute left-0 right-0 -bottom-px h-0.5 rounded-full transition-all"
+                [class]="activeTab() === tab.key ? 'bg-primary' : 'bg-transparent'"></span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+
+    @if (activeTab() === 'datos') {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+        <div class="lg:col-span-2 space-y-5">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Información del Curso</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Nombre <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-input" placeholder="Nombre del curso" formControlName="nombre_programa">
+                @if (form.get('nombre_programa')?.invalid && form.get('nombre_programa')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Este campo es requerido (máximo 200 caracteres)</p>
+                }
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Slug</label>
+                <input type="text" class="form-input bg-default-50 text-default-500 cursor-not-allowed" formControlName="slug" readonly>
+                <p class="mt-1 text-default-400 text-xs">Se actualiza automáticamente al cambiar el nombre.</p>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción</label>
+                <ckeditor
+                  [editor]="Editor"
+                  [data]="form.get('descripcion')?.value ?? ''"
+                  (ready)="onEditorReady($event, 'descripcion')">
+                </ckeditor>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Objetivo</label>
+                <ckeditor
+                  [editor]="Editor"
+                  [data]="form.get('objetivo')?.value ?? ''"
+                  (ready)="onEditorReady($event, 'objetivo')">
+                </ckeditor>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Dirigido a</label>
+                <ckeditor
+                  [editor]="Editor"
+                  [data]="form.get('dirigido')?.value ?? ''"
+                  (ready)="onEditorReady($event, 'dirigido')">
+                </ckeditor>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Detalles Académicos</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Requisitos</label>
+                <ckeditor
+                  [editor]="Editor"
+                  [data]="form.get('requisitos')?.value ?? ''"
+                  (ready)="onEditorReady($event, 'requisitos')">
+                </ckeditor>
+              </div>
+
+              <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Costo del curso (Bs.)</label>
+                  <input type="number" class="form-input" placeholder="Ej. 1500.00" formControlName="costo_monto" min="0" step="0.01">
+                  <p class="mt-1 text-default-400 text-xs">Monto que se cobrará a las inscripciones nuevas sin plan de pagos.</p>
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Carga Horaria</label>
+                  <input type="number" class="form-input" placeholder="Ej. 12" formControlName="creditaje" min="0" step="1">
+                  @if (form.get('creditaje')?.invalid && form.get('creditaje')?.touched) {
+                    <p class="mt-1 text-danger text-xs">Debe ser un número entero, sin decimales</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Nota</label>
+                <ckeditor
+                  [editor]="Editor"
+                  [data]="form.get('nota')?.value ?? ''"
+                  (ready)="onEditorReady($event, 'nota')">
+                </ckeditor>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Imagen Principal</h6></div>
+            <div class="card-body space-y-4">
+
+              @if (imgPreview()) {
+                <div class="relative inline-block w-full">
+                  <img [src]="imgPreview()" alt="Vista previa" class="w-full max-h-64 rounded-lg object-cover border border-default-200">
+                  @if (uploadingImg()) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                      <div class="size-6 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="removeImg()"
+                      class="absolute top-2 end-2 size-7 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                      title="Quitar imagen">
+                      <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <label class="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="flex flex-col items-center gap-2 text-default-400">
+                    <div class="size-10"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                    <span class="text-sm font-medium">Haz clic para subir la imagen principal</span>
+                    <span class="text-xs text-default-300">PNG, JPG, WEBP — máx. 5 MB</span>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden" (change)="onImgSelected($event)">
+                </label>
+              }
+
+              <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido: <strong>1200×675 px</strong> (máx. 500 KB). Imágenes más pesadas ralentizan la carga de la página del curso para los usuarios.
+                </p>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Texto alternativo (alt)</label>
+                <input type="text" class="form-input" placeholder="Descripción accesible de la imagen" formControlName="imagen_alt">
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">URL imagen banner</label>
+                <input type="text" class="form-input" placeholder="https://... (URL de la imagen banner)" formControlName="imagen_banner_url">
+                <p class="mt-1 text-default-400 text-xs">URL opcional para imagen de encabezado/banner del curso</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Documento PDF</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Título del documento</label>
+                <input type="text" class="form-input" placeholder="Ej: Brochure del Curso, Plan de Estudios..." formControlName="titulo_documento1">
+              </div>
+
+              @if (pdfName()) {
+                <div class="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  @if (uploadingPdf()) {
+                    <div class="size-5 animate-spin text-primary shrink-0"><ng-icon name="lucideLoader"></ng-icon></div>
+                  } @else {
+                    <div class="size-5 text-danger shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                  }
+                  <span class="text-sm text-default-700 truncate grow">{{ pdfName() }}</span>
+                  @if (!uploadingPdf()) {
+                    <button type="button" (click)="removePdf()" class="size-5 text-default-400 hover:text-danger shrink-0" title="Quitar documento">
+                      <ng-icon name="lucideX"></ng-icon>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="flex flex-col items-center gap-2 text-default-400">
+                    <div class="size-8"><ng-icon name="lucideFileUp"></ng-icon></div>
+                    <span class="text-sm font-medium">Haz clic para subir el documento</span>
+                    <span class="text-xs text-default-300">Solo PDF — máx. 20 MB</span>
+                  </div>
+                  <input type="file" accept=".pdf" class="hidden" (change)="onPdfSelected($event)">
+                </label>
+              }
+
+              <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido: <strong>máx. 3 MB</strong>. Documentos muy pesados hacen que la página del curso tarde más en cargar y en abrir el PDF.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Multimedia y Contacto</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace de Video</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                    <div class="size-4 text-default-400"><ng-icon name="lucideVideo"></ng-icon></div>
+                  </div>
+                  <input type="url" class="form-input ps-9" placeholder="https://youtube.com/watch?v=..." formControlName="url_video">
+                </div>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace Grupo WhatsApp 1</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                    <div class="size-4 text-default-400"><ng-icon name="lucideMessageCircle"></ng-icon></div>
+                  </div>
+                  <input type="url" class="form-input ps-9" placeholder="https://chat.whatsapp.com/..." formControlName="url_whatsapp">
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Galería de Imágenes</h6></div>
+            <div class="card-body">
+              <p class="text-sm text-default-500 mb-3">Agrega imágenes adicionales del programa. Aparecerán en la galería del curso.</p>
+              <div class="flex items-start gap-2 px-3 py-2 mb-3 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido por imagen: <strong>máx. 500 KB</strong>. Subir muchas imágenes pesadas hace que la galería del curso demore en cargar.
+                </p>
+              </div>
+              <app-curso-imagenes
+                [urls]="form.get('imagenes')?.value"
+                (urlsChange)="form.get('imagenes')?.setValue($event)">
+              </app-curso-imagenes>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Fechas</h6></div>
+            <div class="card-body">
+              <div class="grid sm:grid-cols-3 grid-cols-1 gap-4">
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Actividades</label>
+                  <input type="date" class="form-input" formControlName="inicio_actividades">
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Finalización</label>
+                  <input type="date" class="form-input" formControlName="finalizacion_actividades">
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Inscripciones</label>
+                  <input type="date" class="form-input" formControlName="inicio_inscripciones">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">SEO</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Meta Título</label>
+                <input type="text" class="form-input" placeholder="Título para buscadores" formControlName="meta_titulo">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Meta Descripción</label>
+                <textarea class="form-input" placeholder="Descripción para buscadores (máx. 500 caracteres)" formControlName="meta_descripcion" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="space-y-5">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+            <div class="card-body flex flex-col gap-2">
+              <button
+                type="submit"
+                class="btn bg-primary text-white w-full"
+                [disabled]="form.invalid || submitting() || uploadingImg() || uploadingPdf()"
+              >
+                @if (submitting()) {
+                  <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  Actualizar Curso
+                }
+              </button>
+              <a routerLink="/cenefco/cursos" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+                Cancelar
+              </a>
+            </div>
+          </div>
+
+          @if (form.get('slug')?.value) {
+            <div class="card">
+              <div class="card-header"><h6 class="card-title">Ver en el portal</h6></div>
+              <div class="card-body flex flex-col gap-2">
+                <a
+                  [href]="portalCursoUrl(form.get('slug')?.value)"
+                  target="_blank"
+                  rel="noopener"
+                  class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center flex items-center justify-center gap-2">
+                  <div class="size-4 shrink-0"><ng-icon name="lucideExternalLink" /></div>
+                  Ver curso
+                </a>
+                <a
+                  [href]="portalCursoUrl(form.get('slug')?.value) + '-participantes'"
+                  target="_blank"
+                  rel="noopener"
+                  class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center flex items-center justify-center gap-2">
+                  <div class="size-4 shrink-0"><ng-icon name="lucideUsers" /></div>
+                  Ver participantes
+                </a>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h6 class="card-title">Código QR</h6></div>
+              <div class="card-body flex flex-col gap-2">
+                <button
+                  type="button"
+                  class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center flex items-center justify-center gap-2"
+                  (click)="generarQRCurso()">
+                  <div class="size-4 shrink-0"><ng-icon name="lucideQrCode" /></div>
+                  QR del curso
+                </button>
+                <button
+                  type="button"
+                  class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center flex items-center justify-center gap-2"
+                  (click)="generarQRParticipantes()">
+                  <div class="size-4 shrink-0"><ng-icon name="lucideQrCode" /></div>
+                  QR de participantes
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (catalogoTareas().length > 0) {
+            <div class="card">
+              <div class="card-header"><h6 class="card-title">Requisitos Académicos</h6></div>
+              <div class="card-body">
+                <p class="text-sm text-default-500 mb-3">Agrega nuevos requisitos al checklist de este programa.</p>
+                <div class="space-y-2">
+                  @for (t of catalogoTareas(); track t.id) {
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" [id]="'tarea_edit_'+t.id" [checked]="form.get('tareas_catalogo_ids')?.value?.includes(t.id)" (change)="toggleTarea(t.id, $event)">
+                      <label class="form-check-label" [for]="'tarea_edit_'+t.id">
+                        {{ t.titulo }}
+                        @if (t.requiere_archivo) { <span class="text-xs text-info ml-1">(Evidencia)</span> }
+                      </label>
+                    </div>
+                  }
+                </div>
+                <p class="text-xs text-default-400 mt-2">Solo se agregarán los que aún no tiene asignados.</p>
+              </div>
+            </div>
+          }
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Clasificación</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Área</label>
+                <select class="form-input" formControlName="area_id">
+                  <option [ngValue]="null">— Sin área —</option>
+                  @for (area of areas(); track area.id) {
+                    <option [value]="area.id">{{ area.titulo }}</option>
+                  }
+                </select>
+                <p class="mt-1 text-default-400 text-xs">Área de conocimiento a la que pertenece este curso.</p>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Categoría</label>
+                <select class="form-input" formControlName="categoria_web_id">
+                  <option [value]="null">Sin categoría</option>
+                  @for (cat of categorias(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.nombre }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Tipo de honorario (Aval / RM)</label>
+                <select class="form-input" formControlName="tipo_honorario">
+                  <option [ngValue]="null">— Sin definir —</option>
+                  <option value="diplomado_fijo">Diplomado</option>
+                  <option value="rm_por_dia">RM</option>
+                  <option value="aval_por_dia">Aval</option>
+                </select>
+                <p class="mt-1 text-default-400 text-xs">Determina cómo se calcula el pago de honorarios/comisión a los docentes de este curso. El monto se configura en "Configurar Honorario".</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h6 class="card-title">Planes por Defecto</h6>
+            </div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Impartición (apertura de curso)</label>
+                <input type="text" class="form-input bg-default-100" [value]="imparticionActualLabel()" readonly disabled>
+                <p class="mt-1 text-default-400 text-xs">Se asigna automáticamente al crear el curso — no editable para evitar que dos cursos distintos compartan por error la misma impartición.</p>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Convenio</label>
+                <ng-select
+                  formControlName="convenio_id"
+                  [items]="convenios()"
+                  bindValue="id"
+                  bindLabel="nombre"
+                  placeholder="— Sin convenio —"
+                  [clearable]="true"
+                >
+                  <ng-template ng-option-tmp let-c="item">
+                    <div class="flex items-center gap-2">
+                      @if (c.logo_url) {
+                        <img [src]="'/storage/' + c.logo_url" [alt]="c.nombre"
+                             class="w-6 h-6 rounded object-contain shrink-0 border border-default-100" />
+                      } @else {
+                        <div class="w-6 h-6 rounded bg-default-100 shrink-0 flex items-center justify-center text-default-400 text-xs font-bold">
+                          {{ c.nombre.charAt(0).toUpperCase() }}
+                        </div>
+                      }
+                      <div class="flex flex-col leading-tight">
+                        <span class="text-sm font-medium text-default-800">{{ c.nombre }}</span>
+                        @if (c.institucion) {
+                          <span class="text-xs text-default-400">{{ c.institucion }}</span>
+                        }
+                      </div>
+                    </div>
+                  </ng-template>
+                  <ng-template ng-label-tmp let-c="item">
+                    <div class="flex items-center gap-2">
+                      @if (c.logo_url) {
+                        <img [src]="'/storage/' + c.logo_url" [alt]="c.nombre"
+                             class="w-5 h-5 rounded object-contain shrink-0" />
+                      }
+                      <span>{{ c.nombre }}</span>
+                    </div>
+                  </ng-template>
+                </ng-select>
+                <p class="mt-1 text-default-400 text-xs">Convenio institucional asociado a este curso.</p>
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Vendedor asignado</label>
+                <select class="form-input" formControlName="vendedor_id">
+                  <option [ngValue]="null">— Sin vendedor —</option>
+                  @for (v of vendedores(); track v.id) {
+                    <option [ngValue]="v.id">{{ v.nombre }} {{ v.apellido }}</option>
+                  }
+                </select>
+                <p class="mt-1 text-default-400 text-xs">Vendedor responsable de las ventas de este curso. Solo aparecen vendedores con un usuario del sistema vinculado.</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Publicación</h6></div>
+            <div class="card-body space-y-4">
+
+
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl"
+                   [class]="form.get('estado_web')?.value === 'publicado'
+                     ? 'bg-success/10 border border-success/30'
+                     : 'bg-default-100 border border-default-200'">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full"
+                       [class]="form.get('estado_web')?.value === 'publicado' ? 'bg-success' : 'bg-default-400'">
+                  </div>
+                  <span class="text-sm font-medium"
+                        [class]="form.get('estado_web')?.value === 'publicado' ? 'text-success' : 'text-default-500'">
+                    {{ form.get('estado_web')?.value === 'publicado' ? 'Publicado' : 'Borrador' }}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  [class]="form.get('estado_web')?.value === 'publicado'
+                    ? 'bg-danger/10 text-danger hover:bg-danger/20'
+                    : 'bg-success/10 text-success hover:bg-success/20'"
+                  [disabled]="togglingEstado()"
+                  (click)="toggleEstado()">
+                  @if (togglingEstado()) {
+                    <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+                  } @else if (form.get('estado_web')?.value === 'publicado') {
+                    <ng-icon name="lucideCircleStop" class="size-3.5" />
+                    Cerrar curso
+                  } @else {
+                    <ng-icon name="lucideCirclePlay" class="size-3.5" />
+                    Publicar curso
+                  }
+                </button>
+              </div>
+
+              <p class="text-xs text-default-400 -mt-1">
+                @if (form.get('estado_web')?.value === 'publicado') {
+                  Visible en el portal web y en el chatbot de WhatsApp.
+                } @else {
+                  No visible en el portal ni en el chatbot de WhatsApp.
+                }
+              </p>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Estado</label>
+                <select class="form-input" formControlName="estado_web">
+                  <option value="borrador">Borrador</option>
+                  <option value="publicado">Publicado</option>
+                </select>
+              </div>
+
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+                <input type="number" class="form-input" placeholder="0" formControlName="orden" min="0">
+              </div>
+
+              <div class="flex items-center gap-3">
+                <label class="text-sm font-medium text-default-800">Destacado</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" formControlName="destacado">
+                  <div class="w-11 h-6 bg-default-200 peer-checked:bg-primary rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  <span class="ms-2 text-sm text-default-600">{{ form.get('destacado')?.value ? 'Sí' : 'No' }}</span>
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <div class="card-header"><h6 class="card-title">Mensaje de Éxito</h6></div>
+        <div class="card-body">
+          <p class="text-sm text-default-500 mb-3">Este mensaje se muestra al estudiante después de enviar la pre-inscripción. Puedes agregar enlaces, botones, imágenes y formato.</p>
+          <ckeditor
+            [editor]="Editor"
+            [data]="form.get('mensaje_exito')?.value ?? ''"
+            (ready)="onEditorReady($event, 'mensaje_exito')">
+          </ckeditor>
+        </div>
+      </div>
+
+    </form>
+    }
+
+    @if (activeTab() === 'docentes') {
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-body">
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Mes de facturación</label>
+            <p class="text-xs text-default-400 mb-2">
+              Define en qué mes debe aparecer este curso en Honorarios del Mes. Sin mes asignado, aparece en todos los meses.
+            </p>
+            <input type="month" class="form-input w-56" [value]="form.get('mes_facturacion')?.value ?? ''"
+                   (change)="form.get('mes_facturacion')?.setValue($any($event.target).value)" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <h5 class="text-base font-semibold text-default-800 flex items-center gap-2">
+              Docentes del Curso
+              @if (cursoDocentes().length > 0) {
+                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  {{ cursoDocentes().length }}
+                </span>
+              }
+            </h5>
+            <p class="text-xs text-default-400 mt-0.5">Estos docentes aparecerán asociados al programa</p>
+          </div>
+          <button type="button"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+            (click)="abrirPicker()">
+            <ng-icon name="lucideUserPlus" class="size-4" />
+            Agregar docente
+          </button>
+        </div>
+
+        @if (cursoDocentesLoading()) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (s of [1,2,3]; track s) {
+              <div class="card animate-pulse">
+                <div class="card-body flex flex-col items-center gap-3 py-6">
+                  <div class="size-16 rounded-full bg-default-200"></div>
+                  <div class="w-28 h-3.5 rounded-full bg-default-200"></div>
+                  <div class="w-20 h-2.5 rounded-full bg-default-100"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+        } @else if (cursoDocentes().length === 0) {
+          <div class="card">
+            <div class="card-body flex flex-col items-center gap-3 py-14 text-center">
+              <div class="size-16 rounded-2xl bg-default-100 flex items-center justify-center">
+                <ng-icon name="lucideUsers" class="size-8 text-default-300" />
+              </div>
+              <div>
+                <p class="text-sm font-medium text-default-600">Sin docentes asignados</p>
+                <p class="text-xs text-default-400 mt-0.5">Agrega los docentes que impartirán este programa</p>
+              </div>
+              <button type="button"
+                class="mt-1 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                (click)="abrirPicker()">
+                <ng-icon name="lucideUserPlus" class="size-4" />
+                Agregar primer docente
+              </button>
+            </div>
+          </div>
+
+        } @else {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (doc of cursoDocentes(); track doc.id) {
+              <div class="card group relative overflow-hidden transition-shadow hover:shadow-md"
+                   [class.opacity-60]="quitandoId() === doc.id">
+
+                <button type="button"
+                  class="absolute top-3 right-3 size-7 rounded-full bg-white/80 dark:bg-default-100/80 backdrop-blur-sm flex items-center justify-center text-default-400 hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 z-10 shadow-sm"
+                  title="Quitar docente"
+                  [disabled]="quitandoId() === doc.id"
+                  (click)="quitarDocente(doc)">
+                  @if (quitandoId() === doc.id) {
+                    <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+                  } @else {
+                    <ng-icon name="lucideX" class="size-3.5" />
+                  }
+                </button>
+
+                <div class="card-body flex flex-col items-center text-center gap-3 pt-7 pb-5">
+                  @if (doc.foto_url) {
+                    <img [src]="doc.foto_url" [alt]="doc.nombre_completo"
+                         class="size-16 rounded-full object-cover ring-2 ring-white shadow-sm" />
+                  } @else {
+                    <div class="size-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ring-2 ring-white shadow-sm">
+                      <span class="text-lg font-bold text-primary">{{ inicialesDocente(doc.nombre_completo) }}</span>
+                    </div>
+                  }
+
+                  <div class="min-w-0 w-full">
+                    <p class="text-sm font-semibold text-default-800 leading-snug">{{ doc.nombre_completo }}</p>
+                    @if (doc.titulo_academico) {
+                      <p class="text-xs text-default-500 mt-0.5 truncate">{{ doc.titulo_academico }}</p>
+                    }
+                    @if (doc.especialidad) {
+                      <span class="inline-block mt-2 px-2.5 py-0.5 rounded-full bg-primary/8 text-primary text-xs font-medium truncate max-w-full">
+                        {{ doc.especialidad }}
+                      </span>
+                    }
+                    @if (doc.email_publico) {
+                      <p class="text-xs text-default-400 mt-1.5 truncate">{{ doc.email_publico }}</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="px-4 py-2.5 border-t border-default-100 flex items-center justify-center gap-2">
+                  <a [routerLink]="['/cenefco/docente-perfil-edit', doc.id]"
+                     class="text-xs text-primary hover:underline flex items-center gap-1">
+                    <ng-icon name="lucidePencil" class="size-3" />
+                    Editar perfil
+                  </a>
+                </div>
+              </div>
+            }
+
+            <button type="button"
+              class="card border-2 border-dashed border-default-200 hover:border-primary/40 hover:bg-primary/5 transition-colors group cursor-pointer"
+              (click)="abrirPicker()">
+              <div class="card-body flex flex-col items-center justify-center gap-3 py-8 text-default-400 group-hover:text-primary transition-colors">
+                <div class="size-12 rounded-xl border-2 border-dashed border-current flex items-center justify-center">
+                  <ng-icon name="lucidePlus" class="size-5" />
+                </div>
+                <p class="text-xs font-medium">Agregar docente</p>
+              </div>
+            </button>
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-3 pt-1">
+          <a routerLink="/cenefco/docentes-perfil"
+             class="inline-flex items-center gap-1.5 text-xs text-default-500 hover:text-primary transition-colors">
+            <ng-icon name="lucideUserCog" class="size-3.5" />
+            Gestionar todos los docentes
+          </a>
+          <span class="text-default-200">·</span>
+          <a routerLink="/cenefco/docente-perfil-create"
+             class="inline-flex items-center gap-1.5 text-xs text-default-500 hover:text-primary transition-colors">
+            <ng-icon name="lucideUserPlus" class="size-3.5" />
+            Crear nuevo docente
+          </a>
+        </div>
+
+      </div>
+    }
+
+    @if (mostrarPicker()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+           (click)="mostrarPicker.set(false); docenteBusqueda.set('')">
+        <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]"
+             (click)="$event.stopPropagation()">
+
+          <div class="flex items-center justify-between px-5 py-4 border-b border-default-100">
+            <div>
+              <h3 class="text-sm font-semibold text-default-800">Seleccionar docente</h3>
+              <p class="text-xs text-default-400 mt-0.5">Haz clic en un docente para agregarlo al curso</p>
+            </div>
+            <button type="button"
+              class="size-8 rounded-lg flex items-center justify-center text-default-400 hover:text-default-600 hover:bg-default-100 transition-colors"
+              (click)="mostrarPicker.set(false); docenteBusqueda.set('')">
+              <ng-icon name="lucideX" class="size-4" />
+            </button>
+          </div>
+
+          <div class="px-4 py-3 border-b border-default-100">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-default-100 focus-within:ring-2 focus-within:ring-primary/30">
+              <ng-icon name="lucideSearch" class="size-4 text-default-400 shrink-0" />
+              <input
+                type="text"
+                class="flex-1 bg-transparent text-sm outline-none placeholder:text-default-400"
+                placeholder="Buscar por nombre, título o especialidad..."
+                [value]="docenteBusqueda()"
+                (input)="docenteBusqueda.set($any($event.target).value)"
+                autofocus>
+              @if (docenteBusqueda()) {
+                <button type="button" class="text-default-400 hover:text-default-600"
+                  (click)="docenteBusqueda.set('')">
+                  <ng-icon name="lucideX" class="size-3.5" />
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="overflow-y-auto flex-1">
+            @if (todosPerfilLoading()) {
+              <div class="flex flex-col items-center justify-center gap-2 py-16 text-default-400">
+                <ng-icon name="lucideLoader" class="size-6 animate-spin" />
+                <p class="text-sm">Cargando docentes...</p>
+              </div>
+            } @else if (docentesFiltrados().length === 0) {
+              <div class="flex flex-col items-center justify-center gap-2 py-16 text-default-400">
+                <ng-icon name="lucideSearchX" class="size-6 text-default-300" />
+                <p class="text-sm">No se encontraron docentes</p>
+                @if (docenteBusqueda()) {
+                  <button type="button" class="text-xs text-primary hover:underline"
+                    (click)="docenteBusqueda.set('')">Limpiar búsqueda</button>
+                }
+              </div>
+            } @else {
+              <div class="divide-y divide-default-100">
+                @for (d of docentesFiltrados(); track d.id) {
+                  <button type="button"
+                    class="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-primary/5 transition-colors text-left group/item"
+                    [disabled]="agregandoId() !== null"
+                    (click)="agregarDocente(d)">
+
+                    @if (d.foto_url) {
+                      <img [src]="d.foto_url" [alt]="d.nombre_completo"
+                           class="size-10 rounded-full object-cover shrink-0" />
+                    } @else {
+                      <div class="size-10 rounded-full bg-gradient-to-br from-default-200 to-default-300 flex items-center justify-center shrink-0 text-default-600 font-semibold text-sm">
+                        {{ inicialesDocente(d.nombre_completo) }}
+                      </div>
+                    }
+
+                    <div class="flex-1 min-w-0 text-left">
+                      <p class="text-sm font-medium text-default-800 truncate">{{ d.nombre_completo }}</p>
+                      <p class="text-xs text-default-400 truncate">
+                        @if (d.titulo_academico) { {{ d.titulo_academico }} }
+                        @if (d.titulo_academico && d.especialidad) { · }
+                        @if (d.especialidad) { {{ d.especialidad }} }
+                      </p>
+                    </div>
+
+                    <div class="shrink-0 ml-2">
+                      @if (agregandoId() === d.id) {
+                        <ng-icon name="lucideLoader" class="size-4 text-primary animate-spin" />
+                      } @else {
+                        <div class="size-7 rounded-full border-2 border-default-200 flex items-center justify-center text-default-400 group-hover/item:border-primary group-hover/item:text-primary group-hover/item:bg-primary/5 transition-colors">
+                          <ng-icon name="lucidePlus" class="size-3.5" />
+                        </div>
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="px-5 py-3 border-t border-default-100 flex items-center justify-between bg-default-50/60 rounded-b-2xl">
+            <p class="text-xs text-default-400">
+              {{ docentesFiltrados().length }} docente(s) disponible(s)
+            </p>
+            <a routerLink="/cenefco/docente-perfil-create"
+               class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+               (click)="mostrarPicker.set(false)">
+              <ng-icon name="lucidePlus" class="size-3" />
+              Crear nuevo docente
+            </a>
+          </div>
+
+        </div>
+      </div>
+    }
+
+    @if (activeTab() === 'reglamento') {
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+        <div class="lg:col-span-2">
+          <div class="card">
+            <div class="card-body">
+              <app-curso-reglamento [idPrograma]="cursoIdPrograma()" />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">¿Para qué sirve?</h6></div>
+            <div class="card-body space-y-3 text-sm text-default-600">
+              <p>El reglamento se incluye en el <strong>comprobante PDF</strong> que se entrega al estudiante al momento de su inscripción.</p>
+              <p>Contiene:</p>
+              <ul class="space-y-1 text-xs text-default-500">
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Carta de bienvenida personalizada
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Reglas de asistencia y puntualidad
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Evaluaciones y criterios de aprobación
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Compromisos de pago
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Conducta y convivencia
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Uso de plataformas digitales
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <div class="size-3.5 mt-0.5 shrink-0"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+                  Derechos del estudiante
+                </li>
+              </ul>
+              <p class="text-xs text-default-400 pt-1">
+                Cada línea de texto se convierte en un ítem de la lista. Si no hay contenido personalizado, se usa el texto predeterminado del sistema.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (activeTab() === 'inscritos') {
+      <div class="space-y-5">
+
+
+        @if (inscritosLoaded()) {
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="card">
+              <div class="card-body flex items-center gap-3 py-4">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <ng-icon name="lucideUsers" class="size-5" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-lg font-bold text-default-800 leading-none">{{ inscritos().length }}</p>
+                  <p class="text-xs text-default-400 mt-1">Total inscritos</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body flex items-center gap-3 py-4">
+                <div class="size-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
+                  <ng-icon name="lucideCheckCircle" class="size-5" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-lg font-bold text-default-800 leading-none">{{ inscritosActivosCount() }}</p>
+                  <p class="text-xs text-default-400 mt-1">Activos</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body flex items-center gap-3 py-4">
+                <div class="size-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
+                  <ng-icon name="lucideCircleStop" class="size-5" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-lg font-bold text-default-800 leading-none">{{ inscritos().length - inscritosActivosCount() }}</p>
+                  <p class="text-xs text-default-400 mt-1">Dados de baja</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body flex items-center gap-3 py-4">
+                <div class="size-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning shrink-0">
+                  <ng-icon name="lucideWallet" class="size-5" />
+                </div>
+                <div class="min-w-0 truncate">
+                  <p class="text-lg font-bold text-default-800 leading-none truncate">Bs. {{ inscritosTotalPagado() | number:'1.2-2' }}</p>
+                  <p class="text-xs text-default-400 mt-1">Total recaudado</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h6 class="text-base font-semibold text-default-800">Inscritos en este curso</h6>
+            @if (inscritosLoaded()) {
+              <p class="text-xs text-default-400 mt-0.5">{{ inscritosFiltrados().length }} de {{ inscritos().length }} inscritos</p>
+            }
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-default-400">
+                <ng-icon name="lucideSearch"></ng-icon>
+              </div>
+              <input
+                type="text"
+                class="form-input pl-9 py-2 text-sm w-60"
+                placeholder="Buscar por nombre, CI, email..."
+                [value]="inscritosBusq()"
+                (input)="inscritosBusq.set($any($event.target).value)" />
+            </div>
+            <a routerLink="/cenefco/inscripcion-create"
+              class="btn btn-primary gap-2 text-sm shadow-sm">
+              <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
+              Inscribir
+            </a>
+          </div>
+        </div>
+
+
+        @if (inscritosSeleccionadosCount() > 0) {
+          <div class="card bg-primary/5 border border-primary/20">
+            <div class="card-body flex items-center justify-between gap-3 py-3">
+              <p class="text-sm text-default-700">
+                <span class="font-semibold">{{ inscritosSeleccionadosCount() }}</span> inscrito(s) seleccionado(s)
+              </p>
+              <button type="button"
+                class="btn btn-primary btn-sm gap-1.5 text-xs"
+                [disabled]="marcandoParticipantesBulk()"
+                (click)="marcarSeleccionadosComoParticipantes()">
+                @if (marcandoParticipantesBulk()) {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else {
+                  <div class="size-3.5"><ng-icon name="lucideUserCheck"></ng-icon></div>
+                }
+                Marcar seleccionados como participantes
+              </button>
+            </div>
+          </div>
+        }
+
+
+        <div class="card overflow-hidden">
+          @if (inscritosLoading()) {
+            <div class="flex items-center justify-center py-16 gap-3 text-default-400">
+              <div class="size-5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              <span class="text-sm">Cargando inscritos...</span>
+            </div>
+          } @else if (inscritosFiltrados().length === 0) {
+            <div class="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <div class="size-16 rounded-2xl bg-default-100 flex items-center justify-center">
+                <ng-icon name="lucideUsers" class="size-8 text-default-300" />
+              </div>
+              <div>
+                <p class="text-sm font-medium text-default-600">{{ inscritos().length === 0 ? 'Sin inscritos en este curso' : 'Sin resultados para la búsqueda' }}</p>
+                <p class="text-xs text-default-400 mt-0.5">{{ inscritos().length === 0 ? 'Registra la primera inscripción para este curso' : 'Prueba con otro nombre, CI o correo' }}</p>
+              </div>
+              @if (inscritos().length === 0) {
+                <a routerLink="/cenefco/inscripcion-create" class="btn btn-primary btn-sm mt-1 gap-1.5 text-xs">
+                  <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+                  Registrar primera inscripción
+                </a>
+              }
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse min-w-[900px]">
+                <thead>
+                  <tr class="border-b border-default-200 bg-default-50/60">
+                    <th class="px-4 py-3 w-10">
+                      <input type="checkbox" class="form-checkbox"
+                        [checked]="inscritosSeleccionadosCount() > 0 && inscritosSeleccionadosCount() === inscritosFiltrados().length"
+                        (change)="toggleSeleccionarTodosInscritos($any($event.target).checked)" />
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide w-10">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide min-w-[220px]">Estudiante</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide min-w-[200px]">Contacto</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide whitespace-nowrap">Fecha Ins.</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide whitespace-nowrap">Pagado</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide whitespace-nowrap">Estado</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-default-500 uppercase tracking-wide whitespace-nowrap">Canal</th>
+                    <th class="px-4 py-3 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-default-100">
+                  @for (ins of inscritosFiltrados(); track ins.id_ins; let i = $index) {
+                    <tr class="hover:bg-default-50/80 transition-colors">
+                      <td class="px-4 py-3 align-top">
+                        <input type="checkbox" class="form-checkbox"
+                          [disabled]="ins.estado !== 1 || ins.es_participante"
+                          [checked]="estaSeleccionadoInscrito(ins.id_ins)"
+                          (change)="toggleSeleccionInscrito(ins.id_ins, $any($event.target).checked)" />
+                      </td>
+                      <td class="px-4 py-3 text-xs text-default-400 align-top">{{ i + 1 }}</td>
+                      <td class="px-4 py-3 align-top">
+                        <div class="flex items-center gap-3">
+                          <div class="size-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center shrink-0">
+                            <span class="text-xs font-bold text-primary">{{ inicialesDocente(ins.estudiante_nombre ?? '—') }}</span>
+                          </div>
+                          <div class="min-w-0">
+                            <p class="text-sm font-semibold text-default-800 truncate">{{ ins.estudiante_nombre ?? '—' }}</p>
+                            <p class="text-xs text-default-400 font-mono truncate">CI {{ ins.estudiante_ci ?? '—' }}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 align-top">
+                        <div class="flex flex-col gap-0.5">
+                          @if (ins.estudiante_email) {
+                            <span class="text-xs text-default-500 truncate block max-w-[220px]">{{ ins.estudiante_email }}</span>
+                          }
+                          @if (ins.estudiante_celular) {
+                            <span class="text-xs text-default-400">{{ ins.estudiante_celular }}</span>
+                          }
+                          @if (!ins.estudiante_email && !ins.estudiante_celular) {
+                            <span class="text-xs text-default-300">—</span>
+                          }
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-xs text-default-500 align-top whitespace-nowrap">
+                        {{ ins.fecha_ins ? (ins.fecha_ins | date:'dd/MM/yyyy') : '—' }}
+                      </td>
+                      <td class="px-4 py-3 text-sm font-semibold text-default-700 align-top whitespace-nowrap">
+                        {{ ins.total_pagado != null ? ('Bs. ' + (ins.total_pagado | number:'1.2-2')) : '—' }}
+                      </td>
+                      <td class="px-4 py-3 align-top">
+                        <div class="flex flex-col items-start gap-1">
+                          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+                            [class]="ins.estado === 1
+                              ? 'bg-success/10 text-success'
+                              : 'bg-danger/10 text-danger'">
+                            <span class="size-1.5 rounded-full shrink-0" [class]="ins.estado === 1 ? 'bg-success' : 'bg-danger'"></span>
+                            {{ ins.estado === 1 ? 'Activo' : 'Baja' }}
+                          </span>
+                          @if (ins.es_participante) {
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap bg-primary/10 text-primary">
+                              <div class="size-3"><ng-icon name="lucideUserCheck"></ng-icon></div>
+                              Participante
+                            </span>
+                          }
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 align-top">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-default-100 text-default-500 text-xs capitalize whitespace-nowrap">
+                          {{ ins.canal_venta ?? 'admin' }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 align-top">
+                        <div class="flex items-center gap-1.5">
+                          <a [routerLink]="['/cenefco/inscripcion-detail', ins.id_ins]"
+                            class="btn btn-light btn-sm gap-1 text-xs border border-default-200 hover:border-primary/40 hover:text-primary whitespace-nowrap">
+                            <div class="size-3"><ng-icon name="lucideEye"></ng-icon></div>
+                            Ver
+                          </a>
+                          @if (ins.estado === 1 && !ins.es_participante) {
+                            <button type="button"
+                              class="btn btn-light btn-sm gap-1 text-xs border border-default-200 hover:border-success/40 hover:text-success whitespace-nowrap"
+                              [disabled]="marcandoParticipanteId() === ins.id_ins"
+                              title="Marcar como participante (requiere haber terminado de pagar)"
+                              (click)="marcarComoParticipante(ins)">
+                              @if (marcandoParticipanteId() === ins.id_ins) {
+                                <div class="size-3 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                              } @else {
+                                <div class="size-3"><ng-icon name="lucideUserCheck"></ng-icon></div>
+                              }
+                              Participante
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+      </div>
+    }
+
+
+    @if (activeTab() === 'participantes') {
+      <div class="space-y-5">
+
+
+        @if (!form.get('id_imp')?.value) {
+          <div class="card">
+            <div class="card-body flex flex-col items-center justify-center py-16 gap-3 text-default-400">
+              <div class="size-12"><ng-icon name="lucideAlertCircle"></ng-icon></div>
+              <p class="text-sm font-medium text-center">
+                Este curso no tiene una <strong>Impartición (apertura)</strong> asignada.<br>
+                Asigna una en la pestaña <em>Datos del Curso</em> para gestionar participantes.
+              </p>
+              <button type="button" class="btn btn-sm btn-primary gap-1.5 text-xs mt-1"
+                (click)="setTab('datos')">
+                <div class="size-3.5"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+                Ir a Datos del Curso
+              </button>
+            </div>
+          </div>
+        } @else {
+
+
+          <div class="card overflow-hidden">
+
+
+            <div class="bg-gradient-to-r from-primary/8 to-primary/3 border-b border-primary/10 px-6 py-4">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-3">
+                  <div class="size-9 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                    <ng-icon name="lucideUserPlus" class="size-4" />
+                  </div>
+                  <div>
+                    <h6 class="text-sm font-semibold text-default-800">Registrar participante aprobado</h6>
+                    <p class="text-xs text-default-400 mt-0.5">Si el CI ya existe en el sistema se reutilizará ese registro automáticamente</p>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm bg-white border border-primary/20 text-primary hover:bg-primary/5 gap-1.5 shrink-0"
+                  (click)="abrirModalImportar()">
+                  <ng-icon name="lucideFileSpreadsheet" class="size-3.5" />
+                  Importar por Excel
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body space-y-5">
+
+
+              <div>
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span class="inline-flex size-4 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">1</span>
+                  Datos de identificación
+                </p>
+
+                <label class="flex items-start gap-2.5 rounded-xl border border-default-200 p-3.5 cursor-pointer hover:border-primary/40 transition-colors mb-3">
+                  <input type="checkbox" class="mt-0.5 accent-primary"
+                    [checked]="partic_soloNombreCompleto()"
+                    (change)="partic_soloNombreCompleto.set($any($event.target).checked)">
+                  <span>
+                    <span class="block text-sm font-medium text-default-700">Registrar solo con nombre completo</span>
+                    <span class="block text-xs text-default-400 mt-0.5">
+                      No se pedirá CI ni apellidos por separado. Útil para participantes de listas históricas
+                      donde solo se cuenta con el nombre completo en un solo bloque de texto.
+                    </span>
+                  </span>
+                </label>
+
+                @if (partic_soloNombreCompleto()) {
+                  <div>
+                    <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">
+                      Nombre completo <span class="text-danger normal-case font-normal">*</span>
+                    </label>
+                    <input type="text" class="form-input" placeholder="Juan Carlos García Mamani"
+                      [value]="partic_nombre()"
+                      (input)="partic_nombre.set($any($event.target).value)">
+                  </div>
+                } @else {
+                  <div class="grid sm:grid-cols-4 grid-cols-1 gap-3">
+                    <div>
+                      <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">Ap. Paterno</label>
+                      <input type="text" class="form-input" placeholder="García"
+                        [value]="partic_appaterno()"
+                        (input)="partic_appaterno.set($any($event.target).value)">
+                    </div>
+                    <div>
+                      <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">Ap. Materno</label>
+                      <input type="text" class="form-input" placeholder="Mamani"
+                        [value]="partic_apmaterno()"
+                        (input)="partic_apmaterno.set($any($event.target).value)">
+                    </div>
+                    <div>
+                      <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">
+                        Nombre(s) <span class="text-danger normal-case font-normal">*</span>
+                      </label>
+                      <input type="text" class="form-input" placeholder="Juan Carlos"
+                        [value]="partic_nombre()"
+                        (input)="partic_nombre.set($any($event.target).value)">
+                    </div>
+                    <div>
+                      <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">
+                        CI <span class="text-danger normal-case font-normal">*</span>
+                      </label>
+                      <input type="text" class="form-input font-mono" placeholder="1234567"
+                        [value]="partic_ci()"
+                        (input)="partic_ci.set($any($event.target).value)">
+                    </div>
+                  </div>
+                }
+
+                <div class="mt-3">
+                  <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">
+                    Correo electrónico <span class="text-default-300 normal-case font-normal">(opcional)</span>
+                  </label>
+                  <input type="email" class="form-input max-w-xs" placeholder="correo@ejemplo.com"
+                    [value]="partic_email()"
+                    (input)="partic_email.set($any($event.target).value)">
+                </div>
+              </div>
+
+              <div class="border-t border-default-100"></div>
+
+
+              <div>
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span class="inline-flex size-4 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">2</span>
+                  Calificación
+                </p>
+                <div class="grid sm:grid-cols-3 grid-cols-1 gap-3">
+                  <div>
+                    <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">Condición</label>
+                    <select class="form-input"
+                      [value]="partic_condicion()"
+                      (change)="partic_condicion.set($any($event.target).value)">
+                      <option value="aprobado">✓ Aprobado</option>
+                      <option value="reprobado">✗ Reprobado</option>
+                      <option value="retirado">— Retirado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">Nota final</label>
+                    <div class="relative">
+                      <input type="number" class="form-input pr-10" placeholder="0.00" min="0" max="100" step="0.01"
+                        [value]="partic_notaFinal()"
+                        (input)="partic_notaFinal.set($any($event.target).value)">
+                      <span class="absolute inset-y-0 right-3 flex items-center text-xs text-default-400 pointer-events-none font-mono">/100</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block mb-1.5 text-xs font-semibold text-default-600 uppercase tracking-wide">Observación</label>
+                    <input type="text" class="form-input" placeholder="Opcional"
+                      [value]="partic_obs()"
+                      (input)="partic_obs.set($any($event.target).value)">
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-default-100"></div>
+
+
+              <div>
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span class="inline-flex size-4 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">3</span>
+                  Comprobante de pago
+                  <span class="text-default-300 normal-case font-normal">(opcional)</span>
+                </p>
+
+                @if (!partic_comprobante_nombre()) {
+
+                  <label class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-default-200 rounded-xl py-8 px-6 cursor-pointer hover:border-primary/40 hover:bg-primary/2 transition-all group">
+                    <div class="size-10 rounded-full bg-default-100 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                      <ng-icon name="lucideUploadCloud" class="size-5 text-default-400 group-hover:text-primary" />
+                    </div>
+                    <div class="text-center">
+                      <p class="text-sm font-medium text-default-600">Arrastra o haz clic para subir</p>
+                      <p class="text-xs text-default-400 mt-0.5">PDF, JPG o PNG — máx. 5 MB</p>
+                    </div>
+                    <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                      (change)="onComprobanteSelected($event)">
+                  </label>
+                } @else {
+
+                  <div class="border border-default-200 rounded-xl overflow-hidden bg-default-50">
+                    @if (!partic_comprobante_esPdf() && partic_comprobante_preview()) {
+
+                      <div class="relative">
+                        <img [src]="partic_comprobante_preview()" alt="Comprobante"
+                          class="w-full max-h-48 object-cover object-top">
+                        @if (partic_comprobante_uploading()) {
+                          <div class="absolute inset-0 bg-white/70 flex items-center justify-center gap-2">
+                            <div class="size-5 animate-spin text-primary"><ng-icon name="lucideLoader" /></div>
+                            <span class="text-sm font-medium text-primary">Subiendo...</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                    <div class="flex items-center gap-3 px-4 py-3">
+                      <div class="size-8 rounded-lg flex items-center justify-center shrink-0"
+                        [class]="partic_comprobante_esPdf() ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'">
+                        <ng-icon [name]="partic_comprobante_esPdf() ? 'lucideFileText' : 'lucideImage'" class="size-4" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-default-800 truncate">{{ partic_comprobante_nombre() }}</p>
+                        @if (partic_comprobante_uploading()) {
+                          <p class="text-xs text-primary">Subiendo archivo...</p>
+                        } @else if (partic_comprobante_url()) {
+                          <p class="text-xs text-success">Comprobante listo ✓</p>
+                        }
+                      </div>
+                      @if (!partic_comprobante_uploading()) {
+                        <button type="button"
+                          class="shrink-0 size-7 flex items-center justify-center rounded-lg text-default-400 hover:bg-danger/10 hover:text-danger transition-colors"
+                          (click)="quitarComprobante()">
+                          <ng-icon name="lucideX" class="size-3.5" />
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+
+              <div class="flex items-center justify-between gap-3 pt-1 border-t border-default-100">
+                <button type="button"
+                  class="btn btn-light gap-1.5 text-sm text-default-500 hover:text-danger"
+                  [disabled]="partic_guardando()"
+                  (click)="limpiarFormParticipante()">
+                  <ng-icon name="lucideRotateCcw" class="size-3.5" />
+                  Limpiar formulario
+                </button>
+                <button type="button"
+                  class="btn btn-primary gap-2"
+                  [disabled]="(!partic_soloNombreCompleto() && !partic_ci().trim()) || !partic_nombre().trim() || partic_guardando() || partic_comprobante_uploading()"
+                  (click)="agregarParticipante()">
+                  @if (partic_guardando()) {
+                    <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    Registrando...
+                  } @else {
+                    <ng-icon name="lucideUserCheck" class="size-4" />
+                    Registrar participante
+                  }
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+
+          <div class="card overflow-hidden">
+
+            <div class="card-header flex items-center justify-between gap-3 flex-wrap">
+              <h6 class="card-title flex items-center gap-2">
+                <ng-icon name="lucideUsers" class="size-4 text-primary" />
+                Participantes aprobados
+                @if (participantesLoaded() && participantes().length > 0) {
+                  <span class="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-primary text-white text-[11px] font-bold">
+                    {{ participantes().length }}
+                  </span>
+                }
+              </h6>
+              <div class="relative">
+                <ng-icon name="lucideSearch" class="size-3.5 text-default-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  class="form-input pl-9 py-2 text-sm w-52"
+                  placeholder="Filtrar por nombre o CI..."
+                  [value]="participantesBusq()"
+                  (input)="participantesBusq.set($any($event.target).value)" />
+              </div>
+            </div>
+
+            @if (participantesSeleccionadosCount() > 0) {
+              <div class="flex items-center justify-between gap-3 px-5 py-2.5 bg-danger/5 border-b border-danger/10">
+                <span class="text-xs font-semibold text-danger">
+                  {{ participantesSeleccionadosCount() }} seleccionado(s)
+                </span>
+                <div class="flex items-center gap-2">
+                  <button type="button" class="text-xs text-default-500 hover:underline"
+                    [disabled]="eliminandoParticipantesBulk()"
+                    (click)="limpiarSeleccionParticipantes()">
+                    Cancelar
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm gap-1.5"
+                    [disabled]="eliminandoParticipantesBulk()"
+                    (click)="eliminarParticipantesSeleccionados()">
+                    @if (eliminandoParticipantesBulk()) {
+                      <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+                      Eliminando...
+                    } @else {
+                      <ng-icon name="lucideTrash2" class="size-3.5" />
+                      Eliminar seleccionados
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (participantesLoading()) {
+              <div class="flex items-center justify-center py-16 gap-3 text-default-400">
+                <div class="size-5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                <span class="text-sm">Cargando participantes...</span>
+              </div>
+            } @else if (participantes().length === 0) {
+              <div class="flex flex-col items-center justify-center py-16 gap-3 text-default-300">
+                <div class="size-14 rounded-2xl bg-default-100 flex items-center justify-center">
+                  <ng-icon name="lucideUserCheck" class="size-6 text-default-300" />
+                </div>
+                <div class="text-center">
+                  <p class="text-sm font-semibold text-default-500">Sin participantes registrados</p>
+                  <p class="text-xs text-default-300 mt-0.5">Usa el formulario de arriba para registrar el primero.</p>
+                </div>
+              </div>
+            } @else if (participantesFiltradosTab().length === 0) {
+              <div class="flex flex-col items-center justify-center py-14 gap-2 text-default-400">
+                <ng-icon name="lucideSearch" class="size-8 text-default-200" />
+                <p class="text-sm font-medium">Sin resultados para "{{ participantesBusq() }}"</p>
+              </div>
+            } @else {
+              <div class="flex items-center gap-3 px-5 py-2 border-b border-default-100 bg-default-50/50">
+                <input type="checkbox" class="accent-primary size-3.5"
+                  [checked]="participantesSeleccionadosCount() > 0 && participantesSeleccionadosCount() === participantesFiltradosTab().length"
+                  (change)="toggleSeleccionarTodosParticipantes($any($event.target).checked)">
+                <span class="text-xs text-default-400">Seleccionar todos</span>
+              </div>
+              <div class="divide-y divide-default-100">
+                @for (p of participantesFiltradosTab(); track p.id; let i = $index) {
+
+                  @if (editandoId() === p.id) {
+
+                    <div class="bg-primary/[0.03] border-l-2 border-primary px-5 py-4 space-y-4">
+
+
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                          <div class="size-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                            {{ inicialesParticipante(p.estudiante_nombre ?? 'X') }}
+                          </div>
+                          <p class="text-xs text-default-400 font-mono">CI: {{ p.estudiante_ci ?? '—' }}</p>
+                        </div>
+                        <span class="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <ng-icon name="lucidePencil" class="size-3" />
+                          Editando
+                        </span>
+                      </div>
+
+
+                      <div class="grid sm:grid-cols-3 gap-3">
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Ap. Paterno</label>
+                          <input type="text" class="form-input form-input-sm"
+                            placeholder="Ap. paterno"
+                            [value]="edit_appaterno()"
+                            (input)="edit_appaterno.set($any($event.target).value)">
+                        </div>
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Ap. Materno</label>
+                          <input type="text" class="form-input form-input-sm"
+                            placeholder="Ap. materno"
+                            [value]="edit_apmaterno()"
+                            (input)="edit_apmaterno.set($any($event.target).value)">
+                        </div>
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Nombre(s)</label>
+                          <input type="text" class="form-input form-input-sm"
+                            placeholder="Nombre(s)"
+                            [value]="edit_nombre()"
+                            (input)="edit_nombre.set($any($event.target).value)">
+                        </div>
+                      </div>
+
+                      <div class="grid sm:grid-cols-3 gap-3">
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Condición</label>
+                          <select class="form-input form-input-sm"
+                            [value]="edit_condicion()"
+                            (change)="edit_condicion.set($any($event.target).value)">
+                            <option value="aprobado">✓ Aprobado</option>
+                            <option value="reprobado">✗ Reprobado</option>
+                            <option value="retirado">— Retirado</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Nota final</label>
+                          <div class="relative">
+                            <input type="number" class="form-input form-input-sm pr-10"
+                              placeholder="0.00" min="0" max="100" step="0.01"
+                              [value]="edit_nota()"
+                              (input)="edit_nota.set($any($event.target).value)">
+                            <span class="absolute inset-y-0 right-3 flex items-center text-xs text-default-300 pointer-events-none">/100</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label class="block mb-1 text-xs font-semibold text-default-500 uppercase tracking-wide">Observación</label>
+                          <input type="text" class="form-input form-input-sm"
+                            placeholder="Opcional"
+                            [value]="edit_obs()"
+                            (input)="edit_obs.set($any($event.target).value)">
+                        </div>
+                      </div>
+
+
+                      <div>
+                        <label class="block mb-1.5 text-xs font-semibold text-default-500 uppercase tracking-wide">Comprobante de pago</label>
+                        @if (!edit_comp_nombre()) {
+                          <label class="flex items-center gap-3 border border-dashed border-default-200 rounded-xl px-4 py-3 cursor-pointer hover:border-primary/40 hover:bg-primary/2 transition-all group w-full sm:w-auto sm:max-w-xs">
+                            <div class="size-8 rounded-lg bg-default-100 group-hover:bg-primary/10 flex items-center justify-center shrink-0 transition-colors">
+                              <ng-icon name="lucideUploadCloud" class="size-4 text-default-400 group-hover:text-primary" />
+                            </div>
+                            <div>
+                              <p class="text-sm font-medium text-default-600">
+                                @if (edit_comp_url()) { Cambiar comprobante } @else { Adjuntar comprobante }
+                              </p>
+                              <p class="text-xs text-default-400">PDF, JPG o PNG</p>
+                            </div>
+                            <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                              (change)="onEditComprobanteSelected($event)">
+                          </label>
+                          @if (edit_comp_url()) {
+                            <div class="mt-2 flex items-center gap-2">
+                              <a [href]="edit_comp_url()!" target="_blank"
+                                class="inline-flex items-center gap-1.5 text-xs text-success hover:underline font-semibold">
+                                <ng-icon name="lucideReceipt" class="size-3" />
+                                Ver comprobante actual
+                              </a>
+                              <span class="text-default-200">·</span>
+                              <button type="button" class="text-xs text-default-400 hover:text-danger"
+                                (click)="edit_comp_url.set(null)">Quitar</button>
+                            </div>
+                          }
+                        } @else {
+                          <div class="flex items-center gap-3 border border-default-200 rounded-xl px-4 py-2.5 bg-white max-w-xs">
+                            <div class="size-7 rounded-lg flex items-center justify-center shrink-0"
+                              [class]="edit_comp_esPdf() ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'">
+                              <ng-icon [name]="edit_comp_esPdf() ? 'lucideFileText' : 'lucideImage'" class="size-3.5" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <p class="text-xs font-medium text-default-700 truncate">{{ edit_comp_nombre() }}</p>
+                              @if (edit_comp_uploading()) {
+                                <p class="text-xs text-primary">Subiendo...</p>
+                              } @else if (edit_comp_url()) {
+                                <p class="text-xs text-success">Listo ✓</p>
+                              }
+                            </div>
+                            @if (!edit_comp_uploading()) {
+                              <button type="button"
+                                class="size-6 flex items-center justify-center rounded-lg text-default-300 hover:bg-danger/10 hover:text-danger transition-colors shrink-0"
+                                (click)="edit_comp_nombre.set(null); edit_comp_url.set(null); edit_comp_preview.set(null)">
+                                <ng-icon name="lucideX" class="size-3" />
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+
+
+                      <div class="flex items-center gap-2 pt-1">
+                        <button type="button"
+                          class="btn btn-primary btn-sm gap-1.5"
+                          [disabled]="edit_guardando() || edit_comp_uploading()"
+                          (click)="guardarEdicion(p)">
+                          @if (edit_guardando()) {
+                            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                            Guardando...
+                          } @else {
+                            <ng-icon name="lucideCheck" class="size-3.5" />
+                            Guardar cambios
+                          }
+                        </button>
+                        <button type="button"
+                          class="btn btn-light btn-sm gap-1.5 text-default-500"
+                          [disabled]="edit_guardando()"
+                          (click)="cancelarEdicion()">
+                          <ng-icon name="lucideX" class="size-3.5" />
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+
+                  } @else {
+
+                    <div class="flex items-center gap-3 px-5 py-3.5 hover:bg-default-50/70 transition-colors group">
+
+
+                      <input type="checkbox" class="accent-primary size-3.5 shrink-0"
+                        [checked]="estaSeleccionadoParticipante(p.id)"
+                        (change)="toggleSeleccionParticipante(p.id, $any($event.target).checked)">
+
+                      <span class="text-xs text-default-300 font-mono w-5 shrink-0 text-right">{{ i + 1 }}</span>
+
+
+                      <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <div class="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                          {{ inicialesParticipante(p.estudiante_nombre ?? 'X') }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm font-semibold text-default-800 truncate">{{ p.estudiante_nombre ?? '—' }}</p>
+                          <p class="text-xs text-default-400 font-mono">{{ p.estudiante_ci ?? '—' }}</p>
+                        </div>
+                      </div>
+
+
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize shrink-0"
+                        [class]="condicionBadgeClass(p.condicion)">
+                        {{ p.condicion }}
+                      </span>
+
+
+                      <div class="text-center w-16 shrink-0">
+                        @if (p.nota_final != null) {
+                          <span class="text-sm font-bold text-default-700">{{ p.nota_final }}</span>
+                          <span class="text-[10px] text-default-300">/100</span>
+                        } @else {
+                          <span class="text-xs text-default-200">—</span>
+                        }
+                      </div>
+
+
+                      <div class="w-24 shrink-0 text-center">
+                        @if (p.comprobante_url) {
+                          <a [href]="p.comprobante_url" target="_blank"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-success/10 text-success hover:bg-success/20 transition-colors">
+                            <ng-icon name="lucideReceipt" class="size-3" />
+                            Ver
+                          </a>
+                        } @else {
+                          <span class="text-xs text-default-200">—</span>
+                        }
+                      </div>
+
+
+                      <div class="w-24 shrink-0 text-center">
+                        @if (p.cert_archivo_url) {
+                          <a [href]="p.cert_archivo_url" target="_blank"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                            <ng-icon name="lucideFileCheck" class="size-3" />
+                            PDF
+                          </a>
+                        } @else {
+                          <span class="text-xs text-default-200">Sin cert.</span>
+                        }
+                      </div>
+
+
+                      <span class="text-xs text-default-400 whitespace-nowrap w-20 shrink-0 hidden lg:block">
+                        {{ p.created_at ? (p.created_at | date:'dd/MM/yyyy') : '—' }}
+                      </span>
+
+
+                      <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button"
+                          class="flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                          title="Generar certificado"
+                          (click)="generarCertificadoExterno(p)">
+                          <ng-icon name="lucideAward" class="size-3.5" />
+                          Generar certificado
+                        </button>
+                        <button type="button"
+                          class="size-7 flex items-center justify-center rounded-lg text-default-400 hover:bg-primary/10 hover:text-primary transition-colors"
+                          title="Editar"
+                          [disabled]="editandoId() !== null"
+                          (click)="abrirEdicion(p)">
+                          <ng-icon name="lucidePencil" class="size-3.5" />
+                        </button>
+                        <button type="button"
+                          class="size-7 flex items-center justify-center rounded-lg text-default-400 hover:bg-danger/10 hover:text-danger transition-colors"
+                          title="Eliminar"
+                          [disabled]="partic_eliminandoId() === p.id"
+                          (click)="eliminarParticipante(p)">
+                          @if (partic_eliminandoId() === p.id) {
+                            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                          } @else {
+                            <ng-icon name="lucideTrash2" class="size-3.5" />
+                          }
+                        </button>
+                      </div>
+
+                    </div>
+                  }
+
+                }
+              </div>
+            }
+          </div>
+
+        }
+      </div>
+    }
+
+  }
+
+  @if (qrDataUrl()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" (click)="cerrarQR()">
+      <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+           (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between w-full">
+          <h3 class="text-base font-semibold text-default-800 truncate pr-2">
+            {{ form.get('nombre_programa')?.value }}
+          </h3>
+          <button class="text-default-400 hover:text-default-600 shrink-0" (click)="cerrarQR()">
+            <ng-icon name="lucideX" class="size-5" />
+          </button>
+        </div>
+
+        <img [src]="qrDataUrl()!" alt="QR Code" class="rounded-xl border border-default-200 w-64 h-64" />
+
+        <p class="text-xs text-default-400 text-center">
+          {{ qrSubtitulo() }}
+        </p>
+
+        @if (qrUrl()) {
+          <div class="flex items-center gap-2 w-full bg-default-100 rounded-lg px-3 py-2">
+            <span class="text-xs text-default-600 truncate flex-1">{{ qrUrl() }}</span>
+            <button
+              type="button"
+              class="shrink-0 text-default-500 hover:text-primary"
+              title="Copiar enlace"
+              (click)="copiarUrlQR()">
+              @if (qrCopiado()) {
+                <ng-icon name="lucideCheck" class="size-4 text-success" />
+              } @else {
+                <ng-icon name="lucideCopy" class="size-4" />
+              }
+            </button>
+          </div>
+        }
+
+        <div class="flex gap-3 w-full">
+          <button class="btn btn-outline-default flex-1 gap-1.5" (click)="cerrarQR()">
+            <ng-icon name="lucideX" class="size-4" />
+            Cerrar
+          </button>
+          <button class="btn btn-primary flex-1 gap-1.5" (click)="descargarQR()">
+            <ng-icon name="lucideDownload" class="size-4" />
+            Descargar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+
+  @if (importModalAbierto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" (click)="cerrarModalImportar()">
+      <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]"
+           (click)="$event.stopPropagation()">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-default-100">
+          <div>
+            <h3 class="text-sm font-semibold text-default-800">Importar participantes desde Excel</h3>
+            <p class="text-xs text-default-400 mt-0.5">Aplica las mismas reglas que el registro manual: reutiliza por CI, no duplica dentro de este curso</p>
+          </div>
+          <button type="button"
+            class="size-8 rounded-lg flex items-center justify-center text-default-400 hover:text-default-600 hover:bg-default-100 transition-colors disabled:opacity-40"
+            [disabled]="importando()"
+            (click)="cerrarModalImportar()">
+            <ng-icon name="lucideX" class="size-4" />
+          </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 p-5 space-y-4">
+
+          <label class="flex items-start gap-2.5 rounded-xl border border-default-200 p-3.5 cursor-pointer hover:border-primary/40 transition-colors"
+            [class.opacity-60]="importando()">
+            <input type="checkbox" class="mt-0.5 accent-primary"
+              [disabled]="importando()"
+              [checked]="importSoloNombreCompleto()"
+              (change)="importSoloNombreCompleto.set($any($event.target).checked); importResultado.set(null)">
+            <span>
+              <span class="block text-sm font-medium text-default-700">Importar solo con nombre completo</span>
+              <span class="block text-xs text-default-400 mt-0.5">
+                El Excel trae solo una columna con nombres y apellidos juntos, sin encabezado ni CI. No se separan
+                automáticamente — se guardan tal cual. Recomendado usar plantillas de certificado con el nombre en un solo bloque de texto.
+              </span>
+            </span>
+          </label>
+
+          <div class="rounded-xl bg-default-50 border border-default-100 p-3.5 text-xs text-default-500 space-y-1.5">
+            @if (importSoloNombreCompleto()) {
+              <p class="font-semibold text-default-700">Formato esperado (sin fila de encabezado):</p>
+              <p>
+                Una sola columna (A) con el nombre completo de cada participante (nombres y apellidos juntos), una fila por persona.
+                No se incluye CI — cada fila crea un participante nuevo, sin buscar coincidencias por CI.
+              </p>
+            } @else {
+              <p class="font-semibold text-default-700">Columnas esperadas (la primera fila debe ser el encabezado):</p>
+              <p>
+                <span class="font-mono text-default-700">CI</span> y <span class="font-mono text-default-700">Nombre</span> son obligatorias.
+                Opcionales: Apellido Paterno, Apellido Materno, Email, Condición (aprobado / reprobado / retirado), Nota Final, Observación.
+                El orden de las columnas no importa, mientras el encabezado sea reconocible.
+              </p>
+            }
+            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+              <button type="button" class="text-primary font-medium hover:underline inline-flex items-center gap-1"
+                (click)="descargarPlantillaImportacion()">
+                <ng-icon name="lucideDownload" class="size-3" />
+                Plantilla con columnas separadas
+              </button>
+              <button type="button" class="text-primary font-medium hover:underline inline-flex items-center gap-1"
+                (click)="descargarPlantillaSoloNombreCompleto()">
+                <ng-icon name="lucideDownload" class="size-3" />
+                Plantilla solo nombre completo
+              </button>
+            </div>
+          </div>
+
+          @if (!importArchivo()) {
+            <label
+              [class]="'flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl py-8 px-6 cursor-pointer transition-all group ' +
+                (importArrastrando() ? 'border-primary bg-primary/5' : 'border-default-200 hover:border-primary/40 hover:bg-primary/2')"
+              (dragover)="onImportDragOver($event)"
+              (dragleave)="onImportDragLeave($event)"
+              (drop)="onImportDrop($event)">
+              <div class="size-10 rounded-full bg-default-100 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                <ng-icon name="lucideFileSpreadsheet" class="size-5 text-default-400 group-hover:text-primary" />
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-medium text-default-600">Arrastra o haz clic para subir</p>
+                <p class="text-xs text-default-400 mt-0.5">.xlsx, .xls o .csv — máx. 5 MB</p>
+              </div>
+              <input type="file" class="hidden" accept=".xlsx,.xls,.csv" (change)="onImportArchivoSeleccionado($event)">
+            </label>
+          } @else {
+            <div class="flex items-center gap-3 rounded-xl border border-default-200 px-4 py-3">
+              <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <ng-icon name="lucideFileSpreadsheet" class="size-4" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-default-700 truncate">{{ importArchivo()!.name }}</p>
+                <p class="text-xs text-default-400">{{ (importArchivo()!.size / 1024) | number:'1.0-0' }} KB</p>
+              </div>
+              <button type="button" class="text-default-400 hover:text-danger shrink-0 disabled:opacity-40"
+                [disabled]="importando()"
+                (click)="importArchivo.set(null); importResultado.set(null)">
+                <ng-icon name="lucideX" class="size-4" />
+              </button>
+            </div>
+          }
+
+          @if (importResultado(); as res) {
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-xl bg-success/10 text-success text-center py-3">
+                <p class="text-xl font-bold">{{ res.insertados }}</p>
+                <p class="text-xs font-medium">Insertados</p>
+              </div>
+              <div class="rounded-xl bg-warning/10 text-warning text-center py-3">
+                <p class="text-xl font-bold">{{ res.omitidos }}</p>
+                <p class="text-xs font-medium">Omitidos</p>
+              </div>
+              <div class="rounded-xl bg-danger/10 text-danger text-center py-3">
+                <p class="text-xl font-bold">{{ res.errores.length }}</p>
+                <p class="text-xs font-medium">Errores</p>
+              </div>
+            </div>
+            @if (res.errores.length > 0) {
+              <div class="max-h-40 overflow-y-auto rounded-lg bg-danger/5 border border-danger/10 p-3 space-y-1">
+                @for (e of res.errores; track e) {
+                  <p class="text-xs text-danger">{{ e }}</p>
+                }
+              </div>
+            }
+            @if (res.insertados > 0) {
+              <button type="button"
+                class="btn w-full gap-1.5 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20"
+                (click)="generarCertificadosImportados()">
+                <ng-icon name="lucideAward" class="size-4" />
+                Generar certificados para los {{ res.insertados }} importados
+              </button>
+            }
+          }
+
+        </div>
+
+        <div class="flex gap-3 px-5 py-4 border-t border-default-100">
+          <button type="button" class="btn btn-outline-default flex-1 gap-1.5" [disabled]="importando()" (click)="cerrarModalImportar()">
+            Cerrar
+          </button>
+          <button type="button" class="btn btn-primary flex-1 gap-1.5" [disabled]="!importArchivo() || importando()"
+            (click)="importarParticipantesExcel()">
+            @if (importando()) {
+              <ng-icon name="lucideLoader" class="size-4 animate-spin" />
+              Importando...
+            } @else {
+              <ng-icon name="lucideUpload" class="size-4" />
+              Importar
+            }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+</main>

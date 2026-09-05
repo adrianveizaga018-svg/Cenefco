@@ -1,0 +1,141 @@
+﻿<main>
+
+    <app-page-title title="Timeline" subtitle="Menu" />
+
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-4 mb-5">
+
+        @for (timeline of timelineData; track $index) {
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-4 card-title">{{ timeline.type }}</h6>
+
+                <div>
+                    @for (item of timeline.items; track $index) {
+                    <div class="{{ item.classes }}">
+                        <h6 class="mb-4 text-base font-semibold">{{ item.title }}</h6>
+
+                        @if(item.subtitle) {
+                        <p class="mb-2 text-default-500">{{ item.subtitle }}</p>
+                        }
+
+                        @if(item.date) {
+                        <p class="text-sm text-default-400">{{ item.date }}</p>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <h5 class="mb-5 text-heading font-semibold underline text-lg"></h5>
+    <div class="grid lg:grid-cols-2 grid-cols-1 gap-4 mb-5">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-4 card-title">Timeline with Avatar</h6>
+
+                <div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <img src="assets/images/user/avatar-1.png" alt="" class="size-8 p-0.5 bg-card border rounded-full shrink-0 border-default-200">
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Purchased by James Price</h6>
+                                <p class="mb-2 text-default-500">Product noise evolve smartwatch</p>
+                                <p class="text-sm text-default-500">05:57 AM Today</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <img src="assets/images/user/avatar-2.png" alt="" class="size-8 p-0.5 bg-card border rounded-full shrink-0 border-default-200">
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Natasha Carey have liked the products</h6>
+                                <p class="mb-2 text-default-500">Allow users to like products in your WooCommerce store.</p>
+                                <p class="text-sm text-default-500">25 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <img src="assets/images/user/avatar-3.png" alt="" class="size-8 p-0.5 bg-card border rounded-full shrink-0 border-default-200">
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Today offers by Digitech Galaxy</h6>
+                                <p class="mb-2 text-default-500">Offer is valid on orders of $230 Or above for selected products only.</p>
+                                <p class="text-sm text-default-500">12 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="relative flex gap-2">
+                            <img src="assets/images/user/avatar-3.png" alt="" class="size-8 p-0.5 bg-card border rounded-full shrink-0 border-default-200">
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">New ticket received</h6>
+                                <p class="mb-2 text-default-500">User <a [routerLink]="[]" class="text-primary">Erica245</a> submitted a ticket</p>
+                                <p class="text-sm text-default-500">26 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-4 card-title">Timeline with Avatar</h6>
+
+                <div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <div class="size-8 p-0.5 bg-card text-primary flex items-center justify-center border rounded-full shrink-0 border-default-200">
+                                <div class="size-4 text-primary"><ng-icon name="lucideChartBarBig"></ng-icon></div>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Purchased by James Price</h6>
+                                <p class="mb-2 text-default-500">Product noise evolve smartwatch</p>
+                                <p class="text-sm text-default-500">05:57 AM Today</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <div class="size-8 p-0.5 bg-card text-primary flex items-center justify-center border rounded-full shrink-0 border-default-200">
+                                <div class="size-4 text-danger"><ng-icon name="lucideStore"></ng-icon></div>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Natasha Carey have liked the products</h6>
+                                <p class="mb-2 text-default-500">Allow users to like products in your WooCommerce store.</p>
+                                <p class="text-sm text-default-500">25 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative before:absolute before:border-s-2 before:border-default-200 before:start-3.5 before:end-3.5 before:top-1.5 before:-bottom-1.5 pb-4">
+                        <div class="relative flex gap-2">
+                            <div class="size-8 p-0.5 bg-card text-primary flex items-center justify-center border rounded-full shrink-0 border-default-200">
+                                <div class="size-4 text-green-500"><ng-icon name="lucideShoppingCart"></ng-icon></div>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">Today offers by Digitech Galaxy</h6>
+                                <p class="mb-2 text-default-500">Offer is valid on orders of $230 Or above for selected products only.</p>
+                                <p class="text-sm text-default-500">12 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="relative flex gap-2">
+                            <div class="size-8 p-0.5 bg-card text-primary flex items-center justify-center border rounded-full shrink-0 border-default-200">
+                                <div class="size-4 text-purple-500"><ng-icon name="lucidePercent"></ng-icon></div>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-sm text-heading font-semibold">New ticket received</h6>
+                                <p class="mb-2 text-default-500">User <a [routerLink]="[]" class="text-primary">Erica245</a> submitted a ticket</p>
+                                <p class="text-sm text-default-500">26 Dec, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>

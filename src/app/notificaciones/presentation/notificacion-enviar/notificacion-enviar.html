@@ -1,0 +1,285 @@
+<app-page-title title="Enviar Comunicado" subtitle="Notificaciones" />
+
+<div class="flex justify-end mb-4">
+  <a routerLink="/cenefco/notificaciones/enviados" class="btn btn-sm bg-default-100 text-default-700 flex items-center gap-1.5">
+    <div class="size-4"><ng-icon name="lucideHistory"></ng-icon></div>
+    Ver comunicados enviados
+  </a>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+  <div class="xl:col-span-2 space-y-5">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideType"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Contenido del comunicado</span>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-default-600">Título <span class="text-danger">*</span></label>
+          <input type="text" class="form-input"
+                 placeholder="Ej: Reunión obligatoria este viernes"
+                 maxlength="120"
+                 [(ngModel)]="form.titulo" />
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-default-600">Mensaje <span class="text-danger">*</span></label>
+            <span class="text-[10px] text-default-300">{{ form.mensaje.length }}/2000</span>
+          </div>
+          <textarea class="form-input min-h-32 resize-y"
+                    placeholder="Escribe el cuerpo del comunicado..."
+                    maxlength="2000"
+                    [(ngModel)]="form.mensaje"></textarea>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-default-600">Imagen adjunta (opcional)</label>
+
+          @if (imagenPreview()) {
+            <div class="relative inline-block">
+              <img [src]="imagenPreview()!" class="max-h-48 rounded-xl border border-default-100 object-contain" />
+              <button type="button"
+                class="absolute -top-2 -right-2 size-6 bg-danger text-white rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                (click)="quitarImagen()">
+                <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+              </button>
+            </div>
+            <p class="text-xs text-default-400">{{ imagenFile()?.name }}</p>
+          } @else {
+            <label class="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-default-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+              <div class="size-8 text-default-300"><ng-icon name="lucideImage"></ng-icon></div>
+              <span class="text-sm text-default-400">Arrastra o haz clic para adjuntar</span>
+              <span class="text-xs text-default-300">PNG, JPG, WEBP — máx. 5 MB</span>
+              <input type="file" accept="image/*" class="hidden" (change)="onImagenChange($event)" />
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideSparkles"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Tipo y prioridad</span>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-default-600">Tipo</label>
+          <div class="flex gap-2">
+            <button type="button" class="btn btn-sm flex items-center gap-1.5 flex-1 justify-center"
+              [ngClass]="form.tipo === 'comunicado' ? 'bg-primary text-white' : 'bg-default-100 text-default-600 hover:bg-default-200'"
+              (click)="form.tipo = 'comunicado'">
+              <div class="size-3.5"><ng-icon name="lucideMegaphone"></ng-icon></div>
+              Comunicado
+            </button>
+            <button type="button" class="btn btn-sm flex items-center gap-1.5 flex-1 justify-center"
+              [ngClass]="form.tipo === 'actividad' ? 'bg-primary text-white' : 'bg-default-100 text-default-600 hover:bg-default-200'"
+              (click)="form.tipo = 'actividad'">
+              <div class="size-3.5"><ng-icon name="lucideCalendarDays"></ng-icon></div>
+              Actividad
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-default-600">Prioridad</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            @for (p of prioridades; track p.valor) {
+              <button type="button" class="btn btn-sm flex items-center justify-center gap-1.5 border transition-colors"
+                [style.background]="form.prioridad === p.valor ? prioridadConfig(p.valor).bg : ''"
+                [style.color]="form.prioridad === p.valor ? prioridadConfig(p.valor).color : ''"
+                [style.border-color]="form.prioridad === p.valor ? prioridadConfig(p.valor).color : 'transparent'"
+                [class.bg-default-100]="form.prioridad !== p.valor"
+                [class.text-default-600]="form.prioridad !== p.valor"
+                (click)="form.prioridad = p.valor">
+                @if (form.prioridad === p.valor) {
+                  <div class="size-2 rounded-full" [style.background]="prioridadConfig(p.valor).color"></div>
+                }
+                {{ p.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideUsers"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Destinatarios</span>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          @for (d of destinatarios; track d.valor) {
+            <button type="button" class="btn btn-sm flex items-center justify-center gap-1.5"
+              [ngClass]="form.destinatario === d.valor ? 'bg-primary text-white' : 'bg-default-100 text-default-600 hover:bg-default-200'"
+              (click)="form.destinatario = d.valor">
+              <div class="size-3.5"><ng-icon [name]="d.icono"></ng-icon></div>
+              {{ d.label }}
+            </button>
+          }
+        </div>
+
+        @if (form.destinatario === 'rol') {
+          <div class="space-y-1 pt-1">
+            <label class="text-xs font-semibold text-default-600">Rol</label>
+            <select class="form-select" [(ngModel)]="form.rol_destino">
+              <option value="" disabled>Selecciona un rol</option>
+              @for (rol of roles(); track rol.id) {
+                <option [value]="rol.nombre">{{ rol.nombre }}</option>
+              }
+            </select>
+            @if (roles().length === 0) {
+              <div class="text-xs text-default-400 flex items-center gap-1.5 pt-1">
+                <div class="size-3.5"><ng-icon name="lucideAlertTriangle"></ng-icon></div>
+                No hay roles activos disponibles.
+              </div>
+            }
+          </div>
+        }
+
+        @if (form.destinatario === 'usuario') {
+          <div class="space-y-2 pt-1">
+            <label class="text-xs font-semibold text-default-600">Personal</label>
+
+            @if (usuariosSeleccionados.length > 0) {
+              <div class="flex flex-wrap gap-1.5">
+                @for (u of usuariosSeleccionados; track u.id) {
+                  <span class="inline-flex items-center gap-1 text-xs font-medium pl-2 pr-1 py-1 rounded-full bg-primary/10 text-primary">
+                    {{ u.nombre }} {{ u.apellido }}
+                    <button type="button" class="size-4 flex items-center justify-center rounded-full hover:bg-primary/20" (click)="quitarUsuario(u.id)">
+                      <div class="size-3"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3 text-default-400">
+                <div class="size-3.5"><ng-icon name="lucideSearch"></ng-icon></div>
+              </div>
+              <input type="text" class="form-input ps-9 text-sm" placeholder="Buscar por nombre..."
+                     [(ngModel)]="filtroPersonal" />
+            </div>
+
+            <div class="max-h-52 overflow-y-auto border border-default-200 rounded-xl divide-y divide-default-50">
+              @for (u of usuariosFiltrados; track u.id) {
+                <label class="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-default-50">
+                  <input type="checkbox" class="form-checkbox"
+                         [checked]="form.usuario_ids.includes(u.id)"
+                         (change)="toggleUsuario(u.id, $any($event.target).checked)" />
+                  <span class="flex-1 truncate text-default-700">{{ u.nombre }} {{ u.apellido }}</span>
+                  <span class="text-xs text-default-400 shrink-0">{{ u.rolNombre || 'Sin rol' }}</span>
+                </label>
+              } @empty {
+                <p class="px-3 py-4 text-xs text-default-400 text-center">No se encontró personal con ese nombre</p>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="space-y-1 pt-1">
+          <label class="text-xs font-semibold text-default-600">Expira (opcional)</label>
+          <input type="datetime-local" class="form-input max-w-xs" [(ngModel)]="form.expires_at" />
+          <p class="text-[10px] text-default-400">Si se define, el comunicado dejará de mostrarse después de esta fecha.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-end">
+      <a routerLink="/cenefco/notificaciones" class="btn bg-default-100 text-default-700">
+        Cancelar
+      </a>
+      <button class="btn bg-primary text-white min-w-40 flex items-center justify-center gap-2" (click)="enviar()" [disabled]="enviando()">
+        @if (enviando()) {
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          Enviando...
+        } @else {
+          <div class="size-4"><ng-icon name="lucideSend"></ng-icon></div>
+          Enviar comunicado
+        }
+      </button>
+    </div>
+  </div>
+
+  <div class="xl:col-span-1">
+    <div class="card sticky top-24">
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideEye"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Vista previa</span>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="rounded-xl border border-default-100 overflow-hidden">
+
+          <div class="h-1" [style.background]="prioridadConfig(form.prioridad).color"></div>
+          <div class="bg-default-50 px-4 py-3 flex items-center gap-2.5 border-b border-default-100">
+            <div class="size-9 rounded-xl flex items-center justify-center shrink-0"
+                 [style.background]="prioridadConfig(form.prioridad).bg">
+              <div class="size-4.5" [style.color]="prioridadConfig(form.prioridad).color">
+                <ng-icon [name]="form.tipo === 'actividad' ? 'lucideCalendarDays' : 'lucideMegaphone'"></ng-icon>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-default-900 truncate">
+                {{ form.titulo || 'Título del comunicado' }}
+              </p>
+              <p class="text-[10px] text-default-400">ahora mismo</p>
+            </div>
+          </div>
+
+          @if (imagenPreview()) {
+            <img [src]="imagenPreview()!" class="w-full object-cover max-h-36" />
+          }
+
+          <div class="px-4 py-3">
+            <p class="text-xs text-default-500 whitespace-pre-wrap leading-relaxed">
+              {{ form.mensaje || 'El cuerpo del comunicado aparecerá aquí...' }}
+            </p>
+          </div>
+
+          <div class="px-4 pb-3 flex gap-1.5 flex-wrap">
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                  [style.color]="prioridadConfig(form.prioridad).color"
+                  [style.background]="prioridadConfig(form.prioridad).bg">
+              {{ prioridadConfig(form.prioridad).label }}
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold" [class]="tipoBadgeClass(form.tipo)">
+              {{ form.tipo === 'actividad' ? 'Actividad' : 'Comunicado' }}
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-default-100 text-default-500 flex items-center gap-1">
+              @if (form.destinatario === 'todos') {
+                <div class="size-2.5"><ng-icon name="lucideUsers"></ng-icon></div>
+                Todo el personal
+              } @else if (form.destinatario === 'rol') {
+                <div class="size-2.5"><ng-icon name="lucideShield"></ng-icon></div>
+                {{ form.rol_destino || '—' }}
+              } @else {
+                <div class="size-2.5"><ng-icon name="lucideUser"></ng-icon></div>
+                {{ form.usuario_ids.length }} persona{{ form.usuario_ids.length === 1 ? '' : 's' }}
+              }
+            </span>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-default-300 text-center">Así verán el comunicado los destinatarios</p>
+      </div>
+    </div>
+  </div>
+</div>

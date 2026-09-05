@@ -1,0 +1,142 @@
+<div class="relative flex flex-col md:flex-row w-full overflow-hidden min-h-screen" style="background: linear-gradient(to bottom right, var(--color-brand-primary-dark), var(--color-brand-primary))">
+    <div class="absolute inset-0">
+        @for (fondo of fondos; track fondo; let i = $index) {
+            <img [src]="fondo" alt="" [class]="'bg-slide' + (i === currentFondo() ? ' active' : '')">
+        }
+        <div class="absolute inset-0" style="background: linear-gradient(to bottom right, var(--color-brand-primary-dark), var(--color-brand-primary)); opacity: 0.65;"></div>
+    </div>
+    <div class="absolute inset-0 opacity-20">
+        <img src="assets/images/modern.svg" alt="" class="animate-float-bg w-full h-full object-cover">
+    </div>
+
+    <div class="md:hidden relative z-10 flex flex-col items-center justify-center pt-14 pb-8">
+        <div class="size-16 mb-3">
+            <img src="assets/images/cenefco.png" alt="CENEFCO" class="w-full h-full object-contain animate-pulse">
+        </div>
+        <p class="text-white/70 text-sm">Centro de Formación Continua</p>
+    </div>
+
+    <div class="relative z-10 w-full md:w-160 md:m-4 rounded-t-3xl md:rounded-2xl login-glass flex justify-center text-center grow md:grow-0">
+        <div class="flex flex-col w-full px-6 md:px-10 py-10 md:py-14">
+
+            <div class="my-auto">
+                <div class="mb-8">
+                    <div class="flex justify-center mb-4">
+                      <img src="assets/images/cenefco.png" alt="CENEFCO" class="h-35 object-contain animate-pulse">
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Panel de Administración</h2>
+                    <p class="text-sm text-white/60 mt-1">Ingresa tus credenciales para continuar</p>
+                </div>
+
+                <form (ngSubmit)="submit()" #loginForm="ngForm" class="text-left w-full max-w-sm mx-auto">
+
+                    @if (error()) {
+                    <div role="alert" aria-live="assertive" class="mb-4 rounded-md bg-danger/20 border border-danger/30 px-4 py-3 text-sm text-white">
+                        {{ error() }}
+                    </div>
+                    }
+
+                    <div class="mb-4">
+                        <label for="email" class="block font-medium text-white/80 text-sm mb-2">
+                            Correo electrónico
+                        </label>
+                        <input type="email" id="email" name="email" [(ngModel)]="email" class="form-input"
+                            placeholder="usuario@cenefco.bo" required autocomplete="email" />
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="password" class="block font-medium text-white/80 text-sm mb-2">
+                            Contraseña
+                        </label>
+                        <div class="relative">
+                            <input [type]="showPassword() ? 'text' : 'password'" id="password" name="password"
+                                [(ngModel)]="password" class="form-input pr-10" placeholder="••••••••" required
+                                autocomplete="current-password"
+                                (keydown)="checkCapsLock($event)"
+                                (keyup)="checkCapsLock($event)" />
+                            <button type="button" (click)="showPassword.set(!showPassword())"
+                                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                class="absolute inset-y-0 right-0 flex items-center px-3 text-white/50 hover:text-white"
+                                tabindex="-1">
+                                <span class="size-4">
+                                    <ng-icon [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'"></ng-icon>
+                                </span>
+                            </button>
+                        </div>
+                        @if (capsLock()) {
+                        <p class="mt-1.5 text-xs text-yellow-300/80 flex items-center gap-1" aria-live="polite">
+                            <ng-icon name="lucideTriangleAlert" class="size-3"></ng-icon>
+                            Bloq Mayús activado
+                        </p>
+                        }
+                    </div>
+
+                    <button type="submit" class="btn bg-primary text-white w-full transition-opacity"
+                        [disabled]="loading()"
+                        [class.opacity-60]="loading()"
+                        [class.cursor-not-allowed]="loading()">
+                        @if (loading()) {
+                        <span class="inline-flex items-center gap-2">
+                            <span class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></span>
+                            Ingresando...
+                        </span>
+                        } @else {
+                        Iniciar sesión
+                        }
+                    </button>
+                    
+                    <div class="relative flex py-5 items-center">
+                        <div class="flex-grow border-t border-white/20"></div>
+                        <span class="flex-shrink-0 mx-4 text-white/50 text-xs uppercase tracking-wider">o</span>
+                        <div class="flex-grow border-t border-white/20"></div>
+                    </div>
+
+                    <div id="google-buttonDiv" class="flex justify-center w-full"></div>
+
+                    <p class="text-center text-white/50 text-sm mt-5">
+                      ¿No tienes cuenta?
+                      <a routerLink="/auth-modern/register" class="text-white font-semibold hover:underline ml-1">
+                        Crear cuenta
+                      </a>
+                    </p>
+                </form>
+            </div>
+
+            <div class="mt-5 text-sm text-white/40 flex items-center justify-center gap-1">
+                <div class="size-3.5"><ng-icon name="lucideCopyright"></ng-icon></div>
+                <span>2026 CENEFCO — Centro de Formación y Educación Continua</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="relative z-10 hidden md:flex flex-col items-center justify-between min-h-screen px-10 py-14 grow">
+        <div></div>
+        <div class="text-center">
+            <div class="mb-10">
+                <div class="flex justify-center mb-5">
+                    <img src="assets/images/cenefco.png" alt="CENEFCO" class="h-35 object-contain animate-pulse">
+                </div>
+                <p class="text-white/70 text-base">Gestión académica de cursos, diplomados y programas</p>
+            </div>
+            <div class="grid grid-cols-3 gap-6 max-w-md mx-auto">
+                <div class="snake-card p-5 text-center">
+                    <div class="size-8 text-white/70 mx-auto mb-2"><ng-icon name="lucideBookOpen"></ng-icon></div>
+                    <p class="text-white/80 text-xs font-medium">Cursos</p>
+                </div>
+                <div class="snake-card p-5 text-center">
+                    <div class="size-8 text-white/70 mx-auto mb-2"><ng-icon name="lucideGraduationCap"></ng-icon></div>
+                    <p class="text-white/80 text-xs font-medium">Diplomados</p>
+                </div>
+                <div class="snake-card p-5 text-center">
+                    <div class="size-8 text-white/70 mx-auto mb-2"><ng-icon name="lucideUsers"></ng-icon></div>
+                    <p class="text-white/80 text-xs font-medium">Estudiantes</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pb-2">
+            @for (fondo of fondos; track fondo; let i = $index) {
+                <button (click)="goToFondo(i)" [class]="'slide-dot' + (i === currentFondo() ? ' active' : '')"></button>
+            }
+        </div>
+    </div>
+</div>

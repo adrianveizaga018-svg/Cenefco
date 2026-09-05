@@ -1,0 +1,385 @@
+<main>
+  <app-page-title title="Editor de Campos" subtitle="Generador de Formularios" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+      <ng-icon name="lucideLoader" class="size-6 animate-spin"></ng-icon>
+      Cargando formulario...
+    </div>
+  } @else if (formulario(); as f) {
+
+    <div class="flex items-center justify-between mb-5">
+      <div class="flex items-center gap-3">
+        <a routerLink="/cenefco/generador-formularios"
+           class="flex items-center gap-1.5 text-sm text-default-500 hover:text-primary">
+          <ng-icon name="lucideArrowLeft" class="size-4"></ng-icon>
+          Formularios
+        </a>
+        <span class="text-default-300">/</span>
+        <span class="text-sm font-semibold text-default-800">{{ f.nombre }}</span>
+        @if (!f.activo) {
+          <span class="text-xs px-2 py-0.5 rounded-full bg-default-100 text-default-500">Inactivo</span>
+        }
+      </div>
+      <div class="flex items-center gap-2">
+        <a [routerLink]="['/cenefco/generador-formulario-edit', f.id]"
+           class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
+          <ng-icon name="lucidePencil" class="size-4"></ng-icon>
+          Editar datos
+        </a>
+        <button type="button" (click)="guardar()" [disabled]="saving()"
+          class="btn btn-sm bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-60">
+          @if (saving()) {
+            <ng-icon name="lucideLoader" class="size-4 animate-spin"></ng-icon>
+            Guardando...
+          } @else {
+            <ng-icon name="lucideSave" class="size-4"></ng-icon>
+            Guardar campos
+          }
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <div class="lg:col-span-2 space-y-3">
+
+        <div class="flex items-center gap-2 mb-1">
+          <button type="button" (click)="showNuevo.set(!showNuevo()); showSugeridos.set(false)"
+            class="btn btn-sm bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5">
+            <ng-icon name="lucidePlus" class="size-4"></ng-icon>
+            Nuevo campo
+          </button>
+          <button type="button" (click)="showSugeridos.set(!showSugeridos()); showNuevo.set(false)"
+            class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+            <ng-icon name="lucideSparkles" class="size-4"></ng-icon>
+            Sugeridos
+          </button>
+          <span class="text-xs text-default-400 ml-auto">{{ campos().length }} campo(s) — clic en una fila para editar</span>
+        </div>
+
+        @if (showSugeridos()) {
+          <div class="card border border-violet-200 p-3">
+            <p class="text-xs font-medium text-default-500 mb-2">Selecciona un campo sugerido para agregarlo:</p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (s of sugeridos; track s.nombre_campo) {
+                <button type="button" (click)="usarSugerido(s)"
+                  class="text-xs px-2.5 py-1 rounded-full border border-violet-200 text-violet-700 hover:bg-violet-50 transition-colors">
+                  {{ s.etiqueta }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (showNuevo()) {
+          <div class="card border border-violet-200">
+            <div class="card-header border-b border-violet-100">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-violet-500"><ng-icon name="lucidePlus"></ng-icon></div>
+                <h6 class="text-sm font-semibold text-violet-800">Nuevo campo</h6>
+              </div>
+              <button type="button" (click)="showNuevo.set(false)" class="text-default-400 hover:text-default-700">
+                <ng-icon name="lucideX" class="size-4"></ng-icon>
+              </button>
+            </div>
+            <div class="p-4 space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Tipo</label>
+                  <select class="form-input w-full text-sm" [(ngModel)]="nuevoCampo.tipo">
+                    @for (t of tiposCampo; track t.value) {
+                      <option [value]="t.value">{{ t.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Nombre de campo <span class="text-danger">*</span></label>
+                  <input type="text" class="form-input w-full text-sm font-mono"
+                    placeholder="nombre_campo" [(ngModel)]="nuevoCampo.nombre_campo" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Etiqueta <span class="text-danger">*</span></label>
+                <input type="text" class="form-input w-full text-sm" [(ngModel)]="nuevoCampo.etiqueta" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Placeholder</label>
+                  <input type="text" class="form-input w-full text-sm" [(ngModel)]="nuevoCampo.placeholder" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Ayuda</label>
+                  <input type="text" class="form-input w-full text-sm" [(ngModel)]="nuevoCampo.ayuda" />
+                </div>
+              </div>
+
+              @if (nuevoCampo.tipo === 'select') {
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Opciones</label>
+                  <div class="flex gap-2">
+                    <input type="text" class="form-input flex-1 text-sm"
+                      placeholder="Agregar opción..." [(ngModel)]="nuevaOpcion"
+                      (keydown.enter)="agregarOpcionNuevo()" />
+                    <button type="button" (click)="agregarOpcionNuevo()"
+                      class="btn btn-sm border border-default-300">
+                      <ng-icon name="lucidePlus" class="size-4"></ng-icon>
+                    </button>
+                  </div>
+                  @if (nuevoCampo.opciones?.length) {
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                      @for (op of nuevoCampo.opciones ?? []; track op; let oi = $index) {
+                        <span class="inline-flex items-center gap-1 text-xs bg-default-100 px-2 py-0.5 rounded-full">
+                          {{ op }}
+                          <button type="button" (click)="quitarOpcionNuevo(oi)" class="text-danger">
+                            <ng-icon name="lucideX" class="size-3"></ng-icon>
+                          </button>
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="req-nuevo" class="size-4 rounded" [(ngModel)]="nuevoCampo.requerido" />
+                <label for="req-nuevo" class="text-sm text-default-700 cursor-pointer">Campo requerido</label>
+              </div>
+
+              <div class="flex gap-2 pt-1">
+                <button type="button" (click)="confirmarNuevoCampo()"
+                  class="btn btn-sm bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5">
+                  <ng-icon name="lucideCheck" class="size-4"></ng-icon>
+                  Agregar
+                </button>
+                <button type="button" (click)="showNuevo.set(false)"
+                  class="btn btn-sm border border-default-300 text-default-600">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (campos().length === 0) {
+          <div class="card flex flex-col items-center justify-center py-16 text-default-300 gap-3">
+            <ng-icon name="lucideLayoutList" class="size-12 opacity-40"></ng-icon>
+            <p class="text-sm">No hay campos. Agrega el primero usando los botones de arriba.</p>
+          </div>
+        } @else {
+          <div class="space-y-2">
+            @for (campo of campos(); track campo.nombre_campo; let i = $index) {
+              <div class="card border cursor-pointer transition-all"
+                   [class]="selectedIndex() === i
+                     ? 'border-violet-400 shadow-sm shadow-violet-100 bg-violet-50/30'
+                     : 'border-default-200 hover:border-violet-200'"
+                   (click)="selectCampo(i)">
+                <div class="p-3 flex items-center gap-3">
+
+                  <div class="text-default-300 shrink-0">
+                    <ng-icon name="lucideGripVertical" class="size-5"></ng-icon>
+                  </div>
+
+                  <span class="text-xs text-default-400 font-mono w-6 shrink-0">{{ i + 1 }}</span>
+
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 font-medium shrink-0 hidden sm:inline">
+                    {{ labelTipo(campo.tipo) }}
+                  </span>
+
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-default-800 truncate">
+                      {{ campo.etiqueta }}
+                      @if (campo.requerido) { <span class="text-danger text-xs ml-1">*</span> }
+                    </p>
+                    <p class="text-xs text-default-400 font-mono truncate">{{ campo.nombre_campo }}</p>
+                  </div>
+
+                  <div class="flex items-center gap-1 shrink-0" (click)="$event.stopPropagation()">
+                    <button type="button" (click)="moverArriba(i)" [disabled]="i === 0"
+                      class="p-1.5 rounded hover:bg-default-100 text-default-400 disabled:opacity-30">
+                      <ng-icon name="lucideChevronUp" class="size-4"></ng-icon>
+                    </button>
+                    <button type="button" (click)="moverAbajo(i)" [disabled]="i === campos().length - 1"
+                      class="p-1.5 rounded hover:bg-default-100 text-default-400 disabled:opacity-30">
+                      <ng-icon name="lucideChevronDown" class="size-4"></ng-icon>
+                    </button>
+                    <button type="button" (click)="eliminarCampo(i)"
+                      class="p-1.5 rounded hover:bg-danger/10 text-danger">
+                      <ng-icon name="lucideTrash2" class="size-4"></ng-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (campos().length > 0) {
+          <div class="card mt-5">
+            <div class="card-header border-b border-default-200">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-default-400"><ng-icon name="lucideEye"></ng-icon></div>
+                <h6 class="text-sm font-semibold text-default-800">Vista previa del formulario en el portal</h6>
+              </div>
+            </div>
+            <div class="p-5 space-y-4 bg-default-50/50">
+              @for (campo of campos(); track campo.nombre_campo) {
+                <div class="space-y-1">
+                  <label class="block text-sm font-semibold text-default-700">
+                    {{ campo.etiqueta }}
+                    @if (campo.requerido) { <span class="text-danger ml-0.5">*</span> }
+                  </label>
+                  @switch (campo.tipo) {
+                    @case ('textarea') {
+                      <textarea rows="3" class="form-input w-full bg-white cursor-not-allowed opacity-70"
+                        [placeholder]="campo.placeholder ?? ''" disabled></textarea>
+                    }
+                    @case ('select') {
+                      <select class="form-input w-full bg-white cursor-not-allowed opacity-70" disabled>
+                        <option>— Seleccionar —</option>
+                        @for (op of campo.opciones ?? []; track op) {
+                          <option>{{ op }}</option>
+                        }
+                      </select>
+                    }
+                    @case ('checkbox') {
+                      <label class="flex items-center gap-2 cursor-not-allowed opacity-70">
+                        <input type="checkbox" disabled />
+                        <span class="text-sm text-default-600">{{ campo.ayuda ?? campo.etiqueta }}</span>
+                      </label>
+                    }
+                    @case ('file') {
+                      <div class="form-input bg-white opacity-70 text-default-400 text-sm">Seleccionar archivo...</div>
+                    }
+                    @default {
+                      <input [type]="campo.tipo" class="form-input w-full bg-white cursor-not-allowed opacity-70"
+                        [placeholder]="campo.placeholder ?? ''" disabled />
+                    }
+                  }
+                  @if (campo.ayuda && campo.tipo !== 'checkbox') {
+                    <p class="text-xs text-default-400">{{ campo.ayuda }}</p>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="sticky top-4 h-fit">
+        @if (selected(); as camp) {
+          <div class="card border border-violet-300 shadow-sm">
+            <div class="card-header border-b border-violet-200 bg-violet-50">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-violet-600"><ng-icon name="lucidePencil"></ng-icon></div>
+                <h6 class="text-sm font-semibold text-violet-800 truncate">{{ camp.etiqueta }}</h6>
+              </div>
+              <button type="button" (click)="selectedIndex.set(null)" class="text-default-400 hover:text-default-700">
+                <ng-icon name="lucideX" class="size-4"></ng-icon>
+              </button>
+            </div>
+            <div class="p-4 space-y-3">
+
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Tipo de campo</label>
+                <select class="form-input w-full text-sm"
+                  [ngModel]="camp.tipo"
+                  (ngModelChange)="updateSelected({ tipo: $event, opciones: $event === 'select' ? (camp.opciones ?? []) : [] })">
+                  @for (t of tiposCampo; track t.value) {
+                    <option [value]="t.value">{{ t.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Nombre interno <span class="text-danger">*</span></label>
+                <input type="text" class="form-input w-full text-sm font-mono"
+                  [ngModel]="camp.nombre_campo"
+                  (ngModelChange)="updateSelected({ nombre_campo: $event })" />
+                <p class="text-xs text-default-400 mt-0.5">Clave única. No uses espacios.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Etiqueta visible</label>
+                <input type="text" class="form-input w-full text-sm"
+                  [ngModel]="camp.etiqueta"
+                  (ngModelChange)="updateSelected({ etiqueta: $event })" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Placeholder</label>
+                <input type="text" class="form-input w-full text-sm"
+                  [ngModel]="camp.placeholder"
+                  (ngModelChange)="updateSelected({ placeholder: $event })" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Texto de ayuda</label>
+                <input type="text" class="form-input w-full text-sm"
+                  [ngModel]="camp.ayuda"
+                  (ngModelChange)="updateSelected({ ayuda: $event })" />
+              </div>
+
+              @if (camp.tipo === 'select') {
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Opciones</label>
+                  @for (op of camp.opciones ?? []; track op; let oi = $index) {
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <span class="flex-1 text-xs bg-default-100 rounded px-2 py-1 text-default-700">{{ op }}</span>
+                      <button type="button" (click)="quitarOpcionSelected(oi)"
+                        class="p-1 rounded hover:bg-danger/10 text-danger">
+                        <ng-icon name="lucideX" class="size-3.5"></ng-icon>
+                      </button>
+                    </div>
+                  }
+                  <div class="flex gap-1.5 mt-1.5">
+                    <input type="text" class="form-input flex-1 text-xs"
+                      placeholder="Nueva opción..." #opInput
+                      (keydown.enter)="agregarOpcionSelectedDesdeInput(opInput)" />
+                    <button type="button"
+                      (click)="agregarOpcionSelectedDesdeInput(opInput)"
+                      class="btn btn-xs border border-default-300">
+                      <ng-icon name="lucidePlus" class="size-3.5"></ng-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <div class="flex items-center gap-2 pt-1 border-t border-default-100">
+                <input type="checkbox" [id]="'req-' + selectedIndexStr()" class="size-4 rounded"
+                  [ngModel]="camp.requerido"
+                  (ngModelChange)="updateSelected({ requerido: $event })" />
+                <label [for]="'req-' + selectedIndexStr()" class="text-sm text-default-700 cursor-pointer">
+                  Campo requerido
+                </label>
+              </div>
+
+              <div class="pt-2 border-t border-default-100 flex gap-2">
+                <button type="button" (click)="eliminarCampo(selectedIndex()!)"
+                  class="btn btn-sm border border-danger/30 text-danger hover:bg-danger/10 flex items-center gap-1.5 w-full justify-center">
+                  <ng-icon name="lucideTrash2" class="size-4"></ng-icon>
+                  Eliminar campo
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="card border border-dashed border-default-200">
+            <div class="p-8 flex flex-col items-center justify-center text-default-300 gap-2">
+              <ng-icon name="lucideMousePointerClick" class="size-8 opacity-50"></ng-icon>
+              <p class="text-sm text-center">Haz clic en un campo para editar sus propiedades aquí</p>
+            </div>
+          </div>
+        }
+
+        @if (formulario()) {
+          <div class="card mt-3 p-3">
+            <p class="text-xs text-default-400 mb-1">Slug del formulario</p>
+            <p class="text-xs font-mono text-default-600 bg-default-50 rounded px-2 py-1">{{ formulario()!.slug }}</p>
+            <p class="text-xs text-default-300 mt-1">Usado para vincular con programas en el portal.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</main>

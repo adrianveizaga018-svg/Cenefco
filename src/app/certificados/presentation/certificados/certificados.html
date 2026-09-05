@@ -1,0 +1,182 @@
+<main>
+  <app-page-title title="Certificados" subtitle="Generación Masiva" />
+
+  <div class="card mb-5">
+    <div class="card-header">
+      <h5 class="card-title flex items-center gap-2">
+        <ng-icon name="lucideZap" class="text-warning" />
+        Generar Certificados Masivos
+      </h5>
+    </div>
+    <div class="card-body">
+      <p class="text-sm text-default-500 mb-4">
+        Genera certificados para todos los estudiantes con <code>estado_certificado = pendiente</code> de una apertura de curso.
+      </p>
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="block text-sm font-medium mb-1">ID Apertura (imparte_id)</label>
+          <input type="number" class="form-input w-44"
+            placeholder="Ej: 123"
+            [value]="genImparteId() ?? ''"
+            (input)="genImparteId.set(+$any($event.target).value || null)">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Plantilla de certificado</label>
+          <select class="form-input w-64"
+            (change)="genPlantillaId.set(+$any($event.target).value || null)">
+            <option value="">-- Seleccionar --</option>
+            @for (p of plantillas(); track p.id) {
+              <option [value]="p.id">{{ p.nombre }} ({{ p.tipo }})</option>
+            }
+          </select>
+        </div>
+        <button class="btn bg-primary text-white flex items-center gap-2"
+          (click)="generarLote()" [disabled]="generando()">
+          @if (generando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+            Generando...
+          } @else {
+            <ng-icon name="lucideAward" />
+            Generar Certificados
+          }
+        </button>
+      </div>
+
+      @if (resultado(); as res) {
+        <div class="mt-4 p-4 rounded-lg border bg-default-50">
+          <p class="font-semibold text-sm mb-3">Resultado:</p>
+          <div class="flex gap-6">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-success">{{ res.generados }}</div>
+              <div class="text-xs text-default-500">Generados</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-default-600">{{ res.total_aprobados }}</div>
+              <div class="text-xs text-default-500">Total aprobados</div>
+            </div>
+            @if (res.errores.length) {
+              <div class="text-center">
+                <div class="text-2xl font-bold text-danger">{{ res.errores.length }}</div>
+                <div class="text-xs text-default-500">Errores</div>
+              </div>
+            }
+          </div>
+          @if (res.errores.length) {
+            <details class="mt-3">
+              <summary class="text-sm text-danger font-medium cursor-pointer">Ver errores</summary>
+              <ul class="mt-2 text-xs space-y-1">
+                @for (e of res.errores; track e.usuario_id) {
+                  <li class="text-danger">Usuario {{ e.usuario_id }} ({{ e.nombre }}): {{ e.error }}</li>
+                }
+              </ul>
+            </details>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm text-default-500 font-medium">Filtrar por imparte_id:</span>
+        <input type="number" class="form-input form-input-sm w-36"
+          placeholder="Ej: 123" (input)="onFiltrarImp($event)">
+      </div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="overflow-x-auto">
+        <div class="min-w-full inline-block align-middle">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+              Cargando certificados...
+            </div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <ng-icon name="lucideLock" />
+              No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (isError) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+              <ng-icon name="lucideCircleX" />
+              No se pudo cargar la lista.
+            </div>
+          } @else {
+            <table class="min-w-full divide-y divide-default-200">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th class="px-3.5 py-3 text-start">Código</th>
+                  <th class="px-3.5 py-3 text-start">Estudiante</th>
+                  <th class="px-3.5 py-3 text-start">Programa</th>
+                  <th class="px-3.5 py-3 text-start">Condición</th>
+                  <th class="px-3.5 py-3 text-start">Estado</th>
+                  <th class="px-3.5 py-3 text-start">Verificado</th>
+                  <th class="px-3.5 py-3 text-start">Preview</th>
+                  <th class="px-3.5 py-3 text-start">Descargar</th>
+                  <th class="px-3.5 py-3 text-start">Fecha</th>
+                  <th class="px-3.5 py-3 text-start">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (cert of certificados; track cert.id) {
+                  <tr class="text-default-800 font-normal hover:bg-default-50">
+                    <td class="px-3.5 py-2.5 text-xs font-mono text-primary">{{ cert.codigo_verificacion }}</td>
+                    <td class="px-3.5 py-2.5 text-sm font-medium">{{ cert.nombre_en_certificado }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500 max-w-48 truncate">{{ cert.programa_en_certificado }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-600 capitalize">{{ cert.condicion }}</td>
+                    <td class="px-3.5 py-2.5">
+                      <span class="inline-flex items-center py-0.5 px-2.5 rounded text-xs font-medium capitalize"
+                        [class]="estadoBadge(cert.estado)">
+                        {{ cert.estado }}
+                      </span>
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-center text-default-500">{{ cert.veces_verificado }}</td>
+                    <td class="px-3.5 py-2.5">
+                      @if (previewUrl(cert.archivo_url); as prev) {
+                        <img [src]="storageBase + prev" class="h-12 rounded border object-cover shadow-sm"
+                          alt="preview" loading="lazy">
+                      }
+                    </td>
+                    <td class="px-3.5 py-2.5">
+                      @if (cert.archivo_url) {
+                        <a [href]="storageBase + cert.archivo_url" target="_blank"
+                          class="btn btn-sm bg-success/10 hover:bg-success text-success hover:text-white flex items-center gap-1 w-fit">
+                          <div class="size-3.5"><ng-icon name="lucideDownload" /></div>
+                          PDF
+                        </a>
+                      }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">
+                      {{ cert.created_at ? (cert.created_at | slice:0:10) : '—' }}
+                    </td>
+                    <td class="px-3.5 py-2.5">
+                      <button class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                        (click)="deleteCertificado(cert.id)" title="Eliminar">
+                        <div class="size-4"><ng-icon name="lucideTrash2" /></div>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="10" class="px-3.5 py-12 text-center text-sm text-default-400">
+                      No hay certificados generados aún.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="text-default-500 text-sm">
+          Mostrando <b>{{ certificados.length }}</b> de <b>{{ total }}</b> certificados
+        </p>
+        <app-pagination [total]="total" [pageSize]="pageSize()" [currentPage]="pageIndex()"
+          (pageChange)="onPageChange($event)" />
+      </div>
+    </div>
+  </div>
+</main>

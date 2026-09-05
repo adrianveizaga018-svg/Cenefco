@@ -1,0 +1,252 @@
+<main>
+  <app-page-title title="Nuevo Curso Migrado" subtitle="Cursos Migrados" />
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Información del Curso</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Nombre completo del curso"
+                formControlName="nombre"
+                [class.border-danger]="form.get('nombre')?.invalid && form.get('nombre')?.touched">
+              @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                <p class="mt-1 text-danger text-xs">
+                  @if (form.get('nombre')?.errors?.['required']) { El nombre es requerido. }
+                  @else if (form.get('nombre')?.errors?.['maxlength']) { Máximo 300 caracteres. }
+                </p>
+              }
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-sm font-medium text-default-800">
+                  URL del Curso <span class="text-danger">*</span>
+                </label>
+                @if (urlEditada()) {
+                  <button type="button" (click)="resetUrl()"
+                    class="text-xs text-primary hover:underline flex items-center gap-1">
+                    <ng-icon name="lucideRotateCcw" class="size-3"></ng-icon>
+                    Regenerar desde nombre
+                  </button>
+                }
+              </div>
+              <div class="relative">
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <div class="size-4 text-default-400"><ng-icon name="lucideLink"></ng-icon></div>
+                </div>
+                <input
+                  type="url"
+                  class="form-input ps-9"
+                  placeholder="Se genera automáticamente al escribir el nombre"
+                  formControlName="url"
+                  [class.border-danger]="form.get('url')?.invalid && form.get('url')?.touched">
+              </div>
+              @if (form.get('url')?.invalid && form.get('url')?.touched) {
+                <p class="mt-1 text-danger text-xs">
+                  @if (form.get('url')?.errors?.['required']) { La URL es requerida. }
+                  @else if (form.get('url')?.errors?.['maxlength']) { Máximo 500 caracteres. }
+                </p>
+              }
+              <p class="mt-1 text-default-400 text-xs">
+                Se genera automáticamente a partir del nombre. Puedes editarla manualmente si lo necesitas.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Detalles Académicos</h6></div>
+          <div class="card-body space-y-4">
+
+            <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Período</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="Ej: Enero – Marzo"
+                  formControlName="periodo"
+                  [class.border-danger]="form.get('periodo')?.invalid && form.get('periodo')?.touched">
+                @if (form.get('periodo')?.errors?.['maxlength'] && form.get('periodo')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Máximo 50 caracteres.</p>
+                }
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Gestión</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="Ej: 2024"
+                  formControlName="gestion"
+                  [class.border-danger]="form.get('gestion')?.invalid && form.get('gestion')?.touched">
+                @if (form.get('gestion')?.errors?.['maxlength'] && form.get('gestion')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Máximo 10 caracteres.</p>
+                }
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de Inicio</label>
+                <input type="date" class="form-input" formControlName="fecha_inicio">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Carga Horaria (horas)</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  placeholder="Ej: 40"
+                  formControlName="carga_horaria"
+                  min="1"
+                  max="9999"
+                  [class.border-danger]="form.get('carga_horaria')?.invalid && form.get('carga_horaria')?.touched">
+                @if (form.get('carga_horaria')?.invalid && form.get('carga_horaria')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Debe ser un número entre 1 y 9999.</p>
+                }
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title">Participantes</h6>
+            <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+              {{ participantes().length }} agregado{{ participantes().length !== 1 ? 's' : '' }}
+            </span>
+          </div>
+          <div class="card-body space-y-4">
+
+            <div class="flex gap-2">
+              <div class="relative flex-1">
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <div class="size-4 text-default-400"><ng-icon name="lucideUser"></ng-icon></div>
+                </div>
+                <input
+                  type="text"
+                  class="form-input ps-9"
+                  placeholder="Nombre completo del participante"
+                  [value]="nuevoParticipante()"
+                  (input)="nuevoParticipante.set($any($event.target).value)"
+                  (keydown)="onParticipanteKeydown($event)">
+              </div>
+              <button
+                type="button"
+                class="btn bg-primary text-white shrink-0"
+                (click)="agregarParticipante()"
+                [disabled]="!nuevoParticipante().trim()">
+                <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
+                Agregar
+              </button>
+            </div>
+            <p class="text-xs text-default-400">Presiona <kbd class="px-1 py-0.5 rounded bg-default-100 border text-default-600 text-xs">Enter</kbd> o el botón para agregar. Los duplicados se detectan automáticamente.</p>
+
+            @if (participantes().length > 0) {
+              <ul class="divide-y divide-default-100 border border-default-200 rounded-lg overflow-hidden">
+                @for (p of participantes(); track p; let i = $index) {
+                  <li class="flex items-center justify-between px-3 py-2 bg-white hover:bg-default-50 transition-colors">
+                    <div class="flex items-center gap-2">
+                      <span class="size-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-semibold shrink-0">
+                        {{ i + 1 }}
+                      </span>
+                      <span class="text-sm text-default-800">{{ p }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="size-6 rounded text-default-400 hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
+                      (click)="quitarParticipante(i)"
+                      title="Quitar">
+                      <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="flex flex-col items-center justify-center py-8 text-default-300 gap-2">
+                <div class="size-10"><ng-icon name="lucideUsers"></ng-icon></div>
+                <p class="text-sm">Sin participantes aún. Agrégalos arriba.</p>
+              </div>
+            }
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white w-full"
+              [disabled]="form.invalid || submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                Registrar Curso
+              }
+            </button>
+            <a routerLink="/cenefco/cursos-migrados"
+               class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Cancelar
+            </a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Vista Previa del QR</h6></div>
+          <div class="card-body flex flex-col items-center gap-3">
+            @if (qrApiUrl) {
+              <img
+                [src]="qrApiUrl"
+                alt="QR del curso"
+                class="w-44 h-44 rounded-xl border border-default-200 shadow-sm">
+              <p class="text-xs text-default-400 text-center break-all leading-relaxed">
+                {{ urlActual }}
+              </p>
+              <a [href]="urlActual" target="_blank" rel="noopener"
+                 class="btn btn-sm border border-default-300 text-default-600 hover:bg-default-100 w-full flex items-center justify-center gap-1.5">
+                <div class="size-3.5"><ng-icon name="lucideExternalLink"></ng-icon></div>
+                Abrir URL
+              </a>
+            } @else {
+              <div class="flex flex-col items-center gap-2 py-6 text-default-300">
+                <div class="size-12"><ng-icon name="lucideQrCode"></ng-icon></div>
+                <p class="text-xs text-center">El QR aparecerá aquí cuando escribas el nombre del curso.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">¿Qué es un Curso Migrado?</h6></div>
+          <div class="card-body">
+            <p class="text-sm text-default-500 leading-relaxed">
+              Registro histórico de cursos ya dictados. Una vez creado podrás gestionar
+              la <strong>imagen de portada</strong>, <strong>logos</strong> institucionales
+              y el <strong>código QR</strong> definitivo desde la vista de detalle.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</main>

@@ -1,0 +1,378 @@
+<main>
+  <app-page-title title="Bot WhatsApp" subtitle="Conexión y estado" />
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <div class="lg:col-span-2 space-y-5">
+
+      <div class="card overflow-hidden">
+
+        <div class="h-1.5 w-full"
+          [ngClass]="{
+            'bg-gradient-to-r from-success to-emerald-400': uiState() === 'connected',
+            'bg-gradient-to-r from-warning to-amber-400':   uiState() === 'qr' || uiState() === 'connecting' || uiState() === 'starting',
+            'bg-gradient-to-r from-danger to-rose-400':     uiState() === 'error',
+            'bg-default-200':                               uiState() === 'stopped' || uiState() === 'checking',
+            'bg-gradient-to-r from-primary to-violet-400':  uiState() === 'stopping'
+          }">
+        </div>
+
+        <div class="p-6">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+
+            <div class="flex items-center gap-4">
+              <div class="relative shrink-0">
+                <div class="size-14 rounded-2xl flex items-center justify-center"
+                  [ngClass]="{
+                    'bg-success/10':  uiState() === 'connected',
+                    'bg-warning/10':  uiState() === 'qr' || uiState() === 'connecting' || uiState() === 'starting',
+                    'bg-danger/10':   uiState() === 'error',
+                    'bg-default-100': uiState() === 'stopped' || uiState() === 'checking' || uiState() === 'stopping'
+                  }">
+                  @if (uiState() === 'connected') {
+                    <div class="size-7 text-success"><ng-icon name="lucideMessageCircle"></ng-icon></div>
+                  } @else if (uiState() === 'qr') {
+                    <div class="size-7 text-warning"><ng-icon name="lucideQrCode"></ng-icon></div>
+                  } @else if (uiState() === 'error') {
+                    <div class="size-7 text-danger"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  } @else if (uiState() === 'stopped') {
+                    <div class="size-7 text-default-400"><ng-icon name="lucideBot"></ng-icon></div>
+                  } @else {
+                    <div class="size-7 text-primary animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  }
+                </div>
+                <span class="absolute -bottom-1 -right-1 size-4 rounded-full border-2 border-white"
+                  [ngClass]="{
+                    'bg-success':     uiState() === 'connected',
+                    'bg-warning':     uiState() === 'qr' || uiState() === 'connecting' || uiState() === 'starting',
+                    'bg-danger':      uiState() === 'error',
+                    'bg-default-300': uiState() === 'stopped' || uiState() === 'checking' || uiState() === 'stopping'
+                  }">
+                </span>
+              </div>
+
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                  <h4 class="text-lg font-bold text-default-900">
+                    @switch (uiState()) {
+                      @case ('checking')   { Verificando... }
+                      @case ('stopped')    { Bot detenido }
+                      @case ('starting')   { Iniciando... }
+                      @case ('connecting') { Conectando a WhatsApp }
+                      @case ('qr')         { Escanear código QR }
+                      @case ('connected')  { Bot conectado }
+                      @case ('stopping')   { Deteniendo... }
+                      @case ('error')      { Sin conexión }
+                    }
+                  </h4>
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    [ngClass]="{
+                      'bg-success/15 text-success':      uiState() === 'connected',
+                      'bg-warning/15 text-warning':      uiState() === 'qr' || uiState() === 'connecting' || uiState() === 'starting',
+                      'bg-danger/15 text-danger':        uiState() === 'error',
+                      'bg-default-100 text-default-500': uiState() === 'stopped' || uiState() === 'checking' || uiState() === 'stopping'
+                    }">
+                    @switch (uiState()) {
+                      @case ('connected')  { ACTIVO }
+                      @case ('qr')         { ESPERANDO QR }
+                      @case ('connecting') { CONECTANDO }
+                      @case ('starting')   { INICIANDO }
+                      @case ('stopping')   { DETENIENDO }
+                      @case ('error')      { ERROR }
+                      @default             { INACTIVO }
+                    }
+                  </span>
+                </div>
+                <p class="text-sm text-default-500 max-w-md">
+                  @switch (uiState()) {
+                    @case ('stopped')    { No está en ejecución. Inicialo con <strong>npm start</strong> en <code class="text-xs bg-default-100 px-1 py-0.5 rounded">whatsapp-service</code>. }
+                    @case ('starting')   { Arrancando el servicio... }
+                    @case ('connecting') { Servicio activo. Esperando vinculación de WhatsApp. }
+                    @case ('qr')         { Escaneá el QR con tu celular. Se actualiza automáticamente. }
+                    @case ('connected')  { Respondiendo mensajes. @if (processPid()) { <span class="font-mono text-xs">PID {{ processPid() }}</span> } }
+                    @case ('stopping')   { Terminando el proceso... }
+                    @case ('error')      { No se pudo contactar el servicio. Verificá que el bot esté corriendo. }
+                    @case ('checking')   { Consultando el estado... }
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div class="flex gap-2 flex-wrap shrink-0">
+              @if (uiState() === 'stopped') {
+                <button type="button"
+                  class="btn bg-[#25d366] hover:bg-[#1da851] text-white gap-2 text-sm"
+                  (click)="iniciar()">
+                  <div class="size-3.5"><ng-icon name="lucidePlay"></ng-icon></div>
+                  Iniciar Bot
+                </button>
+              }
+              @if (uiState() === 'error') {
+                <button type="button"
+                  class="btn btn-light gap-2 border border-default-200 text-sm"
+                  (click)="reintentar()">
+                  <div class="size-3.5"><ng-icon name="lucideRefreshCw"></ng-icon></div>
+                  Reintentar
+                </button>
+              }
+              @if (uiState() === 'connected') {
+                <button type="button"
+                  class="btn btn-light gap-2 border border-default-200 text-sm"
+                  (click)="desconectarWhatsApp()">
+                  <div class="size-3.5"><ng-icon name="lucideSmartphoneNfc"></ng-icon></div>
+                  Desvincular WA
+                </button>
+                <button type="button"
+                  class="btn btn-danger gap-2 text-sm"
+                  (click)="detener()">
+                  <div class="size-3"><ng-icon name="lucideSquare"></ng-icon></div>
+                  Detener
+                </button>
+              }
+              @if (uiState() === 'qr') {
+                <button type="button"
+                  class="btn btn-light gap-2 border border-default-200 text-sm"
+                  (click)="refrescarQr()">
+                  <div class="size-3.5"><ng-icon name="lucideRefreshCw"></ng-icon></div>
+                  Refrescar QR
+                </button>
+                <button type="button"
+                  class="btn btn-danger gap-2 text-sm"
+                  (click)="detener()">
+                  <div class="size-3"><ng-icon name="lucideSquare"></ng-icon></div>
+                  Detener
+                </button>
+              }
+              @if (uiState() === 'connecting') {
+                <button type="button"
+                  class="btn btn-light gap-2 border border-default-200 text-sm"
+                  (click)="desconectarWhatsApp()">
+                  <div class="size-3.5"><ng-icon name="lucideSmartphoneNfc"></ng-icon></div>
+                  Desvincular WA
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (uiState() === 'starting' || uiState() === 'stopping' || uiState() === 'connecting') {
+            <div class="mt-5 h-1 bg-default-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-primary to-violet-400"
+                style="animation: progressBar 1.8s ease-in-out infinite alternate; width: 60%">
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (uiState() === 'qr') {
+        <div class="card">
+          <div class="card-header border-b border-default-100">
+            <div class="flex items-center gap-2.5">
+              <div class="size-8 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
+                <div class="size-4 text-warning"><ng-icon name="lucideQrCode"></ng-icon></div>
+              </div>
+              <div>
+                <h5 class="card-title text-sm">Vincular WhatsApp</h5>
+                <p class="text-xs text-default-400">El QR expira en ~20 s — se actualiza automáticamente</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+              <div class="shrink-0 flex flex-col items-center gap-2">
+                @if (qrDataUrl()) {
+                  <div class="p-3 bg-white rounded-2xl border border-default-200 shadow-sm">
+                    <img [src]="qrDataUrl()" alt="QR WhatsApp" class="size-48 rounded block" />
+                  </div>
+                  <p class="text-xs text-default-400">Apuntá tu cámara aquí</p>
+                } @else {
+                  <div class="size-56 rounded-2xl border-2 border-dashed border-default-200 bg-default-50 flex flex-col items-center justify-center gap-3">
+                    <div class="size-8 text-default-300 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    <p class="text-xs text-default-400">Generando QR...</p>
+                  </div>
+                }
+              </div>
+              <div class="flex-1 space-y-2">
+                <p class="text-sm font-semibold text-default-800 mb-3">Pasos para vincular:</p>
+                @for (paso of [
+                  {n: '1', icon: 'lucideSmartphone', text: 'Abrí WhatsApp en tu celular'},
+                  {n: '2', icon: 'lucideEllipsis',   text: 'Tocá los tres puntos (⋮) arriba a la derecha'},
+                  {n: '3', icon: 'lucideMonitor',    text: 'Seleccioná "Dispositivos vinculados"'},
+                  {n: '4', icon: 'lucideScanLine',   text: 'Tocá "Vincular un dispositivo" y escaneá el QR'}
+                ]; track paso.n) {
+                  <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-default-50 transition-colors">
+                    <span class="size-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                      {{ paso.n }}
+                    </span>
+                    <div class="size-4 text-default-400 shrink-0"><ng-icon [name]="paso.icon"></ng-icon></div>
+                    <span class="text-sm text-default-700">{{ paso.text }}</span>
+                  </div>
+                }
+                <div class="flex items-start gap-2 mt-3 rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-2.5">
+                  <div class="size-4 text-amber-500 shrink-0 mt-0.5"><ng-icon name="lucideAlertCircle"></ng-icon></div>
+                  <p class="text-xs text-amber-700">
+                    Si el QR caduca, se refresca solo. También podés presionar <strong>Refrescar QR</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="card overflow-hidden">
+        <button type="button"
+          class="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-default-50/80 transition-colors"
+          (click)="toggleLogs()">
+          <span class="flex items-center gap-2 text-sm font-medium text-default-700">
+            <div class="size-4 text-default-400"><ng-icon name="lucideTerminal"></ng-icon></div>
+            Registros del servicio
+          </span>
+          <div class="size-4 text-default-400 shrink-0">
+            <ng-icon [name]="showLogs() ? 'lucideChevronUp' : 'lucideChevronDown'"></ng-icon>
+          </div>
+        </button>
+        @if (showLogs()) {
+          <div class="border-t border-default-100">
+            <div class="p-4 bg-[#0d1117] rounded-b-xl">
+              <pre class="text-xs font-mono text-green-400 overflow-auto max-h-52 leading-relaxed whitespace-pre-wrap">{{ logsContent() || '// Sin registros disponibles.' }}</pre>
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <div class="space-y-5">
+
+      <div class="card">
+        <div class="card-header border-b border-default-100">
+          <h6 class="text-sm font-semibold text-default-800 flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideActivity"></ng-icon></div>
+            Estado del sistema
+          </h6>
+        </div>
+        <div class="p-4 space-y-3">
+
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-default-600">
+              <div class="size-7 rounded-lg bg-default-100 flex items-center justify-center">
+                <div class="size-3.5 text-default-500"><ng-icon name="lucideCpu"></ng-icon></div>
+              </div>
+              Proceso Node.js
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="size-2 rounded-full"
+                [ngClass]="(uiState() === 'stopped' || uiState() === 'error') ? 'bg-default-300' : 'bg-success animate-pulse'">
+              </span>
+              <span class="text-xs font-medium"
+                [ngClass]="(uiState() === 'stopped' || uiState() === 'error') ? 'text-default-400' : 'text-success'">
+                {{ (uiState() === 'stopped' || uiState() === 'error') ? 'Detenido' : 'Activo' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-default-600">
+              <div class="size-7 rounded-lg bg-[#25d366]/10 flex items-center justify-center">
+                <div class="size-3.5 text-[#25d366]"><ng-icon name="lucideMessageCircle"></ng-icon></div>
+              </div>
+              WhatsApp
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="size-2 rounded-full"
+                [ngClass]="{
+                  'bg-success animate-pulse': uiState() === 'connected',
+                  'bg-warning animate-pulse': uiState() === 'connecting' || uiState() === 'qr',
+                  'bg-default-300':           uiState() === 'stopped' || uiState() === 'error' || uiState() === 'checking'
+                }">
+              </span>
+              <span class="text-xs font-medium"
+                [ngClass]="{
+                  'text-success':     uiState() === 'connected',
+                  'text-warning':     uiState() === 'connecting' || uiState() === 'qr',
+                  'text-default-400': uiState() === 'stopped' || uiState() === 'error' || uiState() === 'checking'
+                }">
+                @switch (uiState()) {
+                  @case ('connected')  { Vinculado }
+                  @case ('qr')         { Sin vincular }
+                  @case ('connecting') { Conectando }
+                  @default             { Inactivo }
+                }
+              </span>
+            </div>
+          </div>
+
+          @if (processPid()) {
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-xs text-default-600">
+                <div class="size-7 rounded-lg bg-default-100 flex items-center justify-center">
+                  <div class="size-3.5 text-default-500"><ng-icon name="lucideHash"></ng-icon></div>
+                </div>
+                PID del proceso
+              </div>
+              <span class="text-xs font-mono text-default-600 bg-default-100 px-2 py-0.5 rounded">{{ processPid() }}</span>
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header border-b border-default-100">
+          <h6 class="text-sm font-semibold text-default-800 flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideRefreshCcw"></ng-icon></div>
+            Caché del bot
+          </h6>
+        </div>
+        <div class="p-4 space-y-3">
+          <p class="text-xs text-default-500 leading-relaxed">
+            Después de editar intents o configuraciones, recargá la caché para que el bot los aplique sin reiniciar.
+          </p>
+          <button type="button"
+            class="btn btn-light w-full gap-2 border border-default-200 hover:border-primary/40 hover:text-primary text-sm transition-all"
+            [disabled]="flushingCache()"
+            (click)="flushCache()">
+            @if (flushingCache()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Recargando...
+            } @else {
+              <div class="size-4"><ng-icon name="lucideRefreshCcw"></ng-icon></div>
+              Recargar intents
+            }
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header border-b border-default-100">
+          <h6 class="text-sm font-semibold text-default-800 flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideSparkles"></ng-icon></div>
+            Capacidades del bot
+          </h6>
+        </div>
+        <div class="p-4">
+          <div class="space-y-1.5">
+            @for (cap of [
+              {icon: 'lucideMessageSquare', color: 'text-blue-500',   bg: 'bg-blue-50',   text: 'Responde consultas sobre cursos'},
+              {icon: 'lucideClipboardList', color: 'text-violet-500', bg: 'bg-violet-50', text: 'Informa inscripciones y precios'},
+              {icon: 'lucideCalendarDays',  color: 'text-rose-500',   bg: 'bg-rose-50',   text: 'Horarios, eventos y noticias'},
+              {icon: 'lucideSearch',        color: 'text-amber-500',  bg: 'bg-amber-50',  text: 'Consulta estado de pagos'},
+              {icon: 'lucideBrain',         color: 'text-teal-500',   bg: 'bg-teal-50',   text: 'Respuestas con IA local (Ollama)'},
+              {icon: 'lucideUsers',         color: 'text-green-500',  bg: 'bg-green-50',  text: 'Deriva a soporte humano'}
+            ]; track cap.icon) {
+              <div class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-default-50 transition-colors">
+                <div class="size-6 rounded-md flex items-center justify-center shrink-0" [ngClass]="cap.bg">
+                  <div class="size-3.5" [ngClass]="cap.color"><ng-icon [name]="cap.icon"></ng-icon></div>
+                </div>
+                <span class="text-xs text-default-600">{{ cap.text }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>

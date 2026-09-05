@@ -1,0 +1,98 @@
+<main>
+  <app-page-title title="Certificados Post-Inscripción" subtitle="Certificados" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <p class="text-sm text-default-500">Configura qué programas ofrecen certificados opcionales al inscribirse.</p>
+
+        <div class="flex items-center gap-2">
+          <a routerLink="/cenefco/cert-config-programa-edit/new" class="btn btn-sm bg-primary text-white">
+            <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+            Nueva configuración
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando configuraciones...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Programa</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Título del modal</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Certificados</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Estado</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (config of configs(); track config.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ config.nombre_programa || ('Programa #' + config.programa_id) }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ config.titulo || '—' }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">
+                            {{ config.items.length }} item(s)
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          <button
+                            type="button"
+                            class="transition disabled:opacity-50"
+                            [disabled]="toggling() === config.id"
+                            (click)="toggle(config)">
+                            @if (config.activo) {
+                              <div class="size-7 text-success mx-auto"><ng-icon name="lucideToggleRight"></ng-icon></div>
+                            } @else {
+                              <div class="size-7 text-default-400 mx-auto"><ng-icon name="lucideToggleLeft"></ng-icon></div>
+                            }
+                          </button>
+                        </td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <a
+                              [routerLink]="['/cenefco/cert-config-programa-edit', config.programa_id]"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Configurar">
+                              <div class="size-4"><ng-icon name="lucideSettings"></ng-icon></div>
+                            </a>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                              title="Eliminar"
+                              [disabled]="deleting() === config.id"
+                              (click)="eliminar(config)">
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No hay configuraciones. Crea una para un programa.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

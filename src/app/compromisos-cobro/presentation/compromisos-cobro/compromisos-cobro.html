@@ -1,0 +1,189 @@
+<main>
+  <app-page-title title="Compromisos de Cobro" subtitle="Fechas comprometidas de pago" />
+
+  @if (resumen(); as r) {
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+    <div class="card">
+      <div class="card-body flex items-center justify-between">
+        <div>
+          <p class="text-xs text-default-500 mb-1">Vencidos</p>
+          <h5 class="font-semibold">{{ r.vencidos }}</h5>
+        </div>
+        <div class="size-10 rounded-full bg-danger/10 text-danger flex items-center justify-center">
+          <div class="size-5"><ng-icon name="lucideAlertTriangle"></ng-icon></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center justify-between">
+        <div>
+          <p class="text-xs text-default-500 mb-1">Para hoy</p>
+          <h5 class="font-semibold">{{ r.hoy }}</h5>
+        </div>
+        <div class="size-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center">
+          <div class="size-5"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header flex-wrap gap-3">
+        <div class="relative">
+          <input
+            type="text"
+            class="ps-10 form-input form-input-sm w-full sm:w-72"
+            placeholder="Buscar por estudiante o CI..."
+            [ngModel]="query()"
+            (ngModelChange)="onBuscar($event)" />
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+            <div class="size-3.5 text-default-400"><ng-icon name="lucideSearch"></ng-icon></div>
+          </div>
+        </div>
+
+        <div class="inline-flex rounded-md border border-default-200 overflow-hidden">
+          @for (f of filtros; track f.value) {
+          <button
+            type="button"
+            class="px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap"
+            [class]="estadoFiltro() === f.value
+              ? 'bg-primary text-white'
+              : 'bg-transparent text-default-600 hover:bg-default-150'"
+            (click)="onFiltrarEstado(f.value)">
+            {{ f.label }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+              @if (loading()) {
+              <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Cargando compromisos de cobro...
+              </div>
+              } @else {
+              <div class="relative">
+                <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                  <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                       class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                </div>
+                <table class="min-w-full divide-y divide-default-200 relative z-10">
+                  <thead class="bg-default-100">
+                    <tr class="text-xs font-semibold text-default-500 uppercase tracking-wide">
+                      <th class="px-4 py-3 text-start">Estudiante</th>
+                      <th class="px-4 py-3 text-start">Curso</th>
+                      <th class="px-4 py-3 text-start">Fecha comprometida</th>
+                      <th class="px-4 py-3 text-end">Monto</th>
+                      <th class="px-4 py-3 text-start">Registrado por</th>
+                      <th class="px-4 py-3 text-center">Estado</th>
+                      <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (item of items(); track item.id) {
+                    <tr class="hover:bg-default-50 transition-colors" [class.bg-danger/5]="esVencido(item)">
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2.5">
+                          <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                            {{ (item.estudiante_nombre || '?')[0].toUpperCase() }}
+                          </div>
+                          <div>
+                            <p class="text-sm font-medium text-default-800">{{ item.estudiante_nombre || '—' }}</p>
+                            <p class="text-xs text-default-400 font-mono">CI: {{ item.estudiante_ci || '—' }}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-sm text-default-600">{{ item.curso_nombre || '—' }}</td>
+                      <td class="px-4 py-3 text-sm" [class.text-danger]="esVencido(item)"
+                        [class.font-semibold]="esVencido(item)">
+                        {{ item.fecha_compromiso | slice:0:10 }}
+                        @if (item.hora_compromiso) {
+                        <span class="text-default-400 font-normal">· {{ item.hora_compromiso }}</span>
+                        }
+                      </td>
+                      <td class="px-4 py-3 text-sm text-end font-semibold text-default-700">
+                        @if (item.monto_comprometido) { Bs. {{ item.monto_comprometido | number:'1.2-2' }} } @else { — }
+                      </td>
+                      <td class="px-4 py-3 text-sm text-default-500">{{ item.registrado_por_nombre || '—' }}</td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full" [class]="estadoClase(item.estado)">
+                          {{ estadoLabel(item.estado) }}
+                        </span>
+                        @if (item.veces_reprogramado > 0) {
+                        <p class="text-[10px] text-amber-600 mt-0.5">Reprog. {{ item.veces_reprogramado }}x</p>
+                        }
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                          @if (item.estado === 'pendiente' || item.estado === 'incumplido') {
+                          <button
+                            type="button"
+                            [disabled]="procesandoId() === item.id"
+                            (click)="marcarCumplido(item)"
+                            class="size-8 flex items-center justify-center rounded text-default-400 hover:text-success hover:bg-success/10 disabled:opacity-50"
+                            title="Marcar cumplido">
+                            <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+                          </button>
+                          <a
+                            [routerLink]="['/cenefco/inscripcion-detail', item.id_ins]"
+                            class="size-8 flex items-center justify-center rounded text-default-400 hover:text-success hover:bg-success/10"
+                            title="Registrar pago">
+                            <div class="size-4"><ng-icon name="lucideBanknote"></ng-icon></div>
+                          </a>
+                          <button
+                            type="button"
+                            [disabled]="procesandoId() === item.id"
+                            (click)="reprogramar(item)"
+                            class="size-8 flex items-center justify-center rounded text-default-400 hover:text-primary hover:bg-primary/10 disabled:opacity-50"
+                            title="Reprogramar">
+                            <div class="size-4"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+                          </button>
+                          } @else {
+                          <a
+                            [routerLink]="['/cenefco/inscripcion-detail', item.id_ins]"
+                            class="size-8 flex items-center justify-center rounded text-default-400 hover:text-primary hover:bg-primary/10"
+                            title="Ver inscripción">
+                            <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                          </a>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                    }
+                    @empty {
+                    <tr>
+                      <td colspan="7" class="px-4 py-16 text-center">
+                        <div class="size-12 mx-auto mb-3 text-default-300"><ng-icon name="lucideClipboardX"></ng-icon></div>
+                        <p class="text-sm text-default-400">No hay compromisos de cobro con estos filtros.</p>
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ items().length }}</b> de <b>{{ total() }}</b> compromisos
+          </p>
+          <app-pagination
+            [currentPage]="currentPage()"
+            [pageSize]="pageSize"
+            [total]="total()"
+            (pageChange)="onPageChange($event)" />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

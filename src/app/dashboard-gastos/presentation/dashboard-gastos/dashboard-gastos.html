@@ -1,0 +1,156 @@
+<main>
+  <app-page-title title="Dashboard de Gastos" subtitle="Gerencial" />
+
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap items-end gap-3">
+      <div>
+        <label class="text-xs text-default-500 block mb-1">Mes</label>
+        <select class="form-select w-40" [ngModel]="mes()" (ngModelChange)="mes.set($event); onCambiarPeriodo()">
+          @for (m of [1,2,3,4,5,6,7,8,9,10,11,12]; track m) {
+            <option [value]="m">{{ nombreMes(m) }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-default-500 block mb-1">Año</label>
+        <select class="form-select w-28" [ngModel]="anio()" (ngModelChange)="anio.set($event); onCambiarPeriodo()">
+          @for (a of [hoy.getFullYear()-1, hoy.getFullYear(), hoy.getFullYear()+1]; track a) {
+            <option [value]="a">{{ a }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando dashboard...
+    </div>
+  } @else if (data(); as d) {
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Ingresos del mes</p>
+            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_ingresos }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-success/10 text-success flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideTrendingUp"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Gastos del mes</p>
+            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_gastos }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-danger/10 text-danger flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideTrendingDown"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Balance</p>
+            <h5 class="font-semibold" [class.text-success]="d.resumen_mes.balance >= 0" [class.text-danger]="d.resumen_mes.balance < 0">
+              Bs. {{ d.resumen_mes.balance }}
+            </h5>
+          </div>
+          <div class="size-10 rounded-full flex items-center justify-center"
+               [class.bg-success/10]="d.resumen_mes.balance >= 0" [class.text-success]="d.resumen_mes.balance >= 0"
+               [class.bg-danger/10]="d.resumen_mes.balance < 0" [class.text-danger]="d.resumen_mes.balance < 0">
+            <div class="size-5"><ng-icon name="lucideScale"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Pagos recibidos</p>
+            <h5 class="font-semibold">{{ d.resumen_mes.n_pagos_mes }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-info/10 text-info flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideTrendingUp"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title">Gastos por categoría</h6>
+        </div>
+        <div class="card-body">
+          @if (d.gastos_por_categoria.length === 0) {
+            <p class="text-sm text-default-400 text-center py-10">Sin gastos registrados este periodo.</p>
+          } @else if (categoriaChartOptions) {
+            <app-apexchart [getOptions]="categoriaChartOptions" />
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title">Gastos por línea de negocio</h6>
+        </div>
+        <div class="card-body flex flex-col gap-4">
+          @if (d.gastos_por_linea_negocio.length === 0) {
+            <p class="text-sm text-default-400 text-center py-10">Sin gastos registrados este periodo.</p>
+          } @else {
+            @for (l of d.gastos_por_linea_negocio; track l.linea_negocio) {
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium text-default-700">{{ nombreLinea(l.linea_negocio) }}</span>
+                  <span class="text-default-500">Bs. {{ l.total }} ({{ porcentajeLinea(l.total) }}%)</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-default-150 overflow-hidden">
+                  <div class="h-full rounded-full {{ colorLinea(l.linea_negocio) }}" [style.width.%]="porcentajeLinea(l.total)"></div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Gastos recurrentes pendientes de confirmar</h6>
+        <a routerLink="/cenefco/gastos-recurrentes" class="btn btn-sm bg-default-200 text-default-700">
+          Ver todos
+        </a>
+      </div>
+      <div class="card-body">
+        @if (d.gastos_pendientes.length === 0) {
+          <p class="text-sm text-default-400 text-center py-6">No hay gastos recurrentes pendientes este mes.</p>
+        } @else {
+          <div class="flex flex-col divide-y divide-default-200">
+            @for (g of d.gastos_pendientes; track g.id) {
+              <div class="flex items-center justify-between py-3">
+                <div class="flex items-center gap-3">
+                  <div class="size-9 rounded-full bg-warning/10 text-warning flex items-center justify-center">
+                    <div class="size-4"><ng-icon name="lucideAlertTriangle"></ng-icon></div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-default-800">{{ g.concepto }}</p>
+                    <p class="text-xs text-default-500">{{ g.categoria_nombre ?? 'Sin categoría' }} · día {{ g.dia_del_mes }} de cada mes</p>
+                  </div>
+                </div>
+                <span class="text-sm font-medium">Bs. {{ g.monto }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</main>

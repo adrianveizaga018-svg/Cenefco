@@ -1,0 +1,242 @@
+<main>
+  <app-page-title [title]="campana()?.nombre || 'Detalle de campaña'" subtitle="Campañas Publicitarias" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else if (campana(); as c) {
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Invertido (monto en contabilidad)</p>
+            <h5 class="font-semibold">Bs {{ c.total_gastado }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-danger/10 text-danger flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideWallet"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Presupuesto planificado</p>
+            <h5 class="font-semibold">
+              {{ c.presupuesto_usd ? ('USD ' + c.presupuesto_usd) : '—' }}
+              @if (c.presupuesto_bob) { <span class="text-default-400">/</span> Bs {{ c.presupuesto_bob }} }
+            </h5>
+          </div>
+          <div class="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideTarget"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Último alcance registrado</p>
+            <h5 class="font-semibold">{{ c.metricas[0]?.alcance ?? '—' }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-info/10 text-info flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideEye"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Últimos resultados</p>
+            <h5 class="font-semibold">{{ c.metricas[0]?.resultados ?? '—' }}</h5>
+            @if (c.metricas[0]?.tipo_resultado) { <span class="text-xs text-default-400">{{ c.metricas[0]?.tipo_resultado }}</span> }
+          </div>
+          <div class="size-10 rounded-full bg-success/10 text-success flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideCheckCircle"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Leads</p>
+            <h5 class="font-semibold">{{ c.leads ?? '—' }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-warning/10 text-warning flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideUsers"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos de la campaña</h6></div>
+          <div class="card-body grid grid-cols-2 gap-4 text-sm">
+            <div><span class="text-default-500">Curso / Propósito:</span> <span class="font-medium">{{ c.programa_nombre || (c.proposito | titlecase) }}</span></div>
+            <div><span class="text-default-500">Plataforma:</span> <span class="font-medium">{{ plataformaLabel(c.plataforma) }}</span></div>
+            <div><span class="text-default-500">Objetivo:</span> <span class="font-medium">{{ c.objetivo || '—' }}</span></div>
+            <div>
+              <span class="text-default-500">Estado:</span>
+              <span class="badge text-xs px-2 py-0.5 rounded-full" [ngClass]="estadoBadgeClass(c.estado)">{{ c.estado | titlecase }}</span>
+            </div>
+            <div><span class="text-default-500">Fecha inicio:</span> <span class="font-medium">{{ c.fecha_inicio }}</span></div>
+            <div><span class="text-default-500">Fecha fin:</span> <span class="font-medium">{{ c.fecha_fin || '—' }}</span></div>
+            <div><span class="text-default-500">Responsable:</span> <span class="font-medium">{{ c.responsable || '—' }}</span></div>
+            <div><span class="text-default-500">ID externo:</span> <span class="font-medium">{{ c.id_campana_externa || '—' }}</span></div>
+            @if (c.notas) {
+              <div class="col-span-2"><span class="text-default-500">Notas:</span> <span class="font-medium">{{ c.notas }}</span></div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Historial de métricas (reporte de Meta/Google Ads)</h6></div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-200">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th class="px-3 py-2.5 text-start">Corte</th>
+                  <th class="px-3 py-2.5 text-end">Alcance</th>
+                  <th class="px-3 py-2.5 text-end">Impresiones</th>
+                  <th class="px-3 py-2.5 text-end">Clics</th>
+                  <th class="px-3 py-2.5 text-end">Resultados</th>
+                  <th class="px-3 py-2.5 text-start">Tipo resultado</th>
+                  <th class="px-3 py-2.5 text-end">Costo/resultado</th>
+                  <th class="px-3 py-2.5 text-start">Fuente</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (m of c.metricas; track m.id) {
+                  <tr class="text-sm text-default-800">
+                    <td class="px-3 py-2">{{ m.fecha_corte }}</td>
+                    <td class="px-3 py-2 text-end">{{ m.alcance ?? '—' }}</td>
+                    <td class="px-3 py-2 text-end">{{ m.impresiones ?? '—' }}</td>
+                    <td class="px-3 py-2 text-end">{{ m.clics_enlace ?? '—' }}</td>
+                    <td class="px-3 py-2 text-end">{{ m.resultados ?? '—' }}</td>
+                    <td class="px-3 py-2 text-default-500">{{ m.tipo_resultado || '—' }}</td>
+                    <td class="px-3 py-2 text-end">{{ m.costo_por_resultado ?? '—' }}</td>
+                    <td class="px-3 py-2 text-default-500">{{ fuenteLabel(m.fuente) }}</td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="8" class="px-3 py-8 text-center text-sm text-default-400">Sin métricas registradas todavía.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Gastos vinculados</h6></div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-200">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th class="px-3 py-2.5 text-start">Fecha</th>
+                  <th class="px-3 py-2.5 text-start">Concepto</th>
+                  <th class="px-3 py-2.5 text-end">Monto</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (g of gastos(); track g.id) {
+                  <tr class="text-sm text-default-800">
+                    <td class="px-3 py-2">{{ g.fecha }}</td>
+                    <td class="px-3 py-2">{{ g.concepto }}</td>
+                    <td class="px-3 py-2 text-end font-medium">Bs. {{ g.monto }}</td>
+                  </tr>
+                }
+                @empty {
+                  <tr>
+                    <td colspan="3" class="px-3 py-8 text-center text-sm text-default-400">
+                      Sin gastos vinculados. Registra un gasto en "Gastos" y elige esta campaña en el campo "Campaña publicitaria".
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Registrar corte de métricas</h6></div>
+          <div class="card-body space-y-3">
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de corte</label>
+              <input type="date" class="form-input" [ngModel]="fechaCorte()" (ngModelChange)="fechaCorte.set($event)" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Alcance</label>
+                <input type="number" class="form-input" min="0" [ngModel]="alcance()" (ngModelChange)="alcance.set($event ? +$event : null)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Impresiones</label>
+                <input type="number" class="form-input" min="0" [ngModel]="impresiones()" (ngModelChange)="impresiones.set($event ? +$event : null)" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Clics en el enlace</label>
+                <input type="number" class="form-input" min="0" [ngModel]="clicsEnlace()" (ngModelChange)="clicsEnlace.set($event ? +$event : null)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Resultados</label>
+                <input type="number" class="form-input" min="0" [ngModel]="resultados()" (ngModelChange)="resultados.set($event ? +$event : null)" />
+              </div>
+            </div>
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Tipo de resultado</label>
+              <input type="text" class="form-input" [ngModel]="tipoResultado()" (ngModelChange)="tipoResultado.set($event)"
+                     placeholder="Ej. Conversaciones de mensajes, Leads..." />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Costo por resultado</label>
+                <input type="number" class="form-input" min="0" step="0.01" [ngModel]="costoPorResultado()" (ngModelChange)="costoPorResultado.set($event ? +$event : null)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Gasto del período</label>
+                <input type="number" class="form-input" min="0" step="0.01" [ngModel]="gastoPeriodo()" (ngModelChange)="gastoPeriodo.set($event ? +$event : null)" />
+              </div>
+            </div>
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Fuente</label>
+              <app-searchable-select
+                [options]="fuenteOptions"
+                [ngModel]="fuente()" (ngModelChange)="fuente.set($event)"
+                [clearable]="false" />
+            </div>
+
+            <button type="button" (click)="registrarMetrica()" [disabled]="guardandoMetrica()" class="btn bg-primary text-white w-full">
+              @if (guardandoMetrica()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+                Registrar
+              }
+            </button>
+          </div>
+        </div>
+
+        <a routerLink="/cenefco/campanas-publicidad" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center block">
+          Volver al listado
+        </a>
+      </div>
+
+    </div>
+  }
+</main>

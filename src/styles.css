@@ -1,0 +1,44 @@
+@import "./assets/css/tokens.css";
+
+@import "@ng-select/ng-select/themes/default.theme.css";
+
+@import "tailwindcss";
+@import "preline/variants.css";
+
+@import "./assets/css/themes.css";
+@import "./assets/css/structure/_general.css";
+@import "./assets/css/structure/_sidenav.css";
+@import "./assets/css/structure/_topbar.css";
+@import "./assets/css/custom/_reboot.css";
+@import "./assets/css/custom/_helper.css";
+@import "./assets/css/custom/_buttons.css";
+@import "./assets/css/custom/_card.css";
+@import "./assets/css/custom/_dropdown.css";
+@import "./assets/css/custom/_forms.css";
+@import "./assets/css/custom/_print.css";
+@import "./assets/css/custom/_chart.css";
+@import "./assets/css/custom/_simplebar.css";
+@import "./assets/css/custom/_calendar.css";
+
+@source "preline/dist/*.js";
+@source "./swiper/swiper-bundle.min.css";
+@source "./**/*.ts";
+
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
+
+/* Angular CDK drag-drop — el preview se monta en un overlay fuera del árbol
+   del componente, así que su estilo tiene que ser global (no se puede scopear). */
+.cdk-drag-preview {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  border-radius: 0.75rem;
+}
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}

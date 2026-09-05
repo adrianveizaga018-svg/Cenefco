@@ -1,0 +1,149 @@
+<main>
+  <app-page-title title="Canjes de Puntos" subtitle="Juego de Trivia" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="relative">
+            <input
+              type="text"
+              class="ps-11 form-input form-input-sm w-full sm:w-56"
+              placeholder="Buscar por código..."
+              (input)="onSearch($event)"
+            >
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+              <div class="size-3.5 flex items-center text-default-500">
+                <ng-icon name="lucideSearch"></ng-icon>
+              </div>
+            </div>
+          </div>
+
+          <select
+            class="form-select form-select-sm w-40"
+            [ngModel]="estadoFiltro()"
+            (ngModelChange)="onEstadoChange($event)"
+          >
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando canjes...
+                </div>
+              } @else if (forbidden) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (error) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo cargar la lista. Intente nuevamente.
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Código</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Usuario</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Premio</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Puntos</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Estado</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Fecha</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+
+                    @for (canje of canjes; track canje.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-mono text-primary">{{ canje.codigo }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <div class="font-medium">{{ canje.usuario_nombre }}</div>
+                          @if (canje.usuario_email) {
+                            <div class="text-xs text-default-400">{{ canje.usuario_email }}</div>
+                          }
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm">{{ canje.premio_nombre }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-semibold text-primary">⭐ {{ canje.costo_puntos }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <span class="text-xs px-2 py-0.5 rounded-full capitalize" [class]="estadoBadgeClass(canje.estado)">
+                            {{ canje.estado }}
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ canje.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td class="px-3.5 py-2.5">
+                          @if (canje.estado === 'pendiente') {
+                            <div class="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                class="btn btn-sm bg-success/10 hover:bg-success text-success hover:text-white"
+                                title="Marcar entregado"
+                                (click)="entregar(canje.id)">
+                                <div class="size-3.5 me-1"><ng-icon name="lucideCheck"></ng-icon></div>
+                                Entregar
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-sm bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                                title="Cancelar canje"
+                                (click)="cancelar(canje.id)">
+                                <div class="size-3.5 me-1"><ng-icon name="lucideX"></ng-icon></div>
+                                Cancelar
+                              </button>
+                            </div>
+                          } @else {
+                            <span class="text-xs text-default-400">
+                              @if (canje.nota) {
+                                {{ canje.nota }}
+                              } @else {
+                                —
+                              }
+                            </span>
+                          }
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="7" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No se encontraron canjes.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ canjes.length }}</b> de <b>{{ total }}</b> canjes
+          </p>
+          <app-pagination
+            [total]="total"
+            [pageSize]="pageSize()"
+            [currentPage]="pageIndex()"
+            (pageChange)="onPageChange($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

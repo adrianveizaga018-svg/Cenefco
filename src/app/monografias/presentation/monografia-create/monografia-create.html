@@ -1,0 +1,66 @@
+<main>
+  <app-page-title title="Nueva Monografía" subtitle="Repositorio Académico" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Monografía</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Título <span class="text-danger">*</span></label>
+            <input type="text" formControlName="titulo_monografia" class="form-input w-full" placeholder="Título completo de la monografía">
+            @if (form.get('titulo_monografia')?.invalid && form.get('titulo_monografia')?.touched) { <p class="text-danger text-xs mt-1">El título es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Autor</label>
+            <input type="text" formControlName="autor" class="form-input w-full" placeholder="Nombre completo del autor">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Publicación</label>
+            <input type="date" formControlName="fecha_publicacion" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Archivo PDF</label>
+            @if (form.get('archivo')?.value) {
+              <div class="flex items-center gap-3 p-3 border border-default-200 rounded-lg bg-default-50">
+                <div class="size-5 text-primary"><ng-icon name="lucideFileText"></ng-icon></div>
+                <span class="text-sm text-default-700 flex-1 truncate">{{ form.get('archivo')?.value }}</span>
+                <button type="button" (click)="removeArchivo()" class="text-danger"><div class="size-4"><ng-icon name="lucideX"></ng-icon></div></button>
+              </div>
+            } @else {
+              <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                @if (uploadingFile()) {
+                  <div class="flex items-center gap-2 text-default-400"><div class="size-5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div><span class="text-xs">Subiendo...</span></div>
+                } @else {
+                  <div class="flex flex-col items-center gap-2 text-default-400">
+                    <div class="size-7"><ng-icon name="lucideUpload"></ng-icon></div>
+                    <span class="text-xs">Haz clic para subir el PDF</span>
+                    <span class="text-xs text-default-300">PDF, DOC, DOCX — máx. 20 MB</span>
+                  </div>
+                }
+                <input type="file" accept=".pdf,.doc,.docx" class="hidden" (change)="onArchivoSelected($event)" [disabled]="uploadingFile()">
+              </label>
+            }
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Descripción / Resumen</label>
+            <textarea formControlName="descripcion_monografia" rows="5" class="form-input w-full" placeholder="Resumen o descripción..."></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting() || uploadingFile()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Monografía }
+            </button>
+            <a routerLink="/cenefco/monografias" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

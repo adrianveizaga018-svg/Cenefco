@@ -1,0 +1,67 @@
+<main>
+  <app-page-title title="Nuevo Curso Moodle" subtitle="Cursos Moodle" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Curso</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre Completo</label>
+            <input type="text" formControlName="fullname" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre Corto</label>
+            <input type="text" formControlName="shortname" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Docente (ID)</label>
+            <input type="number" formControlName="id_docente" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Sigla</label>
+            <input type="text" formControlName="sigla" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Paralelo</label>
+            <input type="text" formControlName="paralelo" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Cupo</label>
+            <input type="text" formControlName="cupo" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Gestión</label>
+            <input type="text" formControlName="gestion" class="form-input w-full">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Título Personalizado</label>
+            <input type="text" formControlName="titulo_personalizado" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha Inicio</label>
+            <input type="date" formControlName="imparte_fecha_inicio" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha Fin</label>
+            <input type="date" formControlName="imparte_fecha_fin" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+              } @else { Guardar }
+            </button>
+            <a routerLink="/cenefco/mdl-courses" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

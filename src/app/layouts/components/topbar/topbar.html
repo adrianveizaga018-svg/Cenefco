@@ -1,0 +1,15 @@
+﻿<div class="app-header min-h-topbar-height flex items-center sticky top-0  bg-(--topbar-background) border-b border-default-200">
+    <div class="w-full flex items-center justify-between px-6">
+        <div class="flex items-center gap-5">
+            <button (click)="toggleSidebar()" id="button-toggle-menu" class="btn btn-icon size-8 hover:bg-default-150 rounded">
+                <div class="text-xl size-5"> <ng-icon name="lucideAlignLeft"></ng-icon></div>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <app-theme-toggler />
+            <app-notification-dropdown />
+            <app-user-profile />
+        </div>
+    </div>
+</div>

@@ -1,0 +1,345 @@
+<main>
+  <app-page-title title="Configuraciones del Sistema" subtitle="Configuraciones" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+
+    @if (isLoading()) {
+      <div class="card">
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin">
+            <ng-icon name="lucideLoader"></ng-icon>
+          </div>
+          Cargando configuraciones...
+        </div>
+      </div>
+    } @else {
+
+      <form [formGroup]="settingsForm" (ngSubmit)="onSubmit()">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Configuraciones Generales</h4>
+          </div>
+
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div class="col-span-full">
+                <label for="site_name" class="block text-sm font-medium text-default-900 mb-2">
+                  Nombre del Sistema <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="site_name"
+                  formControlName="site_name"
+                  class="form-input"
+                  [class.border-danger]="f['site_name'].invalid && f['site_name'].touched"
+                  placeholder="Ej: Sistema de cenefco"
+                />
+                @if (f['site_name'].invalid && f['site_name'].touched) {
+                  <p class="mt-1 text-danger text-xs">
+                    @if (f['site_name'].errors?.['required']) { El nombre del sistema es requerido }
+                    @if (f['site_name'].errors?.['maxlength']) { Máximo 255 caracteres }
+                  </p>
+                }
+              </div>
+
+              <div class="col-span-full">
+                <label class="block text-sm font-medium text-default-900 mb-2">
+                  Logo del Sistema
+                </label>
+                <div class="flex items-start gap-5">
+                  <div class="flex-shrink-0 size-24 rounded-lg border border-default-200 bg-default-50 flex items-center justify-center overflow-hidden">
+                    @if (logoPreview()) {
+                      <img [src]="logoPreview()" alt="Logo" class="w-full h-full object-contain p-1" />
+                    } @else {
+                      <div class="size-8 text-default-400">
+                        <ng-icon name="lucideImage"></ng-icon>
+                      </div>
+                    }
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <label class="btn btn-sm bg-default-200 text-default-700 hover:bg-default-300 cursor-pointer">
+                      <div class="size-4 me-1">
+                        <ng-icon name="lucideUpload"></ng-icon>
+                      </div>
+                      Subir imagen
+                      <input type="file" class="hidden" accept="image/*" (change)="onLogoSelected($event)" />
+                    </label>
+                    @if (logoPreview()) {
+                      <button type="button" class="btn btn-sm bg-danger/10 text-danger hover:bg-danger/20" (click)="removeLogo()">
+                        <div class="size-4 me-1">
+                          <ng-icon name="lucideTrash2"></ng-icon>
+                        </div>
+                        Eliminar
+                      </button>
+                    }
+                    <p class="text-xs text-default-500">PNG, JPG, SVG o WEBP. Máx 2MB.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label for="contact_email" class="block text-sm font-medium text-default-900 mb-2">
+                  Email de Contacto <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="contact_email"
+                  formControlName="contact_email"
+                  class="form-input"
+                  [class.border-danger]="f['contact_email'].invalid && f['contact_email'].touched"
+                  placeholder="admin@example.com"
+                />
+                @if (f['contact_email'].invalid && f['contact_email'].touched) {
+                  <p class="mt-1 text-danger text-xs">
+                    @if (f['contact_email'].errors?.['required']) { El email es requerido }
+                    @if (f['contact_email'].errors?.['email']) { Ingrese un email válido }
+                  </p>
+                }
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label for="items_per_page" class="block text-sm font-medium text-default-900 mb-2">
+                  Items por Página <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="items_per_page"
+                  formControlName="items_per_page"
+                  class="form-input"
+                  [class.border-danger]="f['items_per_page'].invalid && f['items_per_page'].touched"
+                  min="1"
+                  max="100"
+                />
+                @if (f['items_per_page'].invalid && f['items_per_page'].touched) {
+                  <p class="mt-1 text-danger text-xs">
+                    @if (f['items_per_page'].errors?.['required']) { Este campo es requerido }
+                    @if (f['items_per_page'].errors?.['min']) { Mínimo 1 item }
+                    @if (f['items_per_page'].errors?.['max']) { Máximo 100 items }
+                  </p>
+                }
+                <p class="text-xs text-default-500 mt-1">Cantidad de registros a mostrar por página en las tablas</p>
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="site_active"
+                    formControlName="site_active"
+                    class="form-switch"
+                  />
+                  <span class="text-sm font-medium text-default-900">Sitio Activo</span>
+                </label>
+                <p class="text-xs text-default-500 mt-1">Habilitar o deshabilitar el sitio públicamente</p>
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="maintenance_mode"
+                    formControlName="maintenance_mode"
+                    class="form-switch"
+                  />
+                  <span class="text-sm font-medium text-default-900">Modo Mantenimiento</span>
+                </label>
+                <p class="text-xs text-default-500 mt-1">Activar modo de mantenimiento (usuarios no podrán acceder)</p>
+              </div>
+
+              @if (settingsForm.get('maintenance_mode')?.value) {
+                <div class="col-span-full">
+                  <div class="flex items-center gap-3 p-4 rounded-lg bg-warning/10 text-warning text-sm">
+                    <div class="size-5 flex-shrink-0">
+                      <ng-icon name="lucideTriangleAlert"></ng-icon>
+                    </div>
+                    <div>
+                      <strong>¡Atención!</strong> El modo mantenimiento está activo. Los usuarios no podrán acceder al sistema.
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (!settingsForm.get('site_active')?.value) {
+                <div class="col-span-full">
+                  <div class="flex items-center gap-3 p-4 rounded-lg bg-danger/10 text-danger text-sm">
+                    <div class="size-5 flex-shrink-0">
+                      <ng-icon name="lucideCircleX"></ng-icon>
+                    </div>
+                    <div>
+                      <strong>¡Sitio Desactivado!</strong> El sitio no está accesible públicamente.
+                    </div>
+                  </div>
+                </div>
+              }
+
+            </div>
+          </div>
+
+          <div class="card-footer flex justify-end gap-3">
+            <button
+              type="button"
+              (click)="resetForm()"
+              class="btn btn-sm bg-default-200 text-default-700 hover:bg-default-300"
+              [disabled]="isSaving() || isLoading()"
+            >
+              <div class="size-4 me-1">
+                <ng-icon name="lucideRotateCcw"></ng-icon>
+              </div>
+              Restablecer
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-sm bg-primary text-white"
+              [disabled]="settingsForm.invalid || isSaving()"
+            >
+              @if (isSaving()) {
+                <div class="size-4 me-1 animate-spin">
+                  <ng-icon name="lucideLoader"></ng-icon>
+                </div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1">
+                  <ng-icon name="lucideSave"></ng-icon>
+                </div>
+                Guardar Cambios
+              }
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+
+    @if (isLoadingCobroEstado()) {
+      <div class="card">
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin">
+            <ng-icon name="lucideLoader"></ng-icon>
+          </div>
+          Cargando configuración de estado de cobro...
+        </div>
+      </div>
+    } @else {
+
+      <form [formGroup]="cobroEstadoForm" (ngSubmit)="onSubmitCobroEstado()">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Estado de Cobro — Listado de Cursos</h4>
+          </div>
+
+          <div class="p-6">
+            <p class="text-sm text-default-500 mb-5">
+              Define la etiqueta y el color que se muestran junto al monto recaudado en el listado de cursos,
+              según si el curso está totalmente pagado, a medio cobrar, o sin pagos registrados.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label for="completo_label" class="block text-sm font-medium text-default-900 mb-2">
+                  Pago completo <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="completo_label"
+                  formControlName="completo_label"
+                  class="form-input mb-2"
+                  [class.border-danger]="cf['completo_label'].invalid && cf['completo_label'].touched"
+                  placeholder="Ej: Pagado"
+                />
+                <select id="completo_color" formControlName="completo_color" class="form-select">
+                  @for (c of coloresEstadoCobro; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+                <span class="badge mt-2 inline-block text-xs px-2 py-0.5 rounded-full"
+                      [class]="'bg-' + cf['completo_color'].value + '/10 text-' + cf['completo_color'].value">
+                  {{ cf['completo_label'].value || 'Pagado' }}
+                </span>
+              </div>
+
+              <div>
+                <label for="parcial_label" class="block text-sm font-medium text-default-900 mb-2">
+                  Pago parcial <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="parcial_label"
+                  formControlName="parcial_label"
+                  class="form-input mb-2"
+                  [class.border-danger]="cf['parcial_label'].invalid && cf['parcial_label'].touched"
+                  placeholder="Ej: Parcial"
+                />
+                <select id="parcial_color" formControlName="parcial_color" class="form-select">
+                  @for (c of coloresEstadoCobro; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+                <span class="badge mt-2 inline-block text-xs px-2 py-0.5 rounded-full"
+                      [class]="'bg-' + cf['parcial_color'].value + '/10 text-' + cf['parcial_color'].value">
+                  {{ cf['parcial_label'].value || 'Parcial' }}
+                </span>
+              </div>
+
+              <div>
+                <label for="sin_pagos_label" class="block text-sm font-medium text-default-900 mb-2">
+                  Sin pagos <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="sin_pagos_label"
+                  formControlName="sin_pagos_label"
+                  class="form-input mb-2"
+                  [class.border-danger]="cf['sin_pagos_label'].invalid && cf['sin_pagos_label'].touched"
+                  placeholder="Ej: Sin pagos"
+                />
+                <select id="sin_pagos_color" formControlName="sin_pagos_color" class="form-select">
+                  @for (c of coloresEstadoCobro; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+                <span class="badge mt-2 inline-block text-xs px-2 py-0.5 rounded-full"
+                      [class]="'bg-' + cf['sin_pagos_color'].value + '/10 text-' + cf['sin_pagos_color'].value">
+                  {{ cf['sin_pagos_label'].value || 'Sin pagos' }}
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card-footer flex justify-end gap-3">
+            <button
+              type="button"
+              (click)="resetCobroEstadoForm()"
+              class="btn btn-sm bg-default-200 text-default-700 hover:bg-default-300"
+              [disabled]="isSavingCobroEstado() || isLoadingCobroEstado()"
+            >
+              <div class="size-4 me-1">
+                <ng-icon name="lucideRotateCcw"></ng-icon>
+              </div>
+              Restablecer
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-sm bg-primary text-white"
+              [disabled]="cobroEstadoForm.invalid || isSavingCobroEstado()"
+            >
+              @if (isSavingCobroEstado()) {
+                <div class="size-4 me-1 animate-spin">
+                  <ng-icon name="lucideLoader"></ng-icon>
+                </div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1">
+                  <ng-icon name="lucideSave"></ng-icon>
+                </div>
+                Guardar Cambios
+              }
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+
+  </div>
+</main>

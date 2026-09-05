@@ -1,0 +1,101 @@
+<main>
+  <app-page-title title="Directorio de Archivos" subtitle="Cursos con documentos subidos" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header">
+        <div class="relative">
+          <input
+            type="text"
+            class="ps-11 form-input form-input-sm w-full sm:w-64"
+            placeholder="Buscar curso..."
+            (input)="onSearch($event)"
+          >
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+            <div class="size-3.5 flex items-center text-default-500">
+              <ng-icon name="lucideSearch"></ng-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="overflow-x-auto">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-400 text-sm gap-2">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Cargando cursos...
+            </div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+              No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (error) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+              No se pudo cargar la lista. Intente nuevamente.
+            </div>
+          } @else {
+            <table class="min-w-full divide-y divide-default-200">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th scope="col" class="px-3.5 py-3 text-start">Curso</th>
+                  <th scope="col" class="px-3.5 py-3 text-start">Docente</th>
+                  <th scope="col" class="px-3.5 py-3 text-start">Periodo / Gestión</th>
+                  <th scope="col" class="px-3.5 py-3 text-end">Participantes con archivos</th>
+                  <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (curso of cursos; track curso.id_imp) {
+                  <tr class="text-default-800 font-normal">
+                    <td class="px-3.5 py-2.5 text-sm font-medium">{{ curso.nombre }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ curso.docente || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">
+                      {{ curso.periodo || '—' }} @if (curso.gestion) { / {{ curso.gestion }} }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-end">
+                      <span class="inline-flex items-center gap-1 text-default-700 font-medium">
+                        <div class="size-3.5 text-default-400"><ng-icon name="lucideUsers"></ng-icon></div>
+                        {{ curso.participantes_con_archivos }}
+                      </span>
+                    </td>
+                    <td class="px-3.5 py-2.5">
+                      <a
+                        [routerLink]="['/cenefco/directorio-archivos', curso.id_imp, 'participantes']"
+                        class="btn size-7.5 bg-primary/10 hover:bg-primary text-primary hover:text-white"
+                        title="Ver Participantes">
+                        <div class="size-4"><ng-icon name="lucideFolderOpen"></ng-icon></div>
+                      </a>
+                    </td>
+                  </tr>
+                }
+
+                @empty {
+                  <tr>
+                    <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                      No hay cursos con archivos subidos.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <p class="text-default-500 text-sm">
+          Mostrando <b>{{ cursos.length }}</b> de <b>{{ total }}</b> cursos
+        </p>
+        <app-pagination
+          [total]="total"
+          [pageSize]="pageSize()"
+          [currentPage]="pageIndex()"
+          (pageChange)="onPageChange($event)"
+        />
+      </div>
+    </div>
+  </div>
+</main>

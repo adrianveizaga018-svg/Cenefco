@@ -1,0 +1,61 @@
+﻿<div class="grid lg:grid-cols-2 gap-5 mb-6">
+
+  <div class="hs-collapse-group space-y-3">
+    @for (faq of faqData; track $index; let i = $index) {
+      <div>
+        <button
+          type="button"
+          class="hs-collapse-toggle card px-4 mb-2 py-3 flex flex-row justify-between items-center w-full"
+          id="faqData-{{ i }}"
+          aria-expanded="false"
+          [attr.aria-controls]="'faqData-heading-' + i"
+          [attr.data-hs-collapse]="'#faqData-heading-' + i"
+        >
+          {{ faq.question }}
+          <div class="hs-collapse-open:hidden size-4"><ng-icon name="lucideChevronDown"></ng-icon></div>
+          <div class="hs-collapse-open:block hidden size-4"><ng-icon name="lucideChevronUp"></ng-icon></div>
+        </button>
+
+        <div
+          id="faqData-heading-{{ i }}"
+          class="hs-collapse hidden w-full card overflow-hidden transition-[height] duration-300 shadow-md rounded-md"
+          [attr.aria-labelledby]="'faqData-' + i"
+        >
+          <div class="card-body">
+            <div [innerHTML]="faq.answer"></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="hs-collapse-group space-y-3">
+    @for (faq of faqData2; track $index; let i = $index) {
+      <div>
+        <button
+          type="button"
+          class="hs-collapse-toggle card px-4 mb-2 py-3 flex flex-row justify-between items-center w-full"
+          id="faqData2-{{ i }}"
+          aria-expanded="false"
+          [attr.aria-controls]="'faqData2-heading-' + i"
+          [attr.data-hs-collapse]="'#faqData2-heading-' + i"
+        >
+          {{ faq.question }}
+          <div class="hs-collapse-open:hidden size-4"><ng-icon name="lucideChevronDown"></ng-icon></div>
+          <div class="hs-collapse-open:block hidden size-4"><ng-icon name="lucideChevronUp"></ng-icon></div>
+        </button>
+
+        <div
+          id="faqData2-heading-{{ i }}"
+          class="hs-collapse hidden w-full card overflow-hidden transition-[height] duration-300 shadow-md rounded-md"
+          [attr.aria-labelledby]="'faqData2-' + i"
+        >
+          <div class="card-body">
+            <div [innerHTML]="faq.answer"></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

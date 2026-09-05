@@ -1,0 +1,23 @@
+{
+  "name": "cenefco-whatsapp-service",
+  "version": "1.0.0",
+  "description": "Servicio de WhatsApp para CENEFCO — Centro de Formación Continua",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.18",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "multer": "^2.1.1",
+    "pg": "^8.22.0",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}

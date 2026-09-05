@@ -1,0 +1,96 @@
+<main>
+  <app-page-title title="Editar Acreditación" subtitle="Acreditaciones" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Acreditación</h4></div>
+      <div class="p-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+              <input type="text" formControlName="nombre" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Entidad Otorgante <span class="text-danger">*</span></label>
+              <input type="text" formControlName="entidad_otorgante" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Tipo</label>
+              <input type="text" formControlName="tipo" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Obtención</label>
+              <input type="date" formControlName="fecha_obtencion" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Vencimiento</label>
+              <input type="date" formControlName="fecha_vencimiento" class="form-input w-full">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Logo</label>
+
+              @if (logoPreview()) {
+                <div class="relative inline-block">
+                  <img [src]="logoPreview()" alt="Vista previa" class="h-32 max-w-xs rounded-lg object-contain bg-default-50 border border-default-200 p-2">
+                  @if (uploadingLogo()) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                      <div class="size-5 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="removeLogo()"
+                      class="absolute -top-2 -end-2 size-6 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                      title="Quitar logo">
+                      <div class="size-3"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="flex flex-col items-center gap-2 text-default-400">
+                    <div class="size-8"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                    <span class="text-xs font-medium">Haz clic para subir el logo</span>
+                    <span class="text-xs text-default-300">PNG, JPG, WEBP — máx. 5 MB</span>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden" (change)="onLogoSelected($event)">
+                </label>
+              }
+
+              <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido: <strong>300×300 px</strong> (máx. 200 KB, fondo transparente PNG). Un logo muy pesado ralentiza la carga de la página de acreditaciones.
+                </p>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Alt Logo</label>
+              <input type="text" formControlName="logo_alt" class="form-input w-full">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Descripción</label>
+              <textarea formControlName="descripcion" rows="3" class="form-input w-full"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+              <input type="number" formControlName="orden" class="form-input w-full" min="0">
+            </div>
+            <div class="flex items-center gap-2 pt-5">
+              <input type="checkbox" formControlName="activo" id="activo" class="form-checkbox">
+              <label for="activo" class="text-sm text-default-700">Activo</label>
+            </div>
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+                @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Actualizar Acreditación }
+              </button>
+              <a routerLink="/cenefco/acreditaciones" class="btn bg-default-200 text-default-700">Cancelar</a>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+</main>

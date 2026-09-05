@@ -1,0 +1,99 @@
+<main>
+  <app-page-title title="Ranking de Jugadores" subtitle="Juego de Trivia" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-default-700">Mostrar top:</label>
+          <select
+            class="form-select form-select-sm w-24"
+            [ngModel]="limite()"
+            (ngModelChange)="onLimiteChange($event)"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5" (click)="refrescar()">
+          <div class="size-4"><ng-icon name="lucideRefreshCw"></ng-icon></div>
+          Actualizar
+        </button>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando ranking...
+                </div>
+              } @else if (forbidden) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (error) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo cargar el ranking. Intente nuevamente.
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">#</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Jugador</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Puntaje total</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Partidas jugadas</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Partidas ganadas</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+
+                    @for (item of ranking; track item.usuario_id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-medium">
+                          {{ medalla(item.posicion) ?? ('#' + item.posicion) }}
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <div class="flex items-center gap-2.5">
+                            @if (item.avatar_url) {
+                              <img [src]="item.avatar_url" alt="" class="size-8 rounded-full object-cover border border-default-200">
+                            } @else {
+                              <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold uppercase">
+                                {{ item.nombre.charAt(0) }}
+                              </div>
+                            }
+                            <span class="font-medium">{{ item.nombre }}</span>
+                          </div>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm font-semibold text-primary">⭐ {{ item.puntaje_total }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.partidas_jugadas }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.partidas_ganadas }}</td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          Todavía nadie ha jugado.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

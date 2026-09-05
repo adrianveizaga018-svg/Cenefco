@@ -1,0 +1,26 @@
+<aside id="app-menu" >
+    <a routerLink="/" class="logo-box sticky top-0 flex min-h-topbar-height items-center justify-start px-6 backdrop-blur-xs">
+        <div class="logo-light">
+            <img src="assets/images/logo-light.png" class="logo-lg h-10" alt="cenefco">
+            <img src="assets/images/logo-sm.png" class="logo-sm h-6" alt="cenefco">
+        </div>
+
+        <div class="logo-dark">
+            <img src="assets/images/logo-dark.png" class="logo-lg h-10" alt="cenefco">
+            <img src="assets/images/logo-sm.png" class="logo-sm h-6" alt="cenefco">
+        </div>
+    </a>
+
+    <div class="absolute top-0 end-5 flex h-topbar items-center justify">
+        <button (click)="hoverSidebar()"  id="button-hover-toggle" class="">
+           <div class="size-5"><ng-icon name="tablerCircle" ></ng-icon></div>
+        </button>
+    </div>
+
+    <div class="relative min-h-0 flex-grow">
+        <ngx-simplebar class="h-[calc(100vh-var(--spacing-topbar-height))]">
+           <app-sidebar-menu />
+        </ngx-simplebar>
+    </div>
+
+</aside>

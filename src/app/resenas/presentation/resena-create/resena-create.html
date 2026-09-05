@@ -1,0 +1,151 @@
+﻿<main>
+  <app-page-title title="Nueva Reseña" subtitle="Reseñas" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Registrar Reseña de Estudiante</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Curso / Programa <span class="text-danger">*</span></label>
+            @if (programasLoading()) {
+              <div class="form-input w-full text-default-400 text-sm">Cargando programas...</div>
+            } @else {
+              <select formControlName="programa_id" class="form-input w-full" (change)="onProgramaChange($event)">
+                <option [ngValue]="null">— Selecciona un programa —</option>
+                @for (p of programas(); track p.id_programa) {
+                  <option [value]="p.id_programa">{{ p.nombre_programa }}</option>
+                }
+              </select>
+            }
+            @if (form.get('programa_id')?.invalid && form.get('programa_id')?.touched) {
+              <p class="text-danger text-xs mt-1">El programa es requerido</p>
+            }
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Estudiante Inscripto</label>
+            @if (estudiantesLoading()) {
+              <div class="form-input w-full text-default-400 text-sm flex items-center gap-2">
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando estudiantes...
+              </div>
+            } @else if (estudiantes().length > 0) {
+              <select class="form-input w-full" (change)="onEstudianteChange($event)">
+                <option value="">— Selecciona un estudiante —</option>
+                @for (e of estudiantes(); track e.id_us) {
+                  <option [value]="e.id_us">{{ e.nombre_completo }}{{ e.email ? ' · ' + e.email : '' }}</option>
+                }
+              </select>
+              <p class="text-xs text-default-400 mt-1">Al seleccionar, se autocompleta el nombre. Puedes modificarlo libremente.</p>
+            } @else if (form.value.programa_id) {
+              <p class="text-sm text-default-400 italic">No se encontraron estudiantes inscriptos en este programa.</p>
+            } @else {
+              <p class="text-sm text-default-400 italic">Selecciona un programa primero para ver sus estudiantes.</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre del Autor <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Nombre completo">
+            @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+              <p class="text-danger text-xs mt-1">El nombre es requerido</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Cargo Actual</label>
+            <input type="text" formControlName="cargo_actual" class="form-input w-full" placeholder="Ej: Jefe de Planificación">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Foto del Estudiante</label>
+            <div class="flex items-center gap-4">
+              @if (form.value.foto_url) {
+                <img [src]="form.value.foto_url" alt="Foto" class="size-16 rounded-full object-cover border-2 border-primary/20 shrink-0">
+              } @else {
+                <div class="size-16 rounded-full bg-default-100 flex items-center justify-center text-default-400 shrink-0">
+                  <div class="size-6"><ng-icon name="lucideUser"></ng-icon></div>
+                </div>
+              }
+              <div class="flex flex-col gap-1.5">
+                <label class="btn btn-sm bg-default-200 text-default-700 cursor-pointer inline-flex items-center gap-1.5">
+                  @if (uploadingFoto()) {
+                    <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Subiendo...
+                  } @else {
+                    <div class="size-4"><ng-icon name="lucideUpload"></ng-icon></div> Subir foto
+                  }
+                  <input type="file" accept="image/*" class="hidden" [disabled]="uploadingFoto()" (change)="onFotoSeleccionada($event)">
+                </label>
+                @if (form.value.foto_url) {
+                  <button type="button" class="text-xs text-danger hover:underline text-start" (click)="form.patchValue({ foto_url: '' })">Quitar foto</button>
+                }
+                <p class="text-xs text-default-400">JPG, PNG o WEBP. Máx. 20 MB.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Calificación <span class="text-danger">*</span></label>
+            <div class="flex items-center gap-1" (mouseleave)="calificacionHover.set(0)">
+              @for (s of estrellas(); track s) {
+                <button
+                  type="button"
+                  class="size-7 flex items-center justify-center text-2xl leading-none transition-colors"
+                  [class.text-warning]="s <= (calificacionHover() || calificacionValor())"
+                  [class.text-default-300]="s > (calificacionHover() || calificacionValor())"
+                  (mouseenter)="calificacionHover.set(s)"
+                  (click)="setCalificacion(s)">
+                  ★
+                </button>
+              }
+              <span class="ms-2 text-sm text-default-500">{{ calificacionLabel() }}</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option value="aprobada">Aprobada</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="rechazada">Rechazada</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Título de la Reseña</label>
+            <input type="text" formControlName="titulo_resena" class="form-input w-full" placeholder="Ej: Excelente formación">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Reseña <span class="text-danger">*</span></label>
+            <textarea formControlName="resena" rows="4" class="form-input w-full" placeholder="Testimonio del estudiante..."></textarea>
+            @if (form.get('resena')?.invalid && form.get('resena')?.touched) {
+              <p class="text-danger text-xs mt-1">La reseña es requerida</p>
+            }
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-6">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" formControlName="verificado" class="form-checkbox">
+              <span class="text-sm font-medium text-default-700">Marcar como verificado</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" formControlName="destacada" class="form-checkbox">
+              <span class="text-sm font-medium text-default-700">Reseña destacada</span>
+            </label>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+              } @else { Guardar Reseña }
+            </button>
+            <a routerLink="/cenefco/resenas" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

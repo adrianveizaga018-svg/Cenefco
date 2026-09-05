@@ -1,0 +1,116 @@
+﻿<main>
+  <app-page-title title="Sugerencias y Reclamos" subtitle="Ciudadanía" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="relative">
+          <input
+            type="text"
+            class="ps-11 form-input form-input-sm w-full sm:w-64"
+            placeholder="Buscar..."
+            (input)="onSearch($event)"
+          >
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+            <div class="size-3.5 flex items-center text-default-500">
+              <ng-icon name="lucideSearch"></ng-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando registros...
+                </div>
+              } @else if (forbidden) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (error) {
+                <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  No se pudo cargar la lista. Intente nuevamente.
+                </div>
+              } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+                <table class="min-w-full divide-y divide-default-200 relative z-10">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">#</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Tipo</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Nombre</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Estado</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+
+                    @for (item of sugerenciasReclamos; track item.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ item.id }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ item.tipo }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.nombre }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.estado }}</td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center gap-1.5">
+                            <a
+                              [routerLink]="['/cenefco/sugerencia-reclamo-detail', item.id]"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Ver detalle">
+                              <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                            </a>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                              title="Eliminar"
+                              (click)="deleteSugerenciaReclamo(item.id)">
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No se encontraron registros.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ sugerenciasReclamos.length }}</b> de <b>{{ total }}</b> registros
+          </p>
+          <app-pagination
+            [total]="total"
+            [pageSize]="pageSize()"
+            [currentPage]="pageIndex()"
+            (pageChange)="onPageChange($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

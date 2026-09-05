@@ -1,0 +1,26 @@
+<main>
+  <app-page-title title="Editar Fecha de Documentación" subtitle="Fechas de Documentación" />
+  <div class="grid grid-cols-1 gap-5 mb-5"><div class="card">
+    <div class="card-header"><h4 class="card-title">Datos</h4></div>
+    <div class="p-6">
+      @if (loading()) { <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div> }
+      @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div><label class="block text-sm font-medium text-default-700 mb-1">N° Documento</label><input type="text" formControlName="nro_doc" class="form-input w-full"></div>
+          <div><label class="block text-sm font-medium text-default-700 mb-1">Tipo de Documento</label><input type="text" formControlName="tipo_documento" class="form-input w-full"></div>
+          <div><label class="block text-sm font-medium text-default-700 mb-1">Fecha Inicio</label><input type="date" formControlName="fecha_inicio" class="form-input w-full"></div>
+          <div><label class="block text-sm font-medium text-default-700 mb-1">Fecha Fin</label><input type="date" formControlName="fecha_fin" class="form-input w-full"></div>
+          <div><label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full"><option [value]="1">Activo</option><option [value]="0">Inactivo</option></select>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Guardar Cambios }
+            </button>
+            <a routerLink="/cenefco/fechas-doc" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      }
+    </div>
+  </div></div>
+</main>

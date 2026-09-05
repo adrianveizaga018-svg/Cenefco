@@ -1,0 +1,205 @@
+<main>
+  <app-page-title title="Detalle del Mensaje" subtitle="Mensajes de Contacto" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando mensaje...
+    </div>
+  } @else if (mensaje(); as m) {
+
+    <div class="flex items-center justify-between mb-5">
+      <a routerLink="/cenefco/mensajes-contacto" class="btn btn-sm border border-default-300 text-default-600 hover:bg-default-100 flex items-center gap-1.5">
+        <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver al listado
+      </a>
+      <button type="button" (click)="eliminar()" [disabled]="deleting()"
+        class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
+        @if (deleting()) {
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+        } @else {
+          <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+        }
+        Eliminar
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Remitente</h6>
+            </div>
+            <span
+              class="inline-flex items-center py-0.5 px-2.5 rounded text-xs font-medium capitalize"
+              [class]="estadoBadgeClass(m.estado)">
+              {{ estadoLabel(m.estado) }}
+            </span>
+          </div>
+          <div class="p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0">
+                {{ iniciales(m.nombre_remitente) }}
+              </div>
+              <div class="min-w-0">
+                <p class="font-semibold text-default-800 truncate">{{ m.nombre_remitente }}</p>
+                <p class="text-xs text-default-400">Formulario de contacto del sitio web</p>
+              </div>
+            </div>
+
+            <div class="border-t border-default-100 pt-3.5 space-y-2.5 text-sm">
+              <a [href]="'mailto:' + m.email_remitente" class="flex items-center gap-2 text-primary hover:underline">
+                <div class="size-4 shrink-0 text-default-400"><ng-icon name="lucideMail"></ng-icon></div>
+                <span class="truncate">{{ m.email_remitente }}</span>
+              </a>
+              @if (m.telefono_remitente) {
+                <a [href]="'tel:' + m.telefono_remitente" class="flex items-center gap-2 text-default-600 hover:text-primary">
+                  <div class="size-4 shrink-0 text-default-400"><ng-icon name="lucidePhone"></ng-icon></div>
+                  {{ m.telefono_remitente }}
+                </a>
+              }
+              <div class="flex items-center gap-2 text-default-600">
+                <div class="size-4 shrink-0 text-default-400"><ng-icon name="lucideCalendar"></ng-icon></div>
+                <span>{{ m.created_at ? (m.created_at | slice:0:10) : '—' }}</span>
+                @if (m.created_at) {
+                  <span class="text-default-400">· {{ m.created_at | slice:11:16 }}</span>
+                }
+              </div>
+              @if (secretaria(); as s) {
+                <div class="flex items-center gap-2 text-default-600">
+                  <div class="size-4 shrink-0 text-default-400"><ng-icon name="lucideBuilding2"></ng-icon></div>
+                  <span>Dirigido a <span class="font-medium text-default-700">{{ s.nombre }}</span></span>
+                </div>
+              } @else if (m.secretaria_destino_id) {
+                <div class="flex items-center gap-2 text-default-500">
+                  <div class="size-4 shrink-0 text-default-400"><ng-icon name="lucideBuilding2"></ng-icon></div>
+                  <span>Secretaría #{{ m.secretaria_destino_id }}</span>
+                </div>
+              }
+            </div>
+
+            @if (m.ip_origen) {
+              <div class="mt-4 pt-3 border-t border-default-100">
+                <p class="text-xs text-default-400 font-mono">IP de origen: {{ m.ip_origen }}</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (m.respondido_at) {
+          <div class="card border border-success/20">
+            <div class="card-body p-4 flex items-center gap-3">
+              <div class="size-9 rounded-full bg-success/10 text-success flex items-center justify-center shrink-0">
+                <div class="size-4"><ng-icon name="lucideCheckCircle2"></ng-icon></div>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-success">Mensaje respondido</p>
+                <p class="text-xs text-default-400">{{ m.respondido_at | slice:0:10 }} · {{ m.respondido_at | slice:11:16 }}</p>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideMessageSquare"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Conversación</h6>
+            </div>
+            <span class="text-xs font-mono text-default-400">Mensaje #{{ m.id }}</span>
+          </div>
+          <div class="p-5 space-y-4">
+
+            <div class="flex items-start gap-3">
+              <div class="size-9 rounded-full bg-default-200 text-default-600 flex items-center justify-center text-sm font-bold shrink-0">
+                {{ iniciales(m.nombre_remitente) }}
+              </div>
+              <div class="max-w-[85%]">
+                <div class="rounded-2xl rounded-tl-sm bg-default-50 border border-default-200 px-4 py-3">
+                  <p class="text-sm font-semibold text-default-800 mb-1">{{ m.asunto }}</p>
+                  <p class="text-sm text-default-700 whitespace-pre-line leading-relaxed">{{ m.mensaje }}</p>
+                </div>
+                <p class="text-xs text-default-400 mt-1 ms-1">
+                  {{ m.nombre_remitente }} · {{ m.created_at ? (m.created_at | slice:0:10) : '—' }}
+                </p>
+              </div>
+            </div>
+
+            @if (m.respuesta) {
+              <div class="flex items-start gap-3 flex-row-reverse">
+                <div class="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <div class="size-4"><ng-icon name="lucideLandmark"></ng-icon></div>
+                </div>
+                <div class="max-w-[85%]">
+                  <div class="rounded-2xl rounded-tr-sm bg-primary/5 border border-primary/20 px-4 py-3">
+                    <p class="text-sm text-default-700 whitespace-pre-line leading-relaxed">{{ m.respuesta }}</p>
+                  </div>
+                  <p class="text-xs text-default-400 mt-1 me-1 text-end">
+                    Cenefco @if (m.respondido_at) { · {{ m.respondido_at | slice:0:10 }} }
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideSend"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">{{ m.respuesta ? 'Editar respuesta' : 'Responder' }}</h6>
+            </div>
+          </div>
+          <div class="p-5">
+            <form (ngSubmit)="onSubmit()">
+              <div class="mb-3">
+                <textarea
+                  class="form-input w-full resize-none"
+                  rows="6"
+                  placeholder="Escribe la respuesta al ciudadano..."
+                  [value]="respuesta()"
+                  (input)="respuesta.set($any($event.target).value)"
+                  required>
+                </textarea>
+                <p class="text-xs text-default-400 mt-1 text-end">{{ respuestaLength() }} caracteres</p>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <label class="flex items-center gap-2 text-sm text-default-600">
+                  <span>Al enviar, marcar como:</span>
+                  <select
+                    class="form-input py-1.5 text-sm w-auto"
+                    [value]="estadoRespuesta()"
+                    (change)="estadoRespuesta.set($any($event.target).value)">
+                    <option value="respondido">Respondido</option>
+                    <option value="archivado">Respondido y archivado</option>
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  class="btn btn-sm bg-primary text-white flex items-center gap-1.5"
+                  [disabled]="saving() || !respuesta().trim()">
+                  @if (saving()) {
+                    <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    Enviando...
+                  } @else {
+                    <div class="size-4"><ng-icon name="lucideSend"></ng-icon></div>
+                    Enviar respuesta
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+</main>

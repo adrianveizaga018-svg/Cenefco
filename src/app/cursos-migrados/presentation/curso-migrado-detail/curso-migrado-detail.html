@@ -1,0 +1,679 @@
+﻿<main>
+  <app-page-title title="Detalle del Curso Migrado" subtitle="Cursos Migrados" />
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else if (forbidden()) {
+    <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+      <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+      No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+    </div>
+  } @else if (hasError()) {
+    <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+      <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+      No se pudo cargar el curso.
+    </div>
+  } @else if (curso(); as c) {
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Información del Curso</h5>
+            <div class="flex items-center gap-2">
+              @if (!editandoInfo()) {
+                <button type="button" (click)="abrirEditInfo()"
+                  class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5">
+                  <div class="size-3.5"><ng-icon name="lucidePencil"></ng-icon></div>
+                  Editar
+                </button>
+              }
+              <button type="button" (click)="descargarPdf()"
+                [disabled]="descargandoPdf()"
+                class="btn btn-sm bg-danger/10 hover:bg-danger/20 text-danger gap-1.5">
+                @if (descargandoPdf()) {
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else {
+                  <div class="size-4"><ng-icon name="lucideFileText"></ng-icon></div>
+                }
+                PDF
+              </button>
+              <button type="button" (click)="descargarExcel()"
+                [disabled]="descargandoExcel()"
+                class="btn btn-sm bg-success/10 hover:bg-success/20 text-success gap-1.5">
+                @if (descargandoExcel()) {
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else {
+                  <div class="size-4"><ng-icon name="lucideSheet"></ng-icon></div>
+                }
+                Excel
+              </button>
+              <a routerLink="/cenefco/cursos-migrados"
+                 class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5">
+                <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+                Volver
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            @if (editandoInfo()) {
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Nombre del curso</p>
+                  <p class="text-base font-semibold text-default-800">{{ c.nombre }}</p>
+                </div>
+                <div>
+                  <label class="text-xs text-default-400 uppercase tracking-wide mb-1 block">Período</label>
+                  <input type="text" class="form-input form-input-sm w-full"
+                    placeholder="Ej. Marzo 2026"
+                    [value]="infoForm().periodo ?? ''"
+                    (input)="setInfoCampo('periodo', $any($event.target).value)">
+                </div>
+                <div>
+                  <label class="text-xs text-default-400 uppercase tracking-wide mb-1 block">Gestión</label>
+                  <input type="text" class="form-input form-input-sm w-full"
+                    placeholder="Ej. 2026"
+                    [value]="infoForm().gestion ?? ''"
+                    (input)="setInfoCampo('gestion', $any($event.target).value)">
+                </div>
+                <div>
+                  <label class="text-xs text-default-400 uppercase tracking-wide mb-1 block">Fecha de inicio</label>
+                  <input type="date" class="form-input form-input-sm w-full"
+                    [value]="infoForm().fecha_inicio ?? ''"
+                    (input)="setInfoCampo('fecha_inicio', $any($event.target).value)">
+                </div>
+                <div>
+                  <label class="text-xs text-default-400 uppercase tracking-wide mb-1 block">Carga horaria</label>
+                  <input type="number" min="1" max="9999" class="form-input form-input-sm w-full"
+                    placeholder="Ej. 120"
+                    [value]="infoForm().carga_horaria ?? ''"
+                    (input)="setInfoCargaHoraria(+$any($event.target).value || null)">
+                </div>
+                <div class="sm:col-span-2 flex items-center gap-2 pt-1">
+                  <button type="button" (click)="guardarInfo()"
+                    [disabled]="guardandoInfo()"
+                    class="btn btn-sm bg-primary text-white gap-1.5">
+                    @if (guardandoInfo()) {
+                      <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    } @else {
+                      <div class="size-3.5"><ng-icon name="lucideCheck"></ng-icon></div>
+                    }
+                    Guardar
+                  </button>
+                  <button type="button" (click)="cerrarEditInfo()"
+                    class="btn btn-sm bg-default-200 text-default-600 gap-1.5">
+                    <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Nombre del curso</p>
+                  <p class="text-base font-semibold text-default-800">{{ c.nombre }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Período</p>
+                  @if (c.periodo) {
+                    <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">{{ c.periodo }}</span>
+                  } @else {
+                    <span class="text-default-400 text-sm">—</span>
+                  }
+                </div>
+                <div>
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Gestión</p>
+                  <p class="text-sm text-default-700 font-medium">{{ c.gestion ?? '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Fecha de inicio</p>
+                  <p class="text-sm text-default-700 font-medium">{{ c.fecha_inicio ?? '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Carga horaria</p>
+                  @if (c.carga_horaria) {
+                    <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                      {{ c.carga_horaria }} horas
+                    </span>
+                  } @else {
+                    <span class="text-default-400 text-sm">—</span>
+                  }
+                </div>
+                <div>
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Slug</p>
+                  <p class="text-sm font-mono text-default-500">{{ c.slug }}</p>
+                </div>
+                <div class="sm:col-span-2">
+                  <p class="text-xs text-default-400 uppercase tracking-wide mb-1">URL del curso</p>
+                  <a [href]="c.url" target="_blank"
+                     class="text-sm text-primary hover:underline break-all flex items-center gap-1.5">
+                    <div class="size-3.5 shrink-0"><ng-icon name="lucideExternalLink"></ng-icon></div>
+                    {{ c.url }}
+                  </a>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="flex items-center gap-2">
+              <h5 class="card-title">Participantes</h5>
+              <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">
+                {{ c.participantes?.length ?? 0 }}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <input
+                  type="text"
+                  class="ps-9 form-input form-input-sm w-full sm:w-52"
+                  placeholder="Filtrar participante..."
+                  (input)="searchQuery.set($any($event.target).value)"
+                >
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+                  <div class="size-3.5 flex items-center text-default-500">
+                    <ng-icon name="lucideSearch"></ng-icon>
+                  </div>
+                </div>
+              </div>
+              <button type="button" (click)="abrirModalExcel()"
+                class="btn btn-sm bg-success/10 hover:bg-success/20 text-success gap-1.5 shrink-0">
+                <div class="size-4"><ng-icon name="lucideSheet"></ng-icon></div>
+                Importar Excel
+              </button>
+              <button type="button" (click)="abrirModal()"
+                class="btn btn-sm bg-primary text-white gap-1.5 shrink-0">
+                <div class="size-4"><ng-icon name="lucideUserPlus"></ng-icon></div>
+                Agregar
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col">
+            <div class="overflow-x-auto">
+              <div class="min-w-full inline-block align-middle">
+                <div class="overflow-hidden max-h-[500px] overflow-y-auto">
+
+                  @if ((c.participantes?.length ?? 0) === 0) {
+                    <div class="flex items-center justify-center py-12 text-default-400 text-sm gap-2">
+                      <div class="size-5"><ng-icon name="lucideUsers"></ng-icon></div>
+                      Sin participantes registrados
+                    </div>
+                  } @else {
+                    <table class="min-w-full divide-y divide-default-200">
+                      <thead class="bg-default-150 sticky top-0">
+                        <tr class="text-sm font-normal text-default-700">
+                          <th scope="col" class="px-3.5 py-3 text-start w-12">#</th>
+                          <th scope="col" class="px-3.5 py-3 text-start">Nombre completo</th>
+                          <th scope="col" class="px-3.5 py-3 text-end w-24">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-default-200">
+                        @for (p of participantes; track p.id; let i = $index) {
+                          <tr class="text-default-800 font-normal group">
+                            <td class="px-3.5 py-2 text-sm text-default-400">{{ i + 1 }}</td>
+                            <td class="px-3.5 py-2 text-sm">{{ p.nombre_completo }}</td>
+                            <td class="px-3.5 py-2 text-end">
+                              <div class="flex items-center justify-end gap-1">
+                                <button type="button" (click)="abrirEditar(p)"
+                                  class="btn size-7 bg-default-200 hover:bg-warning text-default-500 hover:text-white"
+                                  title="Editar">
+                                  <div class="size-3.5"><ng-icon name="lucidePencil"></ng-icon></div>
+                                </button>
+                                <button type="button" (click)="confirmarEliminar(p)"
+                                  [disabled]="eliminando() === p.id"
+                                  class="btn size-7 bg-default-200 hover:bg-danger text-default-500 hover:text-white"
+                                  title="Eliminar">
+                                  @if (eliminando() === p.id) {
+                                    <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                                  } @else {
+                                    <div class="size-3.5"><ng-icon name="lucideTrash2"></ng-icon></div>
+                                  }
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        }
+                        @empty {
+                          <tr>
+                            <td colspan="3" class="px-3.5 py-8 text-center text-sm text-default-400">
+                              Sin coincidencias para "{{ searchQuery() }}"
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Imagen de portada</h5>
+          </div>
+          <div class="card-body flex flex-col items-center gap-4">
+            @if (c.imagen_path) {
+              <img [src]="'/storage/' + c.imagen_path" [alt]="c.nombre"
+                   class="w-full rounded-xl border border-default-200 shadow-sm object-cover max-h-48" />
+              <div class="flex gap-2 w-full">
+                <label class="btn btn-sm bg-primary/10 text-primary hover:bg-primary/20 flex-1 gap-1.5 justify-center cursor-pointer">
+                  @if (subiendoImagen()) {
+                    <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    Subiendo...
+                  } @else {
+                    <div class="size-3.5"><ng-icon name="lucideRefreshCw"></ng-icon></div>
+                    Cambiar
+                  }
+                  <input type="file" accept="image/*" class="hidden" (change)="onImagenSeleccionada($event)" [disabled]="subiendoImagen()">
+                </label>
+                <button type="button"
+                  class="btn btn-sm bg-danger/10 text-danger hover:bg-danger/20 gap-1.5"
+                  (click)="confirmarEliminarImagen()"
+                  [disabled]="eliminandoImagen()">
+                  @if (eliminandoImagen()) {
+                    <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  } @else {
+                    <div class="size-3.5"><ng-icon name="lucideTrash2"></ng-icon></div>
+                  }
+                </button>
+              </div>
+            } @else {
+              <div class="flex flex-col items-center justify-center py-6 text-default-300 gap-2 w-full">
+                <div class="size-12"><ng-icon name="lucideImage"></ng-icon></div>
+                <p class="text-sm text-default-400">Sin imagen de portada</p>
+              </div>
+              <label class="btn btn-sm bg-primary text-white w-full gap-1.5 justify-center cursor-pointer">
+                @if (subiendoImagen()) {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Subiendo...
+                } @else {
+                  <div class="size-3.5"><ng-icon name="lucideUpload"></ng-icon></div>
+                  Subir imagen
+                }
+                <input type="file" accept="image/*" class="hidden" (change)="onImagenSeleccionada($event)" [disabled]="subiendoImagen()">
+              </label>
+            }
+            <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg w-full">
+              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+              <p class="text-xs text-default-600">
+                Tamaño sugerido: <strong>1200×675 px</strong> (máx. 500 KB). Una imagen muy pesada ralentiza la carga de la página del curso.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Logos institucionales</h5>
+            <label class="btn btn-sm bg-primary text-white gap-1.5 cursor-pointer"
+                   [class.opacity-60]="subiendoLogo()"
+                   [class.pointer-events-none]="subiendoLogo()">
+              @if (subiendoLogo()) {
+                <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Subiendo...
+              } @else {
+                <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+                Agregar
+              }
+              <input type="file" accept="image/*" class="hidden"
+                     (change)="onLogoSeleccionado($event)"
+                     [disabled]="subiendoLogo()">
+            </label>
+          </div>
+          <div class="card-body">
+            <div class="flex items-start gap-2 px-3 py-2 mb-3 bg-warning/10 border border-warning/30 rounded-lg">
+              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+              <p class="text-xs text-default-600">
+                Tamaño sugerido por logo: <strong>máx. 200 KB</strong> (fondo transparente PNG). Logos muy pesados ralentizan la carga del curso.
+              </p>
+            </div>
+            @if (!c.logos || c.logos.length === 0) {
+              <div class="flex flex-col items-center justify-center py-8 text-default-300 gap-2">
+                <div class="size-10"><ng-icon name="lucideImage"></ng-icon></div>
+                <p class="text-sm text-default-400">Sin logos agregados</p>
+              </div>
+            } @else {
+              <div class="grid grid-cols-3 gap-3">
+                @for (logo of c.logos; track logo.id) {
+                  <div class="relative group rounded-xl border border-default-200 overflow-hidden bg-default-50">
+                    <img [src]="'/storage/' + logo.path"
+                         [alt]="logo.nombre ?? 'Logo'"
+                         class="w-full h-20 object-contain p-2">
+                    <button
+                      type="button"
+                      class="absolute top-1 right-1 size-6 rounded-full bg-danger/80 text-white
+                             opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      (click)="confirmarEliminarLogo(logo)"
+                      [disabled]="eliminandoLogo() === logo.id"
+                      title="Eliminar">
+                      @if (eliminandoLogo() === logo.id) {
+                        <div class="size-3 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                      } @else {
+                        <div class="size-3"><ng-icon name="lucideX"></ng-icon></div>
+                      }
+                    </button>
+                    @if (logo.nombre) {
+                      <p class="text-center text-[10px] text-default-400 px-1 pb-1.5 truncate">{{ logo.nombre }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Carga horaria</h5>
+            @if (!editandoCargaHoraria()) {
+              <button type="button" (click)="abrirEditCargaHoraria()"
+                class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5">
+                <div class="size-3.5"><ng-icon name="lucidePencil"></ng-icon></div>
+                Editar
+              </button>
+            }
+          </div>
+          <div class="card-body">
+            @if (editandoCargaHoraria()) {
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1" max="9999"
+                  class="form-input form-input-sm flex-1"
+                  placeholder="Ej. 120"
+                  [value]="cargaHorariaVal() ?? ''"
+                  (input)="cargaHorariaVal.set(+$any($event.target).value || null)"
+                  (keydown.enter)="guardarCargaHoraria()"
+                >
+                <button type="button" (click)="guardarCargaHoraria()"
+                  [disabled]="guardandoCargaHoraria()"
+                  class="btn btn-sm bg-primary text-white gap-1">
+                  @if (guardandoCargaHoraria()) {
+                    <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  } @else {
+                    <div class="size-3.5"><ng-icon name="lucideCheck"></ng-icon></div>
+                  }
+                </button>
+                <button type="button" (click)="cerrarEditCargaHoraria()"
+                  class="btn btn-sm bg-default-200 text-default-600">
+                  <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+                </button>
+              </div>
+            } @else {
+              @if (c.carga_horaria) {
+                <div class="flex items-center gap-2">
+                  <div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <div class="size-4 text-primary"><ng-icon name="lucideClock"></ng-icon></div>
+                  </div>
+                  <div>
+                    <p class="text-xl font-bold text-default-800 leading-none">{{ c.carga_horaria }}</p>
+                    <p class="text-xs text-default-400 mt-0.5">horas académicas</p>
+                  </div>
+                </div>
+              } @else {
+                <p class="text-sm text-default-400">Sin carga horaria registrada</p>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Código QR</h5>
+          </div>
+          <div class="card-body flex flex-col items-center gap-4">
+            @if (c.qr_path) {
+              <img [src]="'/storage/' + c.qr_path" [alt]="'QR ' + c.nombre"
+                   class="w-48 h-48 rounded-xl border border-default-200 shadow-sm" />
+              <p class="text-xs text-default-400 text-center">
+                Escanea para acceder al curso en cenefco.com
+              </p>
+              <a [href]="'/storage/' + c.qr_path" download
+                 class="btn btn-sm bg-primary text-white w-full gap-1.5 justify-center">
+                <div class="size-4"><ng-icon name="lucideDownload"></ng-icon></div>
+                Descargar QR
+              </a>
+            } @else {
+              <div class="flex flex-col items-center justify-center py-8 text-default-300 gap-2">
+                <div class="size-16"><ng-icon name="lucideQrCode"></ng-icon></div>
+                <p class="text-sm text-default-400">QR no generado aún</p>
+              </div>
+              <button type="button"
+                (click)="generarQr()"
+                [disabled]="generandoQr()"
+                class="btn btn-sm bg-primary text-white w-full gap-1.5 justify-center">
+                @if (generandoQr()) {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Generando...
+                } @else {
+                  <div class="size-3.5"><ng-icon name="lucideQrCode"></ng-icon></div>
+                  Generar QR
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+</main>
+
+@if (editando()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarEditar()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-default-800">Editar participante</h3>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarEditar()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">
+          Nombre completo
+        </label>
+        <input
+          type="text"
+          class="form-input w-full"
+          style="text-transform:uppercase"
+          [value]="editNombre()"
+          (input)="setEditNombre($any($event.target).value)"
+          (keydown.enter)="guardarEdicion()"
+          autofocus
+        >
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarEditar()">
+          Cancelar
+        </button>
+        <button type="button"
+          class="btn btn-primary flex-1 gap-1.5"
+          [disabled]="editGuardando() || !editNombre().trim()"
+          (click)="guardarEdicion()">
+          @if (editGuardando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Guardando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+            Guardar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+@if (modalExcelAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarModalExcel()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-5"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-semibold text-default-800">Importar participantes desde Excel</h3>
+          <p class="text-xs text-default-400 mt-0.5">
+            La primera columna de cada fila debe contener el nombre completo.
+          </p>
+          <button type="button" class="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 mt-1.5"
+            (click)="descargarPlantillaExcel()">
+            <ng-icon name="lucideDownload" class="size-3" />
+            Descargar plantilla de ejemplo
+          </button>
+        </div>
+        <button type="button" class="text-default-400 hover:text-default-600 shrink-0" (click)="cerrarModalExcel()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <label class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-default-200
+                    hover:border-primary/50 rounded-xl p-6 cursor-pointer transition-colors group"
+             [class.border-primary]="archivoExcel()">
+        <div class="size-10 rounded-full bg-success/10 flex items-center justify-center
+                    group-hover:bg-success/20 transition-colors">
+          <div class="size-5 text-success"><ng-icon name="lucideSheet"></ng-icon></div>
+        </div>
+        @if (archivoExcel()) {
+          <div class="text-center">
+            <p class="text-sm font-medium text-default-700">{{ archivoExcel()!.name }}</p>
+            <p class="text-xs text-default-400 mt-0.5">
+              {{ (archivoExcel()!.size / 1024).toFixed(1) }} KB — Click para cambiar
+            </p>
+          </div>
+        } @else {
+          <div class="text-center">
+            <p class="text-sm font-medium text-default-600">Seleccionar archivo</p>
+            <p class="text-xs text-default-400 mt-0.5">XLSX, XLS o CSV · máx. 5 MB</p>
+          </div>
+        }
+        <input type="file" accept=".xlsx,.xls,.csv" class="hidden"
+               (change)="onArchivoExcelSeleccionado($event)">
+      </label>
+
+      <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg">
+        <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+        <p class="text-xs text-default-600">
+          Archivos grandes o con muchas filas hacen que la importación demore más. Se recomienda mantenerlo por debajo de <strong>1 MB</strong>.
+        </p>
+      </div>
+
+      @if (resultadoExcel(); as r) {
+        <div class="rounded-xl border border-default-200 overflow-hidden">
+          <div class="grid grid-cols-3 divide-x divide-default-200">
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-success">{{ r.insertados }}</span>
+              <span class="text-[11px] text-default-400">Insertados</span>
+            </div>
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-warning">{{ r.omitidos }}</span>
+              <span class="text-[11px] text-default-400">Omitidos</span>
+            </div>
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-danger">{{ r.errores.length }}</span>
+              <span class="text-[11px] text-default-400">Errores</span>
+            </div>
+          </div>
+          @if (r.errores.length > 0) {
+            <div class="border-t border-default-200 bg-danger/5 p-3 max-h-28 overflow-y-auto">
+              @for (e of r.errores; track $index) {
+                <p class="text-xs text-danger leading-relaxed">{{ e }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarModalExcel()">
+          Cerrar
+        </button>
+        <button type="button"
+          class="btn bg-success text-white flex-1 gap-1.5"
+          [disabled]="!archivoExcel() || importandoExcel()"
+          (click)="importarExcel()">
+          @if (importandoExcel()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Importando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideUpload"></ng-icon></div>
+            Importar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarModal()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-default-800">Agregar participante</h3>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarModal()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">
+          Nombre completo
+        </label>
+        <input
+          type="text"
+          class="form-input w-full"
+          style="text-transform:uppercase"
+          placeholder="EJ. JUAN PÉREZ MAMANI"
+          [value]="nuevoNombre()"
+          (input)="setNuevoNombre($any($event.target).value)"
+          (keydown.enter)="guardarParticipante()"
+          autofocus
+        >
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button type="button"
+          class="btn btn-primary flex-1 gap-1.5"
+          [disabled]="guardando() || !nuevoNombre().trim()"
+          (click)="guardarParticipante()">
+          @if (guardando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Guardando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideUserPlus"></ng-icon></div>
+            Guardar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

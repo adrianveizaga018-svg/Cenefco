@@ -1,0 +1,115 @@
+﻿<main>
+  <app-page-title title="Reporte: Materias por Docente" subtitle="Docentes" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Filtros</h4>
+        <a routerLink="/cenefco/docentes-perfil" class="btn btn-sm bg-default-200 text-default-700">
+          <div class="size-4 me-1"><ng-icon name="lucideArrowLeft"></ng-icon></div> Volver
+        </a>
+      </div>
+      <div class="p-4 flex flex-wrap gap-4 items-end">
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1">Gestión (año)</label>
+          <input type="text" class="form-input form-input-sm w-32" placeholder="Ej: 2025"
+                 [value]="gestionInput()" (input)="onGestionInput($event)" (keydown)="onKeyEnter($event)">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1">Período</label>
+          <input type="text" class="form-input form-input-sm w-36" placeholder="Ej: I/2025"
+                 [value]="periodoInput()" (input)="onPeriodoInput($event)" (keydown)="onKeyEnter($event)">
+        </div>
+        <button type="button" class="btn btn-sm bg-primary text-white" (click)="aplicarFiltros()">
+          <div class="size-4 me-1"><ng-icon name="lucideSearch"></ng-icon></div> Buscar
+        </button>
+        <button type="button" class="btn btn-sm bg-default-200 text-default-700" (click)="limpiarFiltros()">
+          <div class="size-4 me-1"><ng-icon name="lucideX"></ng-icon></div> Limpiar
+        </button>
+      </div>
+
+      @if (!isLoading && !error) {
+        <div class="px-4 pb-4 flex flex-wrap gap-4">
+          <div class="bg-primary/10 rounded-lg px-5 py-3 text-center min-w-28">
+            <p class="text-2xl font-bold text-primary">{{ totalDocentes }}</p>
+            <p class="text-xs text-default-500 mt-0.5">Total docentes</p>
+          </div>
+          <div class="bg-success/10 rounded-lg px-5 py-3 text-center min-w-28">
+            <p class="text-2xl font-bold text-success">{{ docentesConMaterias }}</p>
+            <p class="text-xs text-default-500 mt-0.5">Con materias</p>
+          </div>
+          <div class="bg-warning/10 rounded-lg px-5 py-3 text-center min-w-28">
+            <p class="text-2xl font-bold text-warning">{{ totalMaterias }}</p>
+            <p class="text-xs text-default-500 mt-0.5">Materias asignadas</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <div class="flex flex-col">
+        <div class="overflow-x-auto"><div class="min-w-full inline-block align-middle"><div class="overflow-visible">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
+            </div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+              No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (error) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div> No se pudo cargar el reporte.
+            </div>
+          } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+            <table class="min-w-full divide-y divide-default-200 relative z-10">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th class="px-3.5 py-3 text-start">#</th>
+                  <th class="px-3.5 py-3 text-start">Docente</th>
+                  <th class="px-3.5 py-3 text-start">Título</th>
+                  <th class="px-3.5 py-3 text-start">Especialidad</th>
+                  <th class="px-3.5 py-3 text-start">Teléfono</th>
+                  <th class="px-3.5 py-3 text-start">Email</th>
+                  <th class="px-3.5 py-3 text-start">Tipo</th>
+                  <th class="px-3.5 py-3 text-center">Materias asignadas</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (d of docentes; track d.id; let i = $index) {
+                  <tr class="text-default-800 font-normal" [class.bg-success/5]="d.total_materias > 0">
+                    <td class="px-3.5 py-2.5 text-sm text-default-400">{{ i + 1 }}</td>
+                    <td class="px-3.5 py-2.5 text-sm font-medium">{{ d.nombre_completo }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.titulo_academico || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.especialidad || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.telefono || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.email_publico || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ d.tipo || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-center">
+                      @if (d.total_materias > 0) {
+                        <span class="badge bg-primary/10 text-primary font-bold text-sm px-3 py-1 rounded-full">{{ d.total_materias }}</span>
+                      } @else {
+                        <span class="badge bg-default-200 text-default-400 text-xs px-3 py-1 rounded-full">Sin asignar</span>
+                      }
+                    </td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="8" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron docentes.</td></tr>
+                }
+              </tbody>
+            </table>
+            </div>
+          }
+        </div></div></div>
+      </div>
+    </div>
+
+  </div>
+</main>

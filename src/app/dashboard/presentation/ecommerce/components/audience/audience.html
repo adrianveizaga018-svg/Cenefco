@@ -1,0 +1,33 @@
+ <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title">Audience</h6>
+
+                            <div class="hs-dropdown relative inline-flex">
+                                <button type="button" class="hs-dropdown-toggle btn  size-7.5 text-sm font-semibold rounded-lg hover:bg-default-150" aria-haspopup="menu" aria-expanded="false" aria-label="Dropdown" hs-dropdown-placement="bottom-end">
+                                    <div class="size-4 text-default-500"><ng-icon name="lucideEllipsisVertical" ></ng-icon></div>
+                                </button>
+
+                                <div class="hs-dropdown-menu" role="menu">
+                                    <a class="flex items-center gap-x-3.5 py-1.5 font-medium px-3 text-default-600 hover:bg-default-150 rounded" [routerLink]="[]">
+                                        1 Weekly
+                                    </a>
+                                    <a class="flex items-center gap-x-3.5 py-1.5 font-medium px-3 text-default-600 hover:bg-default-150 rounded" [routerLink]="[]">
+                                        1 Monthly
+                                    </a>
+                                    <a class="flex items-center gap-x-3.5 py-1.5 font-medium px-3 text-default-600 hover:bg-default-150 rounded" [routerLink]="[]">
+                                        3 Monthly
+                                    </a>
+                                    <a class="flex items-center gap-x-3.5 py-1.5 font-medium px-3 text-default-600 hover:bg-default-150 rounded" [routerLink]="[]">
+                                        6 Monthly
+                                    </a>
+                                    <a class="flex items-center gap-x-3.5 py-1.5 font-medium px-3 text-default-600 hover:bg-default-150 rounded" [routerLink]="[]">
+                                        This Yearly
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <app-apexchart [getOptions]="audienceChartOptions" class="apex-charts min-h-auto" />
+                        </div>
+                    </div>

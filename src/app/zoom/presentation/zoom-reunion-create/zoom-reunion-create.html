@@ -1,0 +1,125 @@
+﻿<main>
+  <app-page-title title="Nueva Reunión Zoom" subtitle="Reuniones Zoom" />
+
+  @if (resultado()) {
+    
+    <div class="card mb-5">
+      <div class="card-header">
+        <div class="flex items-center gap-2 text-success">
+          <div class="size-5"><ng-icon name="lucideCircleCheck"></ng-icon></div>
+          <h4 class="card-title text-success">¡Reunión(es) creada(s) en Zoom!</h4>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <table class="min-w-full divide-y divide-default-200">
+          <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
+            <th class="px-3.5 py-3 text-start">Sesión</th>
+            <th class="px-3.5 py-3 text-start">Tema</th>
+            <th class="px-3.5 py-3 text-start">Fecha</th>
+            <th class="px-3.5 py-3 text-start">Contraseña</th>
+            <th class="px-3.5 py-3 text-start">Enlace</th>
+          </tr></thead>
+          <tbody class="divide-y divide-default-200">
+            @for (r of resultado()!; track r.id; let i = $index) {
+              <tr class="text-default-800">
+                <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ i + 1 }}</td>
+                <td class="px-3.5 py-2.5 text-sm font-medium">{{ r.tema }}</td>
+                <td class="px-3.5 py-2.5 text-sm text-default-500">{{ r.fecha }}</td>
+                <td class="px-3.5 py-2.5 text-sm"><span class="font-mono bg-default-100 px-2 py-0.5 rounded text-xs">{{ r.password }}</span></td>
+                <td class="px-3.5 py-2.5">
+                  <a [href]="r.link_invitados" target="_blank" class="text-primary text-xs hover:underline flex items-center gap-1">
+                    <div class="size-3"><ng-icon name="lucideExternalLink"></ng-icon></div> Abrir
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer">
+        <button type="button" class="btn bg-default-200 text-default-700" (click)="volver()">
+          <div class="size-4 me-1"><ng-icon name="lucideArrowLeft"></ng-icon></div> Volver al listado
+        </button>
+      </div>
+    </div>
+  } @else {
+    
+    <div class="grid grid-cols-1 gap-5 mb-5">
+      <div class="card">
+        <div class="card-header"><h4 class="card-title">Configurar Reunión</h4></div>
+        <div class="p-6">
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-2">Tipo de Reunión</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" formControlName="tipo" value="unica" class="form-radio">
+                  <span class="text-sm">Sesión única</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" formControlName="tipo" value="multisesion" class="form-radio">
+                  <span class="text-sm">Multisesión (varias fechas)</span>
+                </label>
+              </div>
+            </div>
+
+            @if (!esMultisesion) {
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-default-700 mb-1">Tema <span class="text-danger">*</span></label>
+                <input type="text" formControlName="tema" class="form-input w-full" placeholder="Ej: Clase de introducción al MBA">
+              </div>
+            } @else {
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-default-700 mb-1">Nombre del Curso <span class="text-danger">*</span></label>
+                <input type="text" formControlName="curso" class="form-input w-full" placeholder="Ej: Diplomado en Gestión Pública">
+                <p class="text-xs text-default-400 mt-1">Cada sesión se creará como: "Nombre del Curso — Sesión N"</p>
+              </div>
+            }
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">
+                {{ esMultisesion ? 'Fecha de la Primera Sesión' : 'Fecha y Hora' }} <span class="text-danger">*</span>
+              </label>
+              <input type="datetime-local" formControlName="fecha_inicio" class="form-input w-full">
+              @if (form.get('fecha_inicio')?.invalid && form.get('fecha_inicio')?.touched) {
+                <p class="text-danger text-xs mt-1">La fecha es requerida</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Duración (minutos)</label>
+              <input type="number" formControlName="duracion_min" class="form-input w-full" min="15" max="480">
+              <p class="text-xs text-default-400 mt-1">Mínimo 15, máximo 480 minutos</p>
+            </div>
+
+            @if (esMultisesion) {
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Número de Sesiones</label>
+                <input type="number" formControlName="n_sesiones" class="form-input w-full" min="1" max="52">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Días entre sesiones</label>
+                <input type="number" formControlName="dias_entre" class="form-input w-full" min="1">
+                <p class="text-xs text-default-400 mt-1">Ej: 7 = semanal, 14 = quincenal</p>
+              </div>
+            }
+
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+                @if (submitting()) {
+                  <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Creando en Zoom...
+                } @else {
+                  <div class="size-4 me-1"><ng-icon name="lucideVideo"></ng-icon></div>
+                  {{ esMultisesion ? 'Crear Sesiones en Zoom' : 'Crear Reunión en Zoom' }}
+                }
+              </button>
+              <a routerLink="/cenefco/zoom-reuniones" class="btn bg-default-200 text-default-700">Cancelar</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+</main>

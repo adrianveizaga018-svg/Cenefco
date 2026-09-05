@@ -1,0 +1,35 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h6 class="card-title">Actividad por Mes</h6>
+      <p class="text-xs text-default-400 mt-0.5">Últimos 6 meses</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="text-right hidden sm:block">
+        <p class="text-xs text-default-400">Total Trámites</p>
+        <p class="text-sm font-bold text-primary">{{ totalTramites }} solicitudes</p>
+      </div>
+      <div class="text-right hidden sm:block">
+        <p class="text-xs text-default-400">Total Publicaciones</p>
+        <p class="text-sm font-bold text-warning">{{ totalPublicaciones }} publicaciones</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sm:hidden grid grid-cols-2 gap-3 px-4 pt-3">
+    <div class="rounded-lg bg-primary/5 px-3 py-2">
+      <p class="text-xs text-default-400">Total Trámites</p>
+      <p class="text-sm font-bold text-primary">{{ totalTramites }} solicitudes</p>
+    </div>
+    <div class="rounded-lg bg-warning/5 px-3 py-2">
+      <p class="text-xs text-default-400">Total Publicaciones</p>
+      <p class="text-sm font-bold text-warning">{{ totalPublicaciones }} publicaciones</p>
+    </div>
+  </div>
+
+  <div class="card-body pt-2">
+    @if (chartOptions) {
+      <app-apexchart [getOptions]="chartOptions" />
+    }
+  </div>
+</div>

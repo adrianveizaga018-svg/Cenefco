@@ -1,0 +1,149 @@
+<main>
+  <app-page-title title="Historial de planillas" subtitle="Sueldos" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <p class="text-sm text-default-500">Cada planilla generada crea un gasto único por el total de sueldos del mes.</p>
+
+        <a routerLink="/cenefco/generar-planilla" class="btn btn-sm bg-primary text-white">
+          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+          Generar planilla
+        </a>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando historial...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Periodo</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Empleados incluidos</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Total</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Generada el</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (p of planillas(); track p.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ nombreMes(p.mes) }} {{ p.anio }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">
+                            {{ p.detalle.length }} empleado(s)
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-end font-medium">Bs. {{ p.total }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ p.created_at | slice:0:10 }}</td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Vista previa"
+                              (click)="previsualizar(p)">
+                              <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                              title="Descargar PDF"
+                              [disabled]="descargando() === p.id"
+                              (click)="descargarPdf(p)">
+                              @if (descargando() === p.id) {
+                                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                              } @else {
+                                <div class="size-4"><ng-icon name="lucideFileDown"></ng-icon></div>
+                              }
+                            </button>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-success/10 hover:bg-success text-success hover:text-white disabled:opacity-50"
+                              title="Descargar Excel"
+                              [disabled]="descargandoExcel() === p.id"
+                              (click)="descargarExcel(p)">
+                              @if (descargandoExcel() === p.id) {
+                                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                              } @else {
+                                <div class="size-4"><ng-icon name="lucideFileSpreadsheet"></ng-icon></div>
+                              }
+                            </button>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-default-200 text-default-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                              [class.bg-danger\/10]="esDelMesActual(p)"
+                              [class.text-danger]="esDelMesActual(p)"
+                              [class.hover\:bg-danger]="esDelMesActual(p)"
+                              [class.hover\:text-white]="esDelMesActual(p)"
+                              [title]="esDelMesActual(p) ? 'Eliminar planilla' : 'Solo se puede eliminar la planilla del mes en curso'"
+                              [disabled]="!esDelMesActual(p) || eliminando() === p.id"
+                              (click)="eliminar(p)">
+                              @if (eliminando() === p.id) {
+                                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                              } @else {
+                                <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                              }
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          Aún no se generó ninguna planilla.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize"
+        [total]="total()"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+
+  @if (previsualizando()) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-4xl h-[90vh] flex flex-col">
+        <div class="card-header shrink-0">
+          <h6 class="card-title">
+            Vista previa — {{ previewPlanilla() ? nombreMes(previewPlanilla()!.mes) + ' ' + previewPlanilla()!.anio : '' }}
+          </h6>
+          <button type="button" (click)="cerrarPreview()"
+                  class="btn size-7.5 bg-default-200 hover:bg-danger text-default-500 hover:text-white">
+            <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+          </button>
+        </div>
+        <div class="flex-1 min-h-0 p-2">
+          @if (cargandoPreview()) {
+            <div class="flex items-center justify-center h-full text-default-500 text-sm gap-2">
+              <div class="size-5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Generando vista previa...
+            </div>
+          } @else if (previewUrl()) {
+            <iframe [src]="previewUrl()" class="w-full h-full rounded-lg border border-default-200"></iframe>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</main>

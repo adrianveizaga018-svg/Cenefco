@@ -1,0 +1,156 @@
+<main>
+  <app-page-title title="Permisos" subtitle="Catálogo de capacidades del sistema" />
+
+  <div class="card mb-5">
+    <div class="card-header flex-wrap gap-3">
+      <div class="relative">
+        <input
+          type="text"
+          class="ps-11 form-input form-input-sm w-full sm:w-72"
+          placeholder="Buscar por código, módulo o descripción..."
+          (input)="onBuscar($event)"
+        />
+        <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+          <div class="size-3.5 flex items-center text-default-500"><ng-icon name="lucideSearch" /></div>
+        </div>
+      </div>
+      <a routerLink="/cenefco/permiso-create" class="btn btn-sm bg-primary text-white gap-2">
+        <ng-icon name="lucidePlus" class="size-4" />
+        Nuevo Permiso
+      </a>
+    </div>
+
+    @if (!loading() && permisos().length > 0) {
+      <div class="card-body py-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+          <span class="text-default-500">
+            <b class="text-default-800">{{ resumen().total }}</b> permiso{{ resumen().total !== 1 ? 's' : '' }}
+          </span>
+          <span class="text-default-500">
+            en <b class="text-default-800">{{ resumen().modulos }}</b> módulo{{ resumen().modulos !== 1 ? 's' : '' }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="text-xs font-medium text-primary hover:underline" (click)="expandirTodos()">Expandir todos</button>
+          <span class="text-default-300">·</span>
+          <button type="button" class="text-xs font-medium text-primary hover:underline" (click)="colapsarTodos()">Colapsar todos</button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20 gap-2 text-default-400 text-sm">
+      <div class="size-5 animate-spin"><ng-icon name="lucideLoader" /></div>
+      Cargando permisos...
+    </div>
+  } @else if (forbidden()) {
+    <div class="card">
+      <div class="card-body flex items-center justify-center py-16 text-warning text-sm gap-2">
+        <div class="size-4"><ng-icon name="lucideLock" /></div>
+        No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="card">
+      <div class="card-body flex items-center justify-center py-16 text-danger text-sm gap-2">
+        <div class="size-4"><ng-icon name="lucideCircleX" /></div>
+        No se pudo cargar el catálogo de permisos.
+      </div>
+    </div>
+  } @else if (permisos().length === 0) {
+    <div class="card">
+      <div class="card-body flex flex-col items-center justify-center py-16 text-default-400 gap-3">
+        <div class="size-14 text-default-300"><ng-icon name="lucideShieldOff" /></div>
+        <p class="text-sm">No hay permisos registrados.</p>
+        <a routerLink="/cenefco/permiso-create" class="btn btn-sm bg-primary text-white">Crear primer permiso</a>
+      </div>
+    </div>
+  } @else if (grupos().length === 0) {
+    <div class="card">
+      <div class="card-body flex flex-col items-center justify-center py-16 text-default-400 gap-3">
+        <div class="size-14 text-default-300"><ng-icon name="lucideSearchX" /></div>
+        <p class="text-sm">No se encontraron permisos que coincidan con "{{ busqueda() }}".</p>
+      </div>
+    </div>
+  } @else {
+    <div class="space-y-3">
+      @for (grupo of grupos(); track grupo.modulo) {
+        <div class="card overflow-hidden">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-default-50 transition-colors"
+            (click)="toggleGrupo(grupo.modulo)"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <div class="size-4.5 text-primary"><ng-icon [name]="grupo.icon" /></div>
+              </div>
+              <span class="font-semibold text-default-800 text-sm truncate">{{ grupo.label }}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-default-100 text-default-500 shrink-0">
+                {{ grupo.items.length }}
+              </span>
+            </div>
+            <div class="size-4 text-default-400 shrink-0 transition-transform" [class.rotate-180]="estaExpandido(grupo.modulo)">
+              <ng-icon name="lucideChevronDown" />
+            </div>
+          </button>
+
+          @if (estaExpandido(grupo.modulo)) {
+            <div class="border-t border-default-100 overflow-x-auto">
+              <table class="min-w-full divide-y divide-default-100">
+                <thead class="bg-default-50">
+                  <tr class="text-xs font-medium text-default-500">
+                    <th class="px-4 sm:px-5 py-2 text-start">Código</th>
+                    <th class="px-4 sm:px-5 py-2 text-start hidden sm:table-cell">Descripción</th>
+                    <th class="px-4 sm:px-5 py-2 text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-default-100">
+                  @for (item of grupo.items; track item.id) {
+                    <tr class="text-default-800 hover:bg-default-50/60 transition-colors">
+                      <td class="px-4 sm:px-5 py-2.5 text-sm">
+                        <span class="font-mono font-medium" [class.text-danger]="item.codigo === '*'">{{ item.codigo }}</span>
+                        @if (item.codigo === '*') {
+                          <span class="ms-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger align-middle">
+                            Comodín — acceso total
+                          </span>
+                        }
+                        <p class="text-xs text-default-400 mt-0.5 sm:hidden">{{ item.descripcion || '—' }}</p>
+                      </td>
+                      <td class="px-4 sm:px-5 py-2.5 text-sm text-default-500 hidden sm:table-cell">{{ item.descripcion || '—' }}</td>
+                      <td class="px-4 sm:px-5 py-2.5">
+                        <div class="flex items-center justify-end gap-1.5">
+                          <a
+                            [routerLink]="['/cenefco/permiso-edit', item.id]"
+                            class="size-8 flex items-center justify-center rounded-lg border border-default-200 text-default-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
+                            title="Editar"
+                          >
+                            <ng-icon name="lucidePencil" class="size-3.5" />
+                          </a>
+                          <button
+                            type="button"
+                            class="size-8 flex items-center justify-center rounded-lg border border-danger/20 text-danger/70 hover:bg-danger/10 hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40"
+                            (click)="delete(item.id, item.codigo)"
+                            [disabled]="deleting() === item.id"
+                            title="Eliminar"
+                          >
+                            @if (deleting() === item.id) {
+                              <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></div>
+                            } @else {
+                              <ng-icon name="lucideTrash2" class="size-3.5" />
+                            }
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</main>

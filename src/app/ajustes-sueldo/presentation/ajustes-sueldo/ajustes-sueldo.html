@@ -1,0 +1,200 @@
+<main>
+  <app-page-title title="Ajustes de Sueldo" subtitle="Sueldos" />
+
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap items-end gap-4">
+      <div style="min-width:220px;">
+        <label class="block text-xs font-medium text-default-600 mb-1">Empleado</label>
+        <select class="form-input text-sm" [ngModel]="filtroEmpleado()" (ngModelChange)="filtroEmpleado.set($event ? +$event : null)">
+          <option [ngValue]="null">Todos</option>
+          @for (e of empleados(); track e.id) {
+            <option [ngValue]="e.id">{{ e.nombre_completo }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-default-600 mb-1">Mes</label>
+        <select class="form-input text-sm" [ngModel]="filtroMes()" (ngModelChange)="filtroMes.set($event ? +$event : null)">
+          <option [ngValue]="null">Todos</option>
+          @for (m of meses; track $index) {
+            <option [ngValue]="$index + 1">{{ m }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-default-600 mb-1">Año</label>
+        <select class="form-input text-sm" [ngModel]="filtroAnio()" (ngModelChange)="filtroAnio.set($event ? +$event : null)">
+          <option [ngValue]="null">Todos</option>
+          @for (a of anios; track a) {
+            <option [ngValue]="a">{{ a }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        @for (opt of [['todos','Todos'],['pendientes','Pendientes'],['aplicados','Aplicados']]; track opt[0]) {
+          <button type="button" class="btn btn-sm text-xs"
+            [ngClass]="filtroAplicado() === opt[0] ? 'bg-primary text-white' : 'bg-default-100 text-default-600 hover:bg-default-200'"
+            (click)="setFiltroAplicado($any(opt[0]))">
+            {{ opt[1] }}
+          </button>
+        }
+      </div>
+
+      <button type="button" (click)="abrirForm()" class="btn btn-sm bg-primary text-white ms-auto flex items-center gap-1.5">
+        <ng-icon name="lucidePlus" class="size-3.5" />
+        Nuevo ajuste
+      </button>
+    </div>
+  </div>
+
+  @if (showForm()) {
+    <div class="card mb-5 border border-primary/30 bg-primary/5">
+      <div class="card-header border-b border-primary/20">
+        <h6 class="text-sm font-semibold text-primary">Registrar ajuste de sueldo</h6>
+        <button type="button" (click)="cerrarForm()" class="text-default-400 hover:text-default-700">
+          <ng-icon name="lucideX" />
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Empleado <span class="text-danger">*</span></label>
+            <select class="form-input w-full text-sm" [ngModel]="formEmpleadoId()" (ngModelChange)="formEmpleadoId.set(+$event)">
+              @for (e of empleados(); track e.id) {
+                <option [ngValue]="e.id">{{ e.nombre_completo }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Mes <span class="text-danger">*</span></label>
+            <select class="form-input w-full text-sm" [ngModel]="formMes()" (ngModelChange)="formMes.set(+$event)">
+              @for (m of meses; track $index) {
+                <option [ngValue]="$index + 1">{{ m }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Año <span class="text-danger">*</span></label>
+            <select class="form-input w-full text-sm" [ngModel]="formAnio()" (ngModelChange)="formAnio.set(+$event)">
+              @for (a of anios; track a) {
+                <option [ngValue]="a">{{ a }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Tipo <span class="text-danger">*</span></label>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-sm flex-1 text-xs"
+                [ngClass]="formTipo() === 'descuento' ? 'bg-danger text-white' : 'bg-default-100 text-default-600'"
+                (click)="formTipo.set('descuento')">
+                <ng-icon name="lucideMinusCircle" class="size-3.5 me-1" /> Descuento
+              </button>
+              <button type="button" class="btn btn-sm flex-1 text-xs"
+                [ngClass]="formTipo() === 'bono' ? 'bg-success text-white' : 'bg-default-100 text-default-600'"
+                (click)="formTipo.set('bono')">
+                <ng-icon name="lucidePlusCircle" class="size-3.5 me-1" /> Bono
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Monto (Bs.) <span class="text-danger">*</span></label>
+            <input type="number" min="0.01" step="0.01" class="form-input w-full text-sm"
+              [ngModel]="formMonto()" (ngModelChange)="formMonto.set($event)" placeholder="0.00" />
+          </div>
+          <div class="lg:col-span-3">
+            <label class="block text-xs font-medium text-default-600 mb-1">Motivo <span class="text-danger">*</span></label>
+            <input type="text" class="form-input w-full text-sm"
+              [ngModel]="formMotivo()" (ngModelChange)="formMotivo.set($event)"
+              placeholder="Ej: Faltó 2 días sin justificar (15 y 16 de junio)" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" (click)="cerrarForm()" class="btn btn-sm border border-default-300 text-default-600">Cancelar</button>
+          <button type="button" (click)="guardar()" [disabled]="guardando()"
+            class="btn btn-sm bg-primary text-white flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardando()) { <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></div> }
+            Guardar ajuste
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      @if (isLoading) {
+        <div class="flex items-center justify-center py-16 text-default-400 gap-2 text-sm">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando ajustes...
+        </div>
+      } @else if (isError) {
+        <div class="flex items-center justify-center py-16 text-danger gap-2 text-sm">
+          <ng-icon name="lucideCircleX" /> Error al cargar los ajustes.
+        </div>
+      } @else if (items.length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-2">
+          <div class="size-10 opacity-30"><ng-icon name="lucideBanknote" /></div>
+          <p class="text-sm">Sin ajustes registrados.</p>
+        </div>
+      } @else {
+        <table class="min-w-full divide-y divide-default-200 text-sm">
+          <thead class="bg-default-100">
+            <tr class="text-xs font-medium text-default-500 uppercase tracking-wide">
+              <th class="px-4 py-3 text-start">Empleado</th>
+              <th class="px-4 py-3 text-start">Periodo</th>
+              <th class="px-4 py-3 text-start">Tipo</th>
+              <th class="px-4 py-3 text-end">Monto</th>
+              <th class="px-4 py-3 text-start">Motivo</th>
+              <th class="px-4 py-3 text-center">Estado</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-default-200">
+            @for (a of items; track a.id) {
+              <tr class="hover:bg-default-50">
+                <td class="px-4 py-3 font-medium text-default-800">{{ a.empleado_nombre }}</td>
+                <td class="px-4 py-3 text-default-600">{{ nombreMes(a.mes) }} {{ a.anio }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="a.tipo === 'descuento' ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'">
+                    <ng-icon [name]="a.tipo === 'descuento' ? 'lucideMinusCircle' : 'lucidePlusCircle'" class="size-3" />
+                    {{ a.tipo === 'descuento' ? 'Descuento' : 'Bono' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-end font-medium" [ngClass]="a.tipo === 'descuento' ? 'text-danger' : 'text-success'">
+                  {{ a.tipo === 'descuento' ? '-' : '+' }}Bs. {{ a.monto | number:'1.2-2' }}
+                </td>
+                <td class="px-4 py-3 text-default-500 text-xs max-w-xs truncate" [title]="a.motivo">{{ a.motivo }}</td>
+                <td class="px-4 py-3 text-center">
+                  @if (a.aplicado) {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-default-200 text-default-600">
+                      Aplicado
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                      Pendiente
+                    </span>
+                  }
+                </td>
+                <td class="px-4 py-3 text-center">
+                  @if (!a.aplicado) {
+                    <button type="button" (click)="eliminar(a)"
+                      class="size-7 inline-flex items-center justify-center rounded-lg border border-danger/20 text-danger/70 hover:bg-danger/10 hover:text-danger hover:border-danger/40"
+                      title="Eliminar">
+                      <ng-icon name="lucideTrash2" class="size-3.5" />
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+    <div class="card-footer">
+      <p class="text-xs text-default-400">{{ total }} ajustes en total</p>
+      <app-pagination [currentPage]="pageIndex()" [pageSize]="pageSize()" [total]="total" (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

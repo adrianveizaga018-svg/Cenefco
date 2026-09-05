@@ -1,0 +1,153 @@
+<main>
+  <app-page-title title="Notificaciones del Sistema" subtitle="Sistema" />
+
+  <div class="grid grid-cols-3 gap-4 mb-5">
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <ng-icon name="lucideBell" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Total en página</p>
+          <p class="text-xl font-bold text-default-800">{{ total }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+          <ng-icon name="lucideCircleAlert" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">No leídas (página)</p>
+          <p class="text-xl font-bold text-amber-600">{{ totalNoLeidas }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-success/10 flex items-center justify-center text-success shrink-0">
+          <ng-icon name="lucideCheckCircle" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Leídas (página)</p>
+          <p class="text-xl font-bold text-success">{{ totalLeidas }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h4 class="card-title">Notificaciones del Sistema</h4>
+        <p class="text-xs text-default-400 mt-0.5">
+          Alertas automáticas y avisos generados por el sistema (pagos, cuotas, certificados, etc.)
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <input
+          type="text"
+          class="form-input text-sm w-56"
+          placeholder="Buscar por título..."
+          [ngModel]="search()"
+          (ngModelChange)="onSearch($event)" />
+
+        <span class="text-xs text-default-500">Filtrar:</span>
+        @for (opt of [['todas','Todas','bg-default-200 text-default-700'],['no_leidas','No leídas','bg-amber-100 text-amber-700'],['leidas','Leídas','bg-success/15 text-success']]; track opt[0]) {
+          <button
+            class="btn btn-sm text-xs"
+            [ngClass]="filtro() === opt[0] ? opt[2] : 'bg-default-100 text-default-500 hover:bg-default-200'"
+            (click)="setFiltro($any(opt[0]))">
+            {{ opt[1] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading) {
+        <div class="flex items-center justify-center py-16 text-default-400 gap-2 text-sm">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando notificaciones…
+        </div>
+      } @else if (isError) {
+        <div class="flex items-center justify-center py-16 text-danger gap-2 text-sm">
+          <ng-icon name="lucideCircleX" /> Error al cargar los registros.
+        </div>
+      } @else if (items.length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-2">
+          <div class="size-10 opacity-30"><ng-icon name="lucideBell" /></div>
+          <p class="text-sm">Sin notificaciones</p>
+          <p class="text-xs">Las alertas generadas por el sistema aparecerán aquí.</p>
+        </div>
+      } @else {
+        <table class="min-w-full divide-y divide-default-200 text-sm">
+          <thead class="bg-default-100">
+            <tr class="text-xs font-medium text-default-500 uppercase tracking-wide">
+              <th class="px-4 py-3 text-start">Fecha</th>
+              <th class="px-4 py-3 text-start">Notificación</th>
+              <th class="px-4 py-3 text-start">Tipo</th>
+              <th class="px-4 py-3 text-start">Estado</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-default-200">
+            @for (item of items; track item.id) {
+              <tr class="hover:bg-default-50 transition-colors">
+                <td class="px-4 py-3 text-default-600 whitespace-nowrap">
+                  {{ formatFecha(item.created_at) }}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-start gap-2">
+                    <div class="size-4 text-default-400 mt-0.5 shrink-0"><ng-icon [name]="iconoTipo(item.tipo)" /></div>
+                    <div>
+                      <p class="font-medium text-default-800">{{ item.titulo }}</p>
+                      @if (item.mensaje) {
+                        <p class="text-xs text-default-400 mt-0.5 max-w-md">{{ item.mensaje }}</p>
+                      }
+                      @if (item.url_accion) {
+                        <a [routerLink]="item.url_accion" class="text-xs text-primary hover:underline mt-0.5 inline-block">Ver detalle →</a>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-default-500 text-xs">
+                  {{ tipoLabel(item.tipo) }}
+                </td>
+                <td class="px-4 py-3">
+                  @if (item.leida) {
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-success/10 text-success font-medium">
+                      <div class="size-1.5 rounded-full bg-success"></div> Leída
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                      <div class="size-1.5 rounded-full bg-amber-500"></div> No leída
+                    </span>
+                  }
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button type="button" (click)="delete(item.id)"
+                    class="size-7 inline-flex items-center justify-center rounded-lg border border-danger/20 text-danger/70 hover:bg-danger/10 hover:text-danger hover:border-danger/40 transition-colors"
+                    title="Eliminar">
+                    <ng-icon name="lucideTrash2" class="size-3.5" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div class="card-footer">
+      <p class="text-xs text-default-400">{{ total }} notificaciones en total</p>
+      <app-pagination
+        [currentPage]="pageIndex()"
+        [pageSize]="pageSize()"
+        [total]="total"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

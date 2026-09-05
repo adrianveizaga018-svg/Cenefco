@@ -1,0 +1,153 @@
+<main>
+  <app-page-title title="Enviar Plantillas WhatsApp" subtitle="Chatbot" />
+
+  <div class="grid lg:grid-cols-2 grid-cols-1 gap-5">
+
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Selecciona una Plantilla</h6>
+      </div>
+      <div class="card-body space-y-3">
+        @for (p of plantillas; track p.id) {
+          <label
+            class="flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all"
+            [class]="plantillaSeleccionada === p.id
+              ? 'border-primary bg-primary/5'
+              : 'border-default-200 hover:border-default-300'"
+          >
+            <input
+              type="radio"
+              name="plantilla"
+              [value]="p.id"
+              [(ngModel)]="plantillaSeleccionada"
+              class="mt-0.5 accent-primary"
+            />
+            <div class="flex items-start gap-3 flex-1">
+              <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <div class="size-4.5 text-primary"><ng-icon [name]="p.icon" /></div>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-default-800">{{ p.label }}</p>
+                <p class="text-xs text-default-500 mt-0.5">{{ p.desc }}</p>
+              </div>
+            </div>
+          </label>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Datos del Envío</h6>
+      </div>
+      <div class="card-body">
+
+        @if (success()) {
+          <div class="mb-4 flex items-center gap-2 rounded-md bg-success/10 border border-success/20 px-4 py-3 text-sm text-success">
+            <div class="size-4"><ng-icon name="lucideCheckCircle" /></div>
+            {{ success() }}
+          </div>
+        }
+        @if (error()) {
+          <div class="mb-4 rounded-md bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger">
+            {{ error() }}
+          </div>
+        }
+
+        <form (ngSubmit)="enviar()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-default-800 mb-1.5">
+              Número de teléfono
+              <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="591XXXXXXXX (con código de país)"
+              [(ngModel)]="phone"
+              name="phone"
+            />
+            <p class="text-xs text-default-400 mt-1">Ejemplo: 59170000000</p>
+          </div>
+
+          @if (plantillaSeleccionada === 'confirmacion' || plantillaSeleccionada === 'entrega') {
+            <div>
+              <label class="block text-sm font-medium text-default-800 mb-1.5">
+                Número de pedido <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="VEN-2026-0001"
+                [(ngModel)]="numeroPedido"
+                name="numeroPedido"
+              />
+            </div>
+          }
+
+          @if (plantillaSeleccionada === 'confirmacion') {
+            <div>
+              <label class="block text-sm font-medium text-default-800 mb-1.5">
+                Total del pedido <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Bs. 150.00"
+                [(ngModel)]="total"
+                name="total"
+              />
+            </div>
+          }
+
+          @if (plantillaSeleccionada === 'promocion') {
+            <div>
+              <label class="block text-sm font-medium text-default-800 mb-1.5">
+                Descuento <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="20%"
+                [(ngModel)]="descuento"
+                name="descuento"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-800 mb-1.5">
+                Fecha de vencimiento <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="31 de marzo de 2026"
+                [(ngModel)]="fechaFin"
+                name="fechaFin"
+              />
+            </div>
+          }
+
+          <div class="flex gap-3 pt-2">
+            <button
+              type="submit"
+              class="btn bg-green-500 text-white gap-2"
+              [disabled]="loading()"
+            >
+              @if (loading()) {
+                <span class="size-4 animate-spin"><ng-icon name="lucideLoader" /></span>
+                Enviando...
+              } @else {
+                <ng-icon name="lucideSend" class="size-4" />
+                Enviar Plantilla
+              }
+            </button>
+            <a routerLink="/cenefco/whatsapp-conversaciones" class="btn border border-default-200 text-default-600">
+              Ver Conversaciones
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</main>

@@ -1,0 +1,441 @@
+<main>
+  <app-page-title title="Reportes de Inscripciones" subtitle="Gestión Académica">
+    <a [routerLink]="cursoFijo() ? '/cenefco/cursos' : '/cenefco/inscripciones'"
+       class="btn btn-sm bg-default-100 text-default-600 flex items-center gap-1.5">
+      <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+      {{ cursoFijo() ? 'Cursos' : 'Inscripciones' }}
+    </a>
+  </app-page-title>
+
+  <div class="grid grid-cols-1 gap-5">
+
+
+    @if (!cursoFijo()) {
+    <div class="card px-5 py-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="size-4 text-primary"><ng-icon name="lucideBookOpen"></ng-icon></div>
+          <span class="text-sm font-semibold text-default-700">Curso</span>
+        </div>
+
+        <div class="relative flex-1 min-w-64 max-w-xl">
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
+              @if (cargandoCursos()) {
+                <div class="size-4 text-default-300 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              } @else {
+                <div class="size-4 text-default-400"><ng-icon name="lucideSearch"></ng-icon></div>
+              }
+            </div>
+            @if (dropdownOpen()) {
+              <input type="text" class="form-input ps-9 pe-9 w-full text-sm"
+                placeholder="Buscar por nombre, período, gestión o docente..."
+                [value]="busquedaCurso()"
+                (input)="busquedaCurso.set($any($event.target).value)" autofocus />
+            } @else {
+              <button type="button"
+                class="form-input ps-9 pe-9 w-full text-sm text-start flex items-center"
+                [class]="cursoSel() ? 'text-default-800' : 'text-default-400'"
+                (click)="abrirDropdown()">
+                @if (cursoSel(); as c) {
+                  <span class="truncate">{{ c.nombre }}</span>
+                  <span class="ms-2 text-default-400 shrink-0 text-xs">{{ c.periodo }} {{ c.gestion }}</span>
+                } @else {
+                  <span>Todos los cursos (sin filtro)</span>
+                }
+              </button>
+            }
+            <div class="absolute inset-y-0 end-0 flex items-center pe-2.5 gap-1">
+              @if (cursoSel()) {
+                <button type="button"
+                  class="size-5 flex items-center justify-center rounded text-default-400 hover:text-danger hover:bg-danger/10 transition-colors"
+                  title="Quitar filtro" (click)="limpiarCurso()">
+                  <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+                </button>
+              }
+              <div class="size-4 text-default-300 pointer-events-none transition-transform duration-200"
+                   [class.rotate-180]="dropdownOpen()">
+                <ng-icon name="lucideChevronDown"></ng-icon>
+              </div>
+            </div>
+          </div>
+
+          @if (dropdownOpen()) {
+            <div class="absolute z-50 mt-1 w-full bg-white rounded-xl border border-default-200 shadow-lg overflow-hidden">
+              <button type="button"
+                class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-primary/5 transition-colors border-b border-default-100 text-start"
+                (click)="seleccionarCurso(null)">
+                <div class="size-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <div class="size-3.5 text-primary"><ng-icon name="lucideLayoutGrid"></ng-icon></div>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-default-700">Todos los cursos</p>
+                  <p class="text-xs text-default-400">Ver estadísticas globales sin filtro</p>
+                </div>
+                @if (!cursoSel()) {
+                  <div class="ms-auto size-4 text-primary shrink-0"><ng-icon name="lucideCheck"></ng-icon></div>
+                }
+              </button>
+              <div class="overflow-y-auto max-h-72">
+                @for (c of cursosFiltrados(); track c.id_imp) {
+                  <button type="button"
+                    class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-default-50 transition-colors text-start"
+                    [class.bg-primary\/5]="cursoSel()?.id_imp === c.id_imp"
+                    (click)="seleccionarCurso(c)">
+                    <div class="size-7 rounded-lg bg-default-100 flex items-center justify-center shrink-0">
+                      <div class="size-3.5 text-default-500"><ng-icon name="lucideBookOpen"></ng-icon></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-default-800 truncate">{{ c.nombre }}</p>
+                      <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-xs text-default-400">{{ c.periodo }} · {{ c.gestion }}</span>
+                        @if (c.paralelo) {
+                          <span class="text-xs text-default-400">· Par. {{ c.paralelo }}</span>
+                        }
+                        @if (c.docente.trim()) {
+                          <span class="text-xs text-default-400 truncate">· {{ c.docente }}</span>
+                        }
+                      </div>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-default-100 text-default-500 shrink-0">
+                      {{ c.total_inscritos }}
+                    </span>
+                    @if (cursoSel()?.id_imp === c.id_imp) {
+                      <div class="size-4 text-primary shrink-0"><ng-icon name="lucideCheck"></ng-icon></div>
+                    }
+                  </button>
+                }
+                @if (cursosFiltrados().length === 0) {
+                  <div class="px-4 py-6 text-center text-sm text-default-400">
+                    No se encontraron cursos con "{{ busquedaCurso() }}"
+                  </div>
+                }
+                @if (!busquedaCurso() && cursos().length > 50) {
+                  <div class="px-4 py-2 text-center text-xs text-default-400 border-t border-default-100 bg-default-50">
+                    Mostrando 50 de {{ cursos().length }} cursos. Escribe para filtrar.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (cursoSel(); as c) {
+          <div class="flex items-center gap-2 text-xs text-default-500 shrink-0">
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              <div class="size-3"><ng-icon name="lucideUsers"></ng-icon></div>
+              {{ c.total_inscritos }} inscritos
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+    }
+
+
+    @if (data()?.curso; as curso) {
+      <div class="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 px-5 py-4 flex flex-wrap items-center gap-4">
+        <div class="size-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+          <div class="size-5"><ng-icon name="lucideGraduationCap"></ng-icon></div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold text-default-800 truncate">{{ curso.nombre }}</p>
+          <div class="flex flex-wrap gap-3 mt-0.5">
+            <span class="text-xs text-default-500 flex items-center gap-1">
+              <div class="size-3 text-primary"><ng-icon name="lucideCalendar"></ng-icon></div>
+              {{ curso.periodo }} — Gestión {{ curso.gestion }}
+            </span>
+            @if (curso.paralelo) {
+              <span class="text-xs text-default-500 flex items-center gap-1">
+                <div class="size-3 text-primary"><ng-icon name="lucideUsers"></ng-icon></div>
+                Par. {{ curso.paralelo }}
+              </span>
+            }
+            @if (curso.docente) {
+              <span class="text-xs text-default-500 flex items-center gap-1">
+                <div class="size-3 text-primary"><ng-icon name="lucideUser"></ng-icon></div>
+                {{ curso.docente }}
+              </span>
+            }
+          </div>
+        </div>
+        @if (!cursoFijo()) {
+          <button type="button"
+            class="btn btn-sm bg-white border border-default-200 text-default-500 hover:text-danger hover:border-danger flex items-center gap-1.5"
+            (click)="seleccionarCurso(null)">
+            <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+            Quitar filtro
+          </button>
+        }
+      </div>
+    }
+
+
+    @if (cargando()) {
+      <div class="flex items-center justify-center py-20 text-default-400 gap-3">
+        <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+        <span class="text-sm">Generando reportes...</span>
+      </div>
+    } @else if (error()) {
+      <div class="flex items-center justify-center py-20 text-danger gap-2 text-sm">
+        <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+        {{ error() }}
+      </div>
+    } @else if (data(); as d) {
+
+
+      <div class="flex justify-end gap-2">
+        <button type="button"
+          class="btn btn-sm flex items-center gap-1.5 bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
+          (click)="exportExcel()"
+          [disabled]="exportandoExcel()">
+          @if (exportandoExcel()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          } @else {
+            <div class="size-3.5"><ng-icon name="lucideSheet"></ng-icon></div>
+          }
+          Excel
+        </button>
+        <button type="button"
+          class="btn btn-sm flex items-center gap-1.5 bg-danger text-white hover:bg-red-700 disabled:opacity-60"
+          (click)="exportPdf()"
+          [disabled]="exportandoPdf()">
+          @if (exportandoPdf()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          } @else {
+            <div class="size-3.5"><ng-icon name="lucideFileText"></ng-icon></div>
+          }
+          PDF
+        </button>
+      </div>
+
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="card p-5 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-white pointer-events-none"></div>
+          <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-100/50 rounded-full -translate-y-8 translate-x-8 pointer-events-none"></div>
+          <div class="relative">
+            <div class="size-9 rounded-xl bg-indigo-100 flex items-center justify-center mb-3">
+              <div class="size-4 text-indigo-600"><ng-icon name="lucideClipboardList"></ng-icon></div>
+            </div>
+            <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-1">Total Inscripciones</p>
+            <p class="text-3xl font-black text-indigo-700">{{ d.resumen.total | number }}</p>
+            <p class="text-xs text-default-400 mt-1">Registros totales</p>
+          </div>
+        </div>
+
+        <div class="card p-5 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-emerald-50 to-white pointer-events-none"></div>
+          <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-100/50 rounded-full -translate-y-8 translate-x-8 pointer-events-none"></div>
+          <div class="relative">
+            <div class="size-9 rounded-xl bg-emerald-100 flex items-center justify-center mb-3">
+              <div class="size-4 text-emerald-600"><ng-icon name="lucideUserCheck"></ng-icon></div>
+            </div>
+            <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-1">Activas</p>
+            <p class="text-3xl font-black text-emerald-600">{{ d.resumen.activas | number }}</p>
+            <p class="text-xs text-default-400 mt-1">
+              {{ d.resumen.total > 0 ? ((d.resumen.activas / d.resumen.total * 100) | number:'1.0-0') : 0 }}% del total
+            </p>
+          </div>
+        </div>
+
+        <div class="card p-5 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-slate-50 to-white pointer-events-none"></div>
+          <div class="absolute top-0 right-0 w-24 h-24 bg-slate-100/50 rounded-full -translate-y-8 translate-x-8 pointer-events-none"></div>
+          <div class="relative">
+            <div class="size-9 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+              <div class="size-4 text-slate-500"><ng-icon name="lucideUserX"></ng-icon></div>
+            </div>
+            <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-1">Bajas</p>
+            <p class="text-3xl font-black text-slate-600">{{ d.resumen.bajas | number }}</p>
+            <p class="text-xs text-default-400 mt-1">
+              {{ d.resumen.total > 0 ? ((d.resumen.bajas / d.resumen.total * 100) | number:'1.0-0') : 0 }}% del total
+            </p>
+          </div>
+        </div>
+
+        <div class="card p-5 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-amber-50 to-white pointer-events-none"></div>
+          <div class="absolute top-0 right-0 w-24 h-24 bg-amber-100/50 rounded-full -translate-y-8 translate-x-8 pointer-events-none"></div>
+          <div class="relative">
+            <div class="size-9 rounded-xl bg-amber-100 flex items-center justify-center mb-3">
+              <div class="size-4 text-amber-600"><ng-icon name="lucideBanknote"></ng-icon></div>
+            </div>
+            <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-1">Total Recaudado</p>
+            <p class="text-2xl font-black text-amber-600">Bs. {{ d.resumen.recaudado | number:'1.0-0' }}</p>
+            <p class="text-xs text-default-400 mt-1">En pagos activos</p>
+          </div>
+        </div>
+
+      </div>
+
+
+      @for (dim of d.dimensiones; track dim.key) {
+        <div class="card overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-px">
+
+
+          <button type="button"
+            class="w-full flex items-center justify-between px-5 py-4 hover:bg-default-50/80 transition-colors text-start gap-3"
+            (click)="toggle(dim.key)">
+
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="size-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                   [style.background]="'linear-gradient(135deg,' + dim.color + '30,' + dim.color + '10)'">
+                @if (dim.tipo === 'donut') {
+                  <div class="size-4.5" [style.color]="dim.color"><ng-icon name="lucidePieChart"></ng-icon></div>
+                } @else {
+                  <div class="size-4.5" [style.color]="dim.color"><ng-icon name="lucideBarChart2"></ng-icon></div>
+                }
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="text-sm font-semibold text-default-800">{{ dim.titulo }}</p>
+                  @if (!isExpanded(dim.key) && dim.datos.length > 0) {
+                    <div class="flex items-center gap-1 flex-wrap">
+                      @for (item of dim.datos.slice(0, 3); track item.label) {
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-md font-medium"
+                              [style.background]="dim.color + '15'"
+                              [style.color]="dim.color">
+                          {{ item.label }}: {{ item.value }}
+                        </span>
+                      }
+                      @if (dim.datos.length > 3) {
+                        <span class="text-[10px] text-default-400">+{{ dim.datos.length - 3 }} más</span>
+                      }
+                    </div>
+                  }
+                </div>
+                <p class="text-xs text-default-400 mt-0.5">{{ dim.subtitulo }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+                    [style.background]="dim.color + '15'"
+                    [style.color]="dim.color">
+                {{ totalDim(dim.datos) | number }} resp.
+              </span>
+              <button type="button"
+                class="size-7 flex items-center justify-center rounded-lg text-xs font-bold transition-colors"
+                [style.background]="dim.color + '15'"
+                [style.color]="dim.color"
+                (click)="$event.stopPropagation(); exportCsv(dim)"
+                title="Exportar CSV">
+                <div class="size-3.5"><ng-icon name="lucideDownload"></ng-icon></div>
+              </button>
+              <div class="size-5 text-default-300 transition-transform duration-300"
+                   [class.rotate-180]="isExpanded(dim.key)">
+                <ng-icon name="lucideChevronDown"></ng-icon>
+              </div>
+            </div>
+          </button>
+
+
+          @if (isExpanded(dim.key)) {
+            <div class="border-t border-default-100">
+
+              @if (dim.datos.length === 0) {
+                <div class="py-10 text-center text-sm text-default-400">
+                  Sin datos para esta dimensión con el filtro actual.
+                </div>
+
+              } @else if (dim.tipo === 'donut') {
+
+                <div class="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-default-100">
+                  <div class="md:col-span-3 p-4">
+                    @if (getChart(dim.key); as opts) {
+                      <apx-chart
+                        [series]="$any(opts.series)"
+                        [chart]="$any(opts.chart)"
+                        [labels]="$any(opts.labels)"
+                        [colors]="$any(opts.colors)"
+                        [legend]="$any(opts.legend)"
+                        [plotOptions]="$any(opts.plotOptions)"
+                        [dataLabels]="$any(opts.dataLabels)"
+                        [stroke]="$any(opts.stroke)"
+                        [tooltip]="$any(opts.tooltip)"
+                        [states]="$any(opts.states)"
+                        [responsive]="$any(opts.responsive)"
+                      />
+                    }
+                  </div>
+                  <div class="md:col-span-2 p-5 flex flex-col gap-3 overflow-y-auto max-h-96">
+                    <p class="text-xs font-bold text-default-400 uppercase tracking-wider">Desglose</p>
+                    @for (item of dim.datos; track item.label; let i = $index) {
+                      <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="size-2.5 rounded-full shrink-0"
+                                 [style.background]="paleta(i)"></div>
+                            <span class="text-sm text-default-700 font-medium truncate">{{ item.label }}</span>
+                          </div>
+                          <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-sm font-bold text-default-900">{{ item.value | number }}</span>
+                            <span class="text-xs text-default-400 w-10 text-end">{{ pct(item.value, dim.datos) }}%</span>
+                          </div>
+                        </div>
+                        <div class="h-2 bg-default-100 rounded-full overflow-hidden">
+                          <div class="h-full rounded-full transition-all duration-700"
+                               [style.width]="pct(item.value, dim.datos) + '%'"
+                               [style.background]="paleta(i)">
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+              } @else {
+
+                <div class="p-4">
+                  @if (getChart(dim.key); as opts) {
+                    <apx-chart
+                      [series]="$any(opts.series)"
+                      [chart]="$any(opts.chart)"
+                      [xaxis]="$any(opts.xaxis)"
+                      [yaxis]="$any(opts.yaxis)"
+                      [colors]="$any(opts.colors)"
+                      [fill]="$any(opts.fill)"
+                      [plotOptions]="$any(opts.plotOptions)"
+                      [dataLabels]="$any(opts.dataLabels)"
+                      [grid]="$any(opts.grid)"
+                      [states]="$any(opts.states)"
+                      [tooltip]="$any(opts.tooltip)"
+                      [legend]="$any(opts.legend)"
+                      [responsive]="$any(opts.responsive)"
+                    />
+                  }
+                </div>
+                <div class="border-t border-default-100 px-5 pb-5">
+                  <p class="text-xs font-bold text-default-400 uppercase tracking-wider pt-4 mb-3">Desglose</p>
+                  <div class="space-y-2.5">
+                    @for (item of dim.datos; track item.label; let i = $index) {
+                      <div class="flex items-center gap-3">
+                        <div class="size-2.5 rounded-full shrink-0" [style.background]="paleta(i)"></div>
+                        <span class="text-xs text-default-600 font-medium w-36 truncate shrink-0">{{ item.label }}</span>
+                        <div class="flex-1 h-2.5 bg-default-100 rounded-full overflow-hidden">
+                          <div class="h-full rounded-full transition-all duration-700"
+                               [style.width]="pct(item.value, dim.datos) + '%'"
+                               [style.background]="'linear-gradient(90deg,' + paleta(i) + ',' + paletaOscuro(i) + ')'">
+                          </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0 w-24 justify-end">
+                          <span class="text-xs font-bold text-default-800">{{ item.value | number }}</span>
+                          <span class="text-[10px] text-default-400">({{ pct(item.value, dim.datos) }}%)</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+            </div>
+          }
+        </div>
+      }
+
+    }
+  </div>
+</main>

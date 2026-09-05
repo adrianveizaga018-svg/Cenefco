@@ -1,0 +1,458 @@
+<main>
+  <app-page-title title="Conversaciones WhatsApp" subtitle="Chatbot" />
+
+  <app-whatsapp-bot-banner class="mb-5" />
+
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap gap-3 items-end">
+      <div class="flex-1 min-w-48">
+        <label class="block text-xs font-medium text-default-600 mb-1">Buscar</label>
+        <div class="relative">
+          <div class="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
+            <ng-icon name="lucideSearch" class="size-4 text-default-400" />
+          </div>
+          <input
+            type="text"
+            class="form-input ps-9"
+            placeholder="Número de teléfono o nombre..."
+            [(ngModel)]="query"
+            (keyup.enter)="search()"
+          />
+        </div>
+      </div>
+      <div class="w-48">
+        <label class="block text-xs font-medium text-default-600 mb-1">Estado</label>
+        <select class="form-select" [(ngModel)]="estadoFiltro" (change)="search()">
+          @for (e of estados; track e.value) {
+            <option [value]="e.value">{{ e.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="w-48">
+        <label class="block text-xs font-medium text-default-600 mb-1">Etiqueta</label>
+        <select class="form-select" [(ngModel)]="etiquetaFiltroId" (change)="search()">
+          <option value="">Todas</option>
+          @for (e of etiquetas(); track e.id) {
+            <option [value]="e.id">{{ e.nombre }}</option>
+          }
+        </select>
+      </div>
+      <button class="btn bg-primary text-white gap-1.5" (click)="search()">
+        <ng-icon name="lucideSearch" class="size-4" />
+        Buscar
+      </button>
+    </div>
+  </div>
+
+  @if (algunoSeleccionado) {
+    <div class="card mb-5 border-2 border-green-400">
+      <div class="card-body">
+        <div class="flex items-start gap-3">
+          <div class="size-9 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+            <ng-icon name="lucideSend" class="size-4 text-green-600" />
+          </div>
+          <div class="flex-1 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <p class="text-sm font-semibold text-default-800">
+                Enviar mensaje a
+                <span class="text-green-600">{{ seleccionados.size }}</span>
+                contacto(s) seleccionado(s)
+              </p>
+              <button
+                type="button"
+                class="text-xs text-default-400 hover:text-default-600 underline"
+                (click)="seleccionados.clear()"
+              >
+                Cancelar selección
+              </button>
+            </div>
+            @if (!archivoAdjunto) {
+              <div class="flex gap-2 items-end">
+                <textarea
+                  class="form-input flex-1 resize-none text-sm min-h-[72px]"
+                  placeholder="Escribe el mensaje a enviar..."
+                  [(ngModel)]="mensajeEnvio"
+                  rows="3"
+                ></textarea>
+                <div class="flex flex-col gap-2 shrink-0">
+                  <label
+                    class="btn bg-default-100 hover:bg-default-200 text-default-600 gap-1.5 cursor-pointer text-xs px-3 h-8"
+                    title="Adjuntar imagen o PDF">
+                    <ng-icon name="lucidePaperclip" class="size-3.5" />
+                    Adjuntar
+                    <input type="file" class="hidden" accept="image/jpeg,image/png,application/pdf" (change)="onArchivoSeleccionado($event)" />
+                  </label>
+                  <button
+                    class="btn bg-green-500 text-white gap-1.5 h-[52px] px-5"
+                    [disabled]="enviando() || !mensajeEnvio.trim()"
+                    (click)="enviarASeleccionados()"
+                  >
+                    @if (enviando()) {
+                      <span class="size-4 animate-spin"><ng-icon name="lucideLoader" /></span>
+                    } @else {
+                      <ng-icon name="lucideSend" class="size-4" />
+                    }
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="border border-default-200 rounded-lg p-3 bg-default-50 space-y-2">
+                <div class="flex items-center gap-2">
+                  <div class="size-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                    @if (tipoAdjunto === 'image') {
+                      <ng-icon name="lucideImage" class="size-4 text-primary" />
+                    } @else {
+                      <ng-icon name="lucideFileText" class="size-4 text-primary" />
+                    }
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-default-800 truncate">{{ archivoAdjunto.name }}</p>
+                    <p class="text-xs text-default-400">{{ tipoAdjunto === 'image' ? 'Imagen' : 'Documento PDF' }}</p>
+                  </div>
+                  <button type="button" class="text-default-400 hover:text-danger" (click)="limpiarAdjunto()">
+                    <ng-icon name="lucideX" class="size-4" />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  class="form-input form-input-sm w-full text-sm"
+                  placeholder="Descripción opcional..."
+                  [(ngModel)]="captionAdjunto"
+                />
+                <div class="flex justify-end">
+                  <button
+                    class="btn bg-green-500 text-white gap-2 text-sm"
+                    [disabled]="enviando()"
+                    (click)="enviarASeleccionados()"
+                  >
+                    @if (enviando()) {
+                      <span class="size-4 animate-spin"><ng-icon name="lucideLoader" /></span>
+                      Enviando...
+                    } @else {
+                      <ng-icon name="lucideSend" class="size-4" />
+                      Enviar archivo
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+            <div class="flex flex-wrap gap-1.5">
+              @for (phone of phonesSeleccionados; track phone) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-mono">
+                  {{ phone }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="card-header flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-2">
+        <h6 class="card-title">Conversaciones</h6>
+        @if (!loading()) {
+          <span class="text-xs font-normal text-default-400">({{ total() }} total)</span>
+        }
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-sm border border-default-200 text-default-600 text-xs gap-1.5" (click)="abrirNuevaEtiqueta()">
+          <ng-icon name="lucideTag" class="size-3.5" />
+          Gestionar etiquetas
+        </button>
+        <a routerLink="/cenefco/whatsapp-enviar" class="btn btn-sm border border-default-200 text-default-600 text-xs gap-1.5">
+          <ng-icon name="lucideUsers" class="size-3.5" />
+          Envío masivo
+        </a>
+        <a routerLink="/cenefco/whatsapp-plantillas" class="btn btn-sm border border-default-200 text-default-600 text-xs gap-1.5">
+          <ng-icon name="lucideFileText" class="size-3.5" />
+          Plantillas
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      @if (loading()) {
+        <div class="flex items-center justify-center py-16 gap-2 text-default-400 text-sm">
+          <div class="size-5 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando conversaciones...
+        </div>
+      } @else if (conversaciones().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-2">
+          <div class="size-12"><ng-icon name="lucideMessageCircle" /></div>
+          <p class="text-sm">No hay conversaciones registradas.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-default-200">
+            <thead class="bg-default-100">
+              <tr>
+                <th class="px-3.5 py-3 text-start w-10">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox"
+                    [checked]="todosSeleccionados"
+                    (change)="toggleTodos()"
+                  />
+                </th>
+                <th class="px-3.5 py-3 text-start text-xs font-medium text-default-500 uppercase tracking-wider">Contacto</th>
+                <th class="px-3.5 py-3 text-start text-xs font-medium text-default-500 uppercase tracking-wider">Estado</th>
+                <th class="px-3.5 py-3 text-start text-xs font-medium text-default-500 uppercase tracking-wider">Etiquetas</th>
+                <th class="px-3.5 py-3 text-start text-xs font-medium text-default-500 uppercase tracking-wider">Contexto</th>
+                <th class="px-3.5 py-3 text-start text-xs font-medium text-default-500 uppercase tracking-wider">Última actividad</th>
+                <th class="px-3.5 py-3 text-start w-28"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-default-200 bg-white">
+              @for (conv of conversaciones(); track conv.id) {
+                <tr
+                  class="transition-colors"
+                  [class]="conv.estado === 'soporte'
+                    ? 'bg-danger/5 border-l-4 border-danger'
+                    : (seleccionados.has(conv.id) ? 'bg-primary/5' : 'hover:bg-default-50')"
+                >
+                  <td class="px-3.5 py-3">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox"
+                      [checked]="seleccionados.has(conv.id)"
+                      (change)="toggleSeleccion(conv.id)"
+                    />
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    <div class="flex items-center gap-2.5">
+                      <div class="relative shrink-0">
+                        <div class="size-9 rounded-full bg-green-100 flex items-center justify-center">
+                          <ng-icon name="lucideUser" class="size-4 text-green-600" />
+                        </div>
+                        @if (conv.estado === 'soporte') {
+                          <span class="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-danger border-2 border-white animate-pulse"></span>
+                        }
+                      </div>
+                      <div>
+                        @if (conv.nombre) {
+                          <p class="text-sm font-semibold text-default-800 leading-tight">{{ conv.nombre }}</p>
+                        }
+                        <p class="text-xs text-default-500 font-mono">{{ formatPhone(conv) }}</p>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    <span
+                      class="inline-flex items-center py-0.5 px-2.5 rounded text-xs font-medium"
+                      [class]="badgeClass(conv.estado)"
+                    >
+                      {{ estadoLabel(conv.estado) }}
+                    </span>
+                    @if (conv.estado === 'soporte') {
+                      <p class="text-[10px] text-danger mt-0.5">Requiere atención</p>
+                    }
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    <div class="flex flex-wrap gap-1 items-center">
+                      @for (et of conv.etiquetas; track et.id) {
+                        <span
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
+                          [style.background-color]="et.color"
+                        >
+                          {{ et.nombre }}
+                        </span>
+                      }
+                      <button
+                        type="button"
+                        class="size-5 rounded border border-dashed border-default-300 flex items-center justify-center text-default-300 hover:text-primary hover:border-primary transition-colors"
+                        (click)="abrirModalEtiquetas(conv)"
+                        title="Gestionar etiquetas"
+                      >
+                        <ng-icon name="lucidePlus" class="size-3" />
+                      </button>
+                    </div>
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    @if (contextoResumen(conv.contexto); as resumen) {
+                      <span class="text-xs text-default-500">{{ resumen }}</span>
+                    } @else {
+                      <span class="text-xs text-default-300">—</span>
+                    }
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    <span class="text-xs text-default-500">
+                      {{ conv.updated_at | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                  </td>
+
+                  <td class="px-3.5 py-3">
+                    <a
+                      [routerLink]="['/cenefco/whatsapp-mensajes', conv.id]"
+                      class="btn btn-sm border border-default-200 text-default-600 hover:bg-default-50 text-xs gap-1"
+                      [class.border-danger]="conv.estado === 'soporte'"
+                      [class.text-danger]="conv.estado === 'soporte'"
+                    >
+                      <ng-icon name="lucideMessageSquare" class="size-3.5" />
+                      Chat
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (totalPages > 1) {
+          <div class="flex items-center justify-between px-4 py-3 border-t border-default-200">
+            <p class="text-xs text-default-500">Página {{ pageIndex }} de {{ totalPages }}</p>
+            <div class="flex gap-1">
+              <button
+                class="btn btn-sm border border-default-200 text-default-600 hover:bg-default-100 disabled:opacity-40"
+                [disabled]="pageIndex === 1"
+                (click)="changePage(pageIndex - 1)"
+              >
+                <ng-icon name="lucideChevronLeft" class="size-3.5" />
+              </button>
+              <button
+                class="btn btn-sm border border-default-200 text-default-600 hover:bg-default-100 disabled:opacity-40"
+                [disabled]="pageIndex === totalPages"
+                (click)="changePage(pageIndex + 1)"
+              >
+                <ng-icon name="lucideChevronRight" class="size-3.5" />
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</main>
+
+@if (showModalEtiquetas) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-default-200">
+        <h6 class="font-semibold text-default-800">Etiquetas de la conversación</h6>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarModalEtiquetas()">
+          <ng-icon name="lucideX" class="size-4" />
+        </button>
+      </div>
+      <div class="p-5 space-y-2 max-h-72 overflow-y-auto">
+        @if (etiquetas().length === 0) {
+          <p class="text-sm text-default-400 text-center py-4">No hay etiquetas creadas aún.</p>
+        }
+        @for (et of etiquetas(); track et.id) {
+          <label class="flex items-center gap-3 cursor-pointer hover:bg-default-50 rounded-lg px-2 py-1.5">
+            <input
+              type="checkbox"
+              class="form-checkbox"
+              [checked]="etiquetasConv.includes(et.id)"
+              (change)="toggleEtiquetaConv(et.id)"
+            />
+            <span
+              class="size-3 rounded-full shrink-0"
+              [style.background-color]="et.color"
+            ></span>
+            <span class="text-sm text-default-700">{{ et.nombre }}</span>
+          </label>
+        }
+      </div>
+      <div class="flex justify-end gap-2 px-5 py-4 border-t border-default-200">
+        <button type="button" class="btn btn-sm border border-default-200 text-default-600" (click)="cerrarModalEtiquetas()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm bg-primary text-white gap-1.5"
+          [disabled]="guardandoEtiquetas"
+          (click)="guardarEtiquetasConv()"
+        >
+          @if (guardandoEtiquetas) {
+            <span class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></span>
+          }
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showModalNuevaEtiqueta) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-default-200">
+        <h6 class="font-semibold text-default-800">
+          {{ etiquetaEditId ? 'Editar etiqueta' : 'Nueva etiqueta' }}
+        </h6>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarModalEtiqueta()">
+          <ng-icon name="lucideX" class="size-4" />
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1">Nombre</label>
+          <input type="text" class="form-input w-full" placeholder="Ej: Interesado, Inscrito..." [(ngModel)]="etiquetaNombre" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-2">Color</label>
+          <div class="flex flex-wrap gap-2">
+            @for (c of coloresDisponibles; track c) {
+              <button
+                type="button"
+                class="size-7 rounded-full border-2 transition-all"
+                [style.background-color]="c"
+                [class.border-default-800]="etiquetaColor === c"
+                [class.border-transparent]="etiquetaColor !== c"
+                (click)="etiquetaColor = c"
+              ></button>
+            }
+          </div>
+        </div>
+
+        @if (!etiquetaEditId && etiquetas().length > 0) {
+          <div class="border-t border-default-100 pt-4">
+            <p class="text-xs font-medium text-default-500 mb-2">Etiquetas existentes</p>
+            <div class="space-y-1">
+              @for (et of etiquetas(); track et.id) {
+                <div class="flex items-center justify-between px-2 py-1 rounded hover:bg-default-50">
+                  <div class="flex items-center gap-2">
+                    <span class="size-3 rounded-full shrink-0" [style.background-color]="et.color"></span>
+                    <span class="text-sm text-default-700">{{ et.nombre }}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button type="button" class="text-default-400 hover:text-primary p-1" (click)="abrirEditarEtiqueta(et)">
+                      <ng-icon name="lucidePencil" class="size-3.5" />
+                    </button>
+                    <button type="button" class="text-default-400 hover:text-danger p-1" (click)="eliminarEtiqueta(et)">
+                      <ng-icon name="lucideTrash2" class="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <div class="flex justify-end gap-2 px-5 py-4 border-t border-default-200">
+        <button type="button" class="btn btn-sm border border-default-200 text-default-600" (click)="cerrarModalEtiqueta()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm bg-primary text-white gap-1.5"
+          [disabled]="guardandoEtiqueta || !etiquetaNombre.trim()"
+          (click)="guardarEtiqueta()"
+        >
+          @if (guardandoEtiqueta) {
+            <span class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></span>
+          }
+          {{ etiquetaEditId ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

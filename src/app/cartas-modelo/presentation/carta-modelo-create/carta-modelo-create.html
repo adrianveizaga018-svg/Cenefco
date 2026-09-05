@@ -1,0 +1,51 @@
+<main>
+  <app-page-title title="Nuevo Modelo de Carta" subtitle="Modelos de Cartas" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Modelo</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre del Modelo <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombremodelo" class="form-input w-full" placeholder="Ej: Carta de Presentación">
+            @if (form.get('nombremodelo')?.invalid && form.get('nombremodelo')?.touched) { <p class="text-danger text-xs mt-1">El nombre es requerido</p> }
+          </div>
+          <div class="flex items-center gap-2 pt-2">
+            <input type="checkbox" formControlName="usar_encabezado_pie_estandar" id="encabezado" class="form-checkbox">
+            <label for="encabezado" class="text-sm text-default-700">Usar encabezado y pie estándar</label>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Principal (textocarta)</label>
+            <textarea formControlName="textocarta" rows="4" class="form-input w-full" placeholder="Texto principal de la carta..."></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 1 (textocarta1)</label>
+            <textarea formControlName="textocarta1" rows="3" class="form-input w-full"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 3 (textocarta3)</label>
+            <textarea formControlName="textocarta3" rows="3" class="form-input w-full"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto de Carta (texto_carta)</label>
+            <textarea formControlName="texto_carta" rows="4" class="form-input w-full"></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Modelo }
+            </button>
+            <a routerLink="/cenefco/cartas-modelo" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

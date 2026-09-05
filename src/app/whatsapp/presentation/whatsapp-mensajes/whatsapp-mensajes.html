@@ -1,0 +1,202 @@
+﻿<main>
+  <app-page-title
+    [title]="nombre ? 'Chat con ' + nombre : 'Chat · ' + phone"
+    subtitle="WhatsApp · Conversación #{{ conversacionId }}"
+  />
+
+  <div class="mb-4 flex items-center gap-3 flex-wrap">
+    <a routerLink="/cenefco/whatsapp-conversaciones" class="btn btn-sm border border-default-200 text-default-600 gap-1.5">
+      <ng-icon name="lucideArrowLeft" class="size-3.5" />
+      Volver a conversaciones
+    </a>
+    @if (esSoporte) {
+      <button
+        class="btn btn-sm bg-success text-white gap-1.5"
+        [disabled]="atendiendo()"
+        (click)="marcarAtendido()"
+      >
+        @if (atendiendo()) {
+          <span class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></span>
+          Procesando...
+        } @else {
+          <ng-icon name="lucideCheckCircle" class="size-3.5" />
+          Marcar como atendido
+        }
+      </button>
+    }
+  </div>
+
+  @if (esSoporte) {
+    <div class="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3">
+      <div class="flex items-start gap-3">
+        <span class="size-2.5 rounded-full bg-danger animate-pulse shrink-0 mt-1"></span>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-danger">Este contacto espera atención de un asesor</p>
+          <p class="text-xs text-default-500 mt-0.5">El bot está pausado. Cuando termines, presiona "Marcar como atendido" para que el bot retome el control.</p>
+        </div>
+      </div>
+
+      @if (asesor()) {
+        <div class="mt-3 pt-3 border-t border-danger/20 flex items-center gap-2">
+          <div class="size-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <ng-icon name="lucideUser" class="size-4 text-primary" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-default-800">{{ asesor()!.nombre }}</p>
+            <a [href]="'https://wa.me/' + asesor()!.telefono.replace('+','')" target="_blank"
+               class="text-xs text-success hover:underline flex items-center gap-1">
+              <ng-icon name="lucidePhone" class="size-3" />
+              {{ asesor()!.telefono }}
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="card flex flex-col" style="height: calc(100vh - 240px); min-height: 500px;">
+
+    <div class="card-header border-b border-default-200 flex items-center gap-3 px-4 py-3">
+      <div class="size-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+        <ng-icon name="lucideUser" class="size-5 text-green-600" />
+      </div>
+      <div class="flex-1 min-w-0">
+        @if (nombre) {
+          <p class="text-sm font-semibold text-default-800 truncate">{{ nombre }}</p>
+          <p class="text-xs text-default-400 font-mono">{{ phoneDisplay }}</p>
+        } @else {
+          <p class="text-sm font-semibold text-default-800 font-mono">{{ phoneDisplay }}</p>
+        }
+      </div>
+      <div class="shrink-0 flex items-center gap-1.5 text-xs text-default-400">
+        <span class="size-1.5 rounded-full bg-green-400 animate-pulse inline-block"></span>
+        Actualizando cada 5s
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 bg-default-50">
+      @if (loading()) {
+        <div class="flex items-center justify-center h-full gap-2 text-default-400 text-sm">
+          <div class="size-5 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando mensajes...
+        </div>
+      } @else if (mensajes().length === 0) {
+        <div class="flex flex-col items-center justify-center h-full text-default-400 gap-2">
+          <div class="size-12 text-default-300"><ng-icon name="lucideMessageSquare" /></div>
+          <p class="text-sm">No hay mensajes en esta conversación.</p>
+        </div>
+      } @else {
+        <div class="flex flex-col gap-3 max-w-2xl mx-auto">
+          @for (msg of mensajes(); track msg.id) {
+
+            @if (msg.direccion === 'entrante') {
+              <div class="flex justify-start">
+                <div class="flex items-end gap-2 max-w-[78%]">
+                  <div class="size-7 rounded-full bg-default-200 flex items-center justify-center shrink-0">
+                    <ng-icon name="lucideUser" class="size-3.5 text-default-500" />
+                  </div>
+                  <div class="bg-white rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm border border-default-100">
+                    @if (msg.contenido) {
+                      <p class="text-sm text-default-800 whitespace-pre-wrap">{{ msg.contenido }}</p>
+                    } @else {
+                      <p class="text-xs text-default-400 italic">{{ tipoLabel(msg.tipo) }}</p>
+                    }
+                    <p class="text-[10px] text-default-400 mt-1 text-right">
+                      {{ msg.created_at | date:'HH:mm · dd/MM' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (msg.direccion === 'saliente') {
+              <div class="flex justify-end">
+                <div class="flex items-end gap-2 max-w-[78%]">
+                  <div class="bg-green-500 rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+                    @if (msg.contenido) {
+                      <p class="text-sm text-white whitespace-pre-wrap">{{ msg.contenido }}</p>
+                    } @else {
+                      <p class="text-xs text-green-100 italic">{{ tipoLabel(msg.tipo) }}</p>
+                    }
+                    <p class="text-[10px] text-green-200 mt-1 text-right">
+                      {{ msg.created_at | date:'HH:mm · dd/MM' }}
+                    </p>
+                  </div>
+                  <div class="size-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                    <ng-icon name="lucideBot" class="size-3.5 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            }
+
+          }
+        </div>
+      }
+    </div>
+
+    <div class="border-t border-default-200 p-3 bg-white">
+      <div class="max-w-2xl mx-auto space-y-2">
+
+        @if (archivoAdjunto) {
+          <div class="flex items-center gap-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2">
+            <div class="size-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+              @if (tipoAdjunto === 'image') {
+                <ng-icon name="lucideImage" class="size-4 text-primary" />
+              } @else {
+                <ng-icon name="lucideFileText" class="size-4 text-primary" />
+              }
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium text-default-700 truncate">{{ archivoAdjunto.name }}</p>
+              <p class="text-[10px] text-default-400">{{ tipoAdjunto === 'image' ? 'Imagen' : 'PDF' }}</p>
+            </div>
+            <input
+              type="text"
+              class="form-input form-input-sm text-xs flex-1 max-w-[200px]"
+              placeholder="Descripción opcional..."
+              [(ngModel)]="captionAdjunto"
+            />
+            <button type="button" class="text-default-400 hover:text-danger shrink-0" (click)="limpiarAdjunto()">
+              <ng-icon name="lucideX" class="size-4" />
+            </button>
+          </div>
+        }
+
+        <div class="flex items-end gap-2">
+          
+          <label
+            class="btn size-11 shrink-0 bg-default-100 hover:bg-default-200 text-default-500 flex items-center justify-center cursor-pointer"
+            title="Adjuntar imagen o PDF">
+            <ng-icon name="lucidePaperclip" class="size-4" />
+            <input type="file" class="hidden" accept="image/jpeg,image/png,application/pdf" (change)="onArchivoSeleccionado($event)" />
+          </label>
+
+          <textarea
+            class="form-input flex-1 resize-none min-h-[44px] max-h-32 py-2.5 text-sm"
+            placeholder="Escribe un mensaje como operador..."
+            [(ngModel)]="textoNuevo"
+            (keydown.enter)="onEnter($event)"
+            [disabled]="!!archivoAdjunto"
+            rows="1"
+          ></textarea>
+
+          <button
+            class="btn bg-green-500 text-white size-11 shrink-0 flex items-center justify-center disabled:opacity-50"
+            [disabled]="enviando() || (!textoNuevo.trim() && !archivoAdjunto)"
+            (click)="enviar()"
+            title="Enviar (Enter)"
+          >
+            @if (enviando()) {
+              <span class="size-4 animate-spin"><ng-icon name="lucideLoader" /></span>
+            } @else {
+              <ng-icon name="lucideSend" class="size-4" />
+            }
+          </button>
+        </div>
+
+        <p class="text-[10px] text-default-300 text-center">Enter para enviar · Shift+Enter para nueva línea</p>
+      </div>
+    </div>
+
+  </div>
+</main>

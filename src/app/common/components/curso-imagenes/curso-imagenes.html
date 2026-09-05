@@ -1,0 +1,45 @@
+﻿<div class="space-y-4">
+
+  <label class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-default-300 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+         [class.opacity-60]="uploading()"
+         [class.pointer-events-none]="uploading()">
+    <input type="file" class="hidden" multiple accept="image/*" (change)="onFileSelected($event)">
+    @if (uploading()) {
+      <div class="flex flex-col items-center gap-2 text-default-500">
+        <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+        <span class="text-sm">Subiendo...</span>
+      </div>
+    } @else {
+      <div class="flex flex-col items-center gap-2 text-default-400">
+        <div class="size-8"><ng-icon name="lucideImagePlus"></ng-icon></div>
+        <span class="text-sm font-medium">Haz clic o arrastra imágenes aquí</span>
+        <span class="text-xs">PNG, JPG, WEBP — puedes seleccionar varias a la vez</span>
+      </div>
+    }
+  </label>
+
+  @if (error()) {
+    <p class="text-danger text-xs">{{ error() }}</p>
+  }
+
+  @if (_urls().length > 0) {
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      @for (url of _urls(); track url; let i = $index) {
+        <div class="relative group rounded-lg overflow-hidden border border-default-200 aspect-video bg-default-100">
+          <img [src]="url" alt="imagen {{ i + 1 }}"
+               class="w-full h-full object-cover">
+          
+          <button type="button"
+                  class="absolute top-1.5 right-1.5 size-6 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                  (click)="remove(i)">
+            <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+          </button>
+          
+          <span class="absolute bottom-1 left-1.5 text-[10px] bg-black/50 text-white rounded px-1">{{ i + 1 }}</span>
+        </div>
+      }
+    </div>
+    <p class="text-xs text-default-400">{{ _urls().length }} imagen{{ _urls().length !== 1 ? 'es' : '' }} agregada{{ _urls().length !== 1 ? 's' : '' }}</p>
+  }
+
+</div>

@@ -1,0 +1,374 @@
+﻿<main>
+  <app-page-title title="Reporte Financiero" subtitle="Análisis de Ingresos y Ventas" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+
+    <div class="card">
+      <div class="card-header flex-wrap gap-3">
+
+        <select class="form-input form-input-sm text-sm"
+          [ngModel]="gestionInput()" (ngModelChange)="gestionInput.set(+$event)">
+          @for (g of gestiones; track g) {
+            <option [value]="g">{{ g }}</option>
+          }
+        </select>
+
+        <input type="text" class="form-input form-input-sm text-sm w-40"
+          placeholder="Período (ej: I)"
+          [ngModel]="periodoInput()" (ngModelChange)="periodoInput.set($event)" />
+
+        <button type="button"
+          class="btn btn-sm bg-primary text-white flex items-center gap-1"
+          (click)="cargar()" [disabled]="cargando()">
+          @if (cargando()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></div> Cargando...
+          } @else {
+            <div class="size-3.5"><ng-icon name="lucideRefreshCw" /></div> Actualizar
+          }
+        </button>
+
+        <button type="button"
+          class="btn btn-sm bg-success text-white flex items-center gap-1 ms-auto"
+          (click)="exportarExcel()" [disabled]="datos().length === 0">
+          <div class="size-3.5"><ng-icon name="lucideDownload" /></div> Exportar Excel
+        </button>
+
+      </div>
+    </div>
+
+    @if (cargando()) {
+      <div class="card">
+        <div class="flex items-center justify-center py-20 text-default-500 text-sm gap-2">
+          <div class="size-5 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando datos...
+        </div>
+      </div>
+    } @else if (datos().length === 0) {
+      <div class="card">
+        <div class="flex flex-col items-center justify-center py-20 text-default-400">
+          <div class="size-14 mb-3"><ng-icon name="lucideBarChart2" /></div>
+          <p class="text-sm">No hay datos para los filtros seleccionados.</p>
+        </div>
+      </div>
+    } @else {
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="card p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Inscripciones</p>
+          <p class="text-3xl font-bold text-primary">{{ totales().inscritos }}</p>
+          <div class="flex gap-2 mt-1 flex-wrap">
+            <span class="text-xs text-success">{{ totales().pagados }} pagadas</span>
+            <span class="text-xs text-warning">{{ totales().parciales }} parciales</span>
+            <span class="text-xs text-danger">{{ totales().pendi }} pendientes</span>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Total Cobrado</p>
+          <p class="text-2xl font-bold text-success">Bs. {{ totales().pagado | number:'1.0-0' }}</p>
+          <p class="text-xs text-default-400 mt-1">{{ porcentajeCobro() }}% del plan total</p>
+        </div>
+
+        <div class="card p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Saldo Pendiente</p>
+          <p class="text-2xl font-bold text-danger">Bs. {{ totales().pendiente | number:'1.0-0' }}</p>
+          <p class="text-xs text-default-400 mt-1">{{ 100 - porcentajeCobro() }}% por cobrar</p>
+        </div>
+
+        <div class="card p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Total Plan</p>
+          <p class="text-2xl font-bold text-default-700">Bs. {{ totales().aPagar | number:'1.0-0' }}</p>
+          <div class="mt-2 h-1.5 bg-default-200 rounded-full overflow-hidden">
+            <div class="h-full bg-success rounded-full transition-all"
+                 [style.width.%]="porcentajeCobro()"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <div class="card lg:col-span-2">
+          <div class="card-header">
+            <h6 class="text-sm font-semibold text-default-700">Ingresos mensuales</h6>
+          </div>
+          <div class="p-4">
+            @if (chartData(); as cd) {
+              <div class="overflow-x-auto">
+                <svg [attr.width]="cd.W" [attr.height]="cd.H + 30"
+                     style="display:block;min-width:280px">
+                  <line x1="0" [attr.y1]="cd.H" [attr.x2]="cd.W" [attr.y2]="cd.H"
+                        stroke="#e5e7eb" stroke-width="1"/>
+                  @for (b of cd.barras; track b.mes) {
+                    <rect [attr.x]="b.x" [attr.y]="cd.H - b.hPagado - b.hPendi"
+                          [attr.width]="cd.BAR_W" [attr.height]="b.hPendi"
+                          fill="#fecaca" rx="3"/>
+                    <rect [attr.x]="b.x" [attr.y]="cd.H - b.hPagado"
+                          [attr.width]="cd.BAR_W" [attr.height]="b.hPagado"
+                          fill="#07435B" rx="3"/>
+                    <text [attr.x]="b.x + cd.BAR_W / 2" [attr.y]="cd.H + 16"
+                          text-anchor="middle" font-size="10" fill="#9ca3af">{{ b.mes }}</text>
+                  }
+                </svg>
+              </div>
+              <div class="flex gap-4 mt-2">
+                <span class="flex items-center gap-1.5 text-xs text-default-500">
+                  <span class="inline-block w-3 h-3 rounded-sm bg-primary"></span>Cobrado
+                </span>
+                <span class="flex items-center gap-1.5 text-xs text-default-500">
+                  <span class="inline-block w-3 h-3 rounded-sm bg-danger/30"></span>Pendiente
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="text-sm font-semibold text-default-700">Por canal de venta</h6>
+          </div>
+          <div class="p-4 flex flex-col gap-4">
+            @for (c of porCanal(); track c.canal; let i = $index) {
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm font-semibold text-default-700">{{ canalLabel(c.canal) }}</span>
+                  <span class="text-xs text-default-400">{{ c.inscritos }} inscr.</span>
+                </div>
+                <div class="h-2 bg-default-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full"
+                       [style.width.%]="(c.inscritos / totales().inscritos) * 100"
+                       [style.background]="canalColor(i)"></div>
+                </div>
+                <p class="text-xs text-default-400 mt-0.5">
+                  Bs. {{ c.pagado | number:'1.0-0' }} ·
+                  {{ (c.inscritos / totales().inscritos * 100) | number:'1.0-0' }}%
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h6 class="text-sm font-semibold text-default-700">Resumen por mes</h6>
+        </div>
+        <div class="flex flex-col">
+          <div class="overflow-x-auto">
+            <div class="min-w-full inline-block align-middle">
+              <table class="min-w-full divide-y divide-default-200">
+                <thead class="bg-default-100">
+                  <tr class="text-xs font-semibold text-default-500 uppercase tracking-wide">
+                    <th class="px-4 py-3 text-start">Mes</th>
+                    <th class="px-4 py-3 text-end">Inscr.</th>
+                    <th class="px-4 py-3 text-end">Cobrado</th>
+                    <th class="px-4 py-3 text-end">Pendiente</th>
+                    <th class="px-4 py-3 text-end">% Cobro</th>
+                    <th class="px-4 py-3 text-center">Pagadas</th>
+                    <th class="px-4 py-3 text-center">Parciales</th>
+                    <th class="px-4 py-3 text-center">Pendientes</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-default-200">
+                  @for (f of porMes(); track f.key) {
+                    <tr class="hover:bg-default-50 transition-colors">
+                      <td class="px-4 py-3 text-sm font-semibold text-default-700">{{ f.mes }}</td>
+                      <td class="px-4 py-3 text-sm text-end text-default-600">{{ f.inscritos }}</td>
+                      <td class="px-4 py-3 text-sm text-end font-semibold text-success font-mono">
+                        Bs. {{ f.pagado | number:'1.0-0' }}
+                      </td>
+                      <td class="px-4 py-3 text-sm text-end text-danger font-mono">
+                        Bs. {{ f.pendiente | number:'1.0-0' }}
+                      </td>
+                      <td class="px-4 py-3 text-sm text-end text-default-500">
+                        @if (f.pagado + f.pendiente > 0) {
+                          {{ ((f.pagado / (f.pagado + f.pendiente)) * 100) | number:'1.0-0' }}%
+                        } @else { — }
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success">
+                          {{ f.pagados }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-warning/10 text-warning">
+                          {{ f.parciales }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger">
+                          {{ f.pendi }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot class="bg-default-50 border-t-2 border-default-200">
+                  <tr class="text-sm font-bold text-default-700">
+                    <td class="px-4 py-3">Total</td>
+                    <td class="px-4 py-3 text-end">{{ totales().inscritos }}</td>
+                    <td class="px-4 py-3 text-end text-success font-mono">Bs. {{ totales().pagado | number:'1.0-0' }}</td>
+                    <td class="px-4 py-3 text-end text-danger font-mono">Bs. {{ totales().pendiente | number:'1.0-0' }}</td>
+                    <td class="px-4 py-3 text-end">{{ porcentajeCobro() }}%</td>
+                    <td class="px-4 py-3 text-center text-success">{{ totales().pagados }}</td>
+                    <td class="px-4 py-3 text-center text-warning">{{ totales().parciales }}</td>
+                    <td class="px-4 py-3 text-center text-danger">{{ totales().pendi }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (porMetodo().length > 0) {
+        <div class="card">
+          <div class="card-header">
+            <h6 class="text-sm font-semibold text-default-700">Por método de pago</h6>
+          </div>
+          <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+            @for (m of porMetodo(); track m.metodo; let i = $index) {
+              <div class="rounded-xl p-4 border border-default-200 bg-default-50">
+                <p class="text-xs font-semibold uppercase tracking-wide text-default-500 mb-1">
+                  {{ metodoLabel(m.metodo) }}
+                </p>
+                <p class="text-2xl font-bold text-default-800">{{ m.cantidad }}</p>
+                <p class="text-xs text-default-400 mt-0.5">
+                  Bs. {{ m.monto | number:'1.0-0' }}
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    }
+
+    @if (vendedores().length > 0) {
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="text-sm font-semibold text-default-700">Rendimiento por vendedor/asesor</h6>
+          </div>
+          <div class="p-4">
+            @if (chartVendedorData(); as cd) {
+              <div class="overflow-x-auto mb-3">
+                <svg [attr.width]="cd.W" [attr.height]="cd.H + 30"
+                     style="display:block;min-width:240px">
+                  <line x1="0" [attr.y1]="cd.H" [attr.x2]="cd.W" [attr.y2]="cd.H"
+                        stroke="#e5e7eb" stroke-width="1"/>
+                  @for (b of cd.barras; track b.nombre) {
+                    <rect [attr.x]="b.x" [attr.y]="cd.H - b.hCob - b.hPend"
+                          [attr.width]="cd.BAR_W" [attr.height]="b.hPend"
+                          fill="#fecaca" rx="3"/>
+                    <rect [attr.x]="b.x" [attr.y]="cd.H - b.hCob"
+                          [attr.width]="cd.BAR_W" [attr.height]="b.hCob"
+                          fill="#128AA2" rx="3"/>
+                    <text [attr.x]="b.x + cd.BAR_W / 2" [attr.y]="cd.H + 16"
+                          text-anchor="middle" font-size="10" fill="#9ca3af">{{ b.nombre }}</text>
+                  }
+                </svg>
+              </div>
+              <div class="flex gap-4">
+                <span class="flex items-center gap-1.5 text-xs text-default-500">
+                  <span class="inline-block w-3 h-3 rounded-sm" style="background:#128AA2"></span>Cobrado
+                </span>
+                <span class="flex items-center gap-1.5 text-xs text-default-500">
+                  <span class="inline-block w-3 h-3 rounded-sm bg-danger/30"></span>Pendiente
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h6 class="text-sm font-semibold text-default-700">Ranking de vendedores</h6>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-200">
+              <thead class="bg-default-100">
+                <tr class="text-xs font-semibold text-default-500 uppercase">
+                  <th class="px-4 py-2.5 text-start">#</th>
+                  <th class="px-4 py-2.5 text-start">Vendedor</th>
+                  <th class="px-4 py-2.5 text-end">Inscr.</th>
+                  <th class="px-4 py-2.5 text-end">Cobrado</th>
+                  <th class="px-4 py-2.5 text-end">Pendiente</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (v of vendedores(); track v.vendedor_nombre; let i = $index) {
+                  <tr class="hover:bg-default-50 transition-colors">
+                    <td class="px-4 py-2.5 text-sm text-default-400 font-mono">{{ i + 1 }}</td>
+                    <td class="px-4 py-2.5 text-sm font-semibold text-default-700">{{ v.vendedor_nombre }}</td>
+                    <td class="px-4 py-2.5 text-sm text-end text-default-600">{{ v.inscritos }}</td>
+                    <td class="px-4 py-2.5 text-sm text-end text-success font-mono font-semibold">
+                      Bs. {{ v.total_cobrado | number:'1.0-0' }}
+                    </td>
+                    <td class="px-4 py-2.5 text-sm text-end text-danger font-mono">
+                      Bs. {{ v.total_pendiente | number:'1.0-0' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    }
+
+    @if (proyeccion().length > 0) {
+      <div class="card">
+        <div class="card-header">
+          <h6 class="text-sm font-semibold text-default-700">Proyección de cobros — próximos 6 meses</h6>
+          <span class="text-xs text-default-400">Cuotas con fecha vencimiento futura, aún sin pago registrado</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-default-200">
+            <thead class="bg-default-100">
+              <tr class="text-xs font-semibold text-default-500 uppercase">
+                <th class="px-4 py-3 text-start">Mes</th>
+                <th class="px-4 py-3 text-end">Cuotas pendientes</th>
+                <th class="px-4 py-3 text-end">Monto proyectado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-default-200">
+              @for (p of proyeccion(); track p.mes_key) {
+                <tr class="hover:bg-default-50 transition-colors">
+                  <td class="px-4 py-3 text-sm font-semibold text-default-700">{{ mesLabel(p.mes_key) }}</td>
+                  <td class="px-4 py-3 text-sm text-end text-default-600">{{ p.cuotas_pendientes }}</td>
+                  <td class="px-4 py-3 text-sm text-end text-primary font-mono font-semibold">
+                    Bs. {{ p.monto_proyectado | number:'1.0-0' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="bg-primary/5 border-t-2 border-primary/20">
+              <tr class="text-sm font-bold">
+                <td class="px-4 py-3 text-default-700">Total proyectado</td>
+                <td class="px-4 py-3 text-end text-default-600">
+                  {{ totalProyectadoCuotas() }}
+                </td>
+                <td class="px-4 py-3 text-end text-primary font-mono">
+                  Bs. {{ totalProyectadoMonto() | number:'1.0-0' }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    } @else if (cargandoExtra()) {
+      <div class="card">
+        <div class="flex items-center justify-center py-8 text-default-400 text-sm gap-2">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando proyección...
+        </div>
+      </div>
+    }
+
+  </div>
+</main>

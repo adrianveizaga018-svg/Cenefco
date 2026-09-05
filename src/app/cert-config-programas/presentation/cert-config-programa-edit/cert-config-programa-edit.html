@@ -1,0 +1,183 @@
+<main>
+  <app-page-title [title]="isNew() ? 'Nueva Configuración' : 'Editar Configuración'" subtitle="Certificados" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Configuración del modal</h6></div>
+          <div class="card-body space-y-4">
+
+            @if (isNew()) {
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Programa</label>
+                <app-searchable-select
+                  [options]="programaOptions()"
+                  [ngModel]="programaId()" (ngModelChange)="programaId.set($event)"
+                  placeholder="Buscar programa/curso..." />
+              </div>
+            } @else {
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Programa</label>
+                <p class="text-sm text-default-500">{{ programaNombre() }}</p>
+              </div>
+            }
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Título del modal</label>
+              <input type="text" class="form-input" [ngModel]="titulo()" (ngModelChange)="titulo.set($event)"
+                     placeholder="¡Obtén tus certificados!" />
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción</label>
+              <textarea class="form-input resize-none" [ngModel]="descripcion()" (ngModelChange)="descripcion.set($event)" rows="3"
+                        placeholder="Texto que se muestra en el modal..."></textarea>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-medium text-default-800">Modal activo</label>
+              <button type="button" (click)="activo.set(!activo())"
+                      class="badge text-xs px-2.5 py-1 rounded-full font-medium transition"
+                      [class]="activo() ? 'bg-success/10 text-success' : 'bg-default-200 text-default-500'">
+                {{ activo() ? 'Activo' : 'Inactivo' }}
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        @if (config()) {
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Certificados ofrecidos</h6></div>
+            <div class="card-body space-y-4">
+
+              @if (config()!.items.length === 0) {
+                <p class="text-sm text-default-400">No hay certificados configurados aún.</p>
+              } @else {
+                <div class="space-y-2">
+                  @for (item of config()!.items; track item.id) {
+                    <div class="flex items-center justify-between p-3 rounded-lg"
+                         [class]="editandoItemId() === item.id ? 'bg-primary/5 border border-primary/30' : 'bg-default-50'">
+                      <div class="flex items-center gap-3">
+                        @if (item.es_gratuito) {
+                          <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full font-bold">GRATIS</span>
+                        } @else {
+                          <span class="badge bg-warning/10 text-warning text-xs px-2 py-0.5 rounded-full font-medium">Bs. {{ item.precio }}</span>
+                        }
+                        <span class="text-sm text-default-800">{{ item.nombre_cert }}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <button type="button" (click)="editarItem(item)"
+                                class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                                title="Editar">
+                          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                        </button>
+                        <button type="button" (click)="removeItem(item)"
+                                class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                                title="Eliminar">
+                          <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="border-t border-default-200 pt-4 space-y-3">
+                <p class="text-sm font-medium text-default-800">
+                  {{ editandoItemId() ? 'Editando certificado' : 'Agregar certificado' }}
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="col-span-2">
+                    <label class="block mb-1.5 text-xs font-medium text-default-600">Nombre del certificado</label>
+                    <input type="text" class="form-input" placeholder="Ej. Certificado de Aprobación"
+                           [ngModel]="newItem().nombre_cert"
+                           (ngModelChange)="updateNewItem('nombre_cert', $event)" />
+                  </div>
+                  <div>
+                    <label class="block mb-1.5 text-xs font-medium text-default-600">Precio (Bs.)</label>
+                    <input type="number" class="form-input" placeholder="0 = gratis" min="0" step="0.5"
+                           [ngModel]="newItem().precio"
+                           (ngModelChange)="updateNewItem('precio', +$event)" />
+                  </div>
+                  <div class="flex items-end pb-2 gap-2">
+                    <input type="checkbox" id="esGratuito"
+                           [ngModel]="newItem().es_gratuito"
+                           (ngModelChange)="updateNewItem('es_gratuito', $event)" />
+                    <label for="esGratuito" class="text-sm text-default-700">Es gratuito</label>
+                  </div>
+                  <div>
+                    <label class="block mb-1.5 text-xs font-medium text-default-600">Plantilla de certificado</label>
+                    <app-searchable-select
+                      [options]="plantillaOptions()"
+                      [ngModel]="newItem().plantilla_id"
+                      (ngModelChange)="updateNewItem('plantilla_id', $event)"
+                      placeholder="Seleccionar plantilla (opcional)" />
+                  </div>
+                  <div>
+                    <label class="block mb-1.5 text-xs font-medium text-default-600">Orden de aparición</label>
+                    <input type="number" class="form-input" placeholder="0" min="0"
+                           [ngModel]="newItem().orden"
+                           (ngModelChange)="updateNewItem('orden', +$event)" />
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" (click)="addItem()" [disabled]="addingItem() || !newItem().nombre_cert"
+                          class="btn bg-default-800 text-white hover:opacity-90 disabled:opacity-50">
+                    @if (addingItem()) {
+                      <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                      Guardando...
+                    } @else if (editandoItemId()) {
+                      <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                      Actualizar certificado
+                    } @else {
+                      <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+                      Agregar certificado
+                    }
+                  </button>
+                  @if (editandoItemId()) {
+                    <button type="button" (click)="cancelarEdicionItem()"
+                            class="btn border border-default-300 text-default-600 hover:bg-default-100">
+                      Cancelar
+                    </button>
+                  }
+                </div>
+              </div>
+
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button type="button" (click)="save()" [disabled]="saving()" class="btn bg-primary text-white w-full">
+              @if (saving()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                Guardar configuración
+              }
+            </button>
+            <a routerLink="/cenefco/cert-config-programas" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Volver al listado
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+</main>

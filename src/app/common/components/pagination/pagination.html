@@ -1,0 +1,36 @@
+<nav class="flex items-center gap-2" aria-label="Pagination">
+
+  <button
+    type="button"
+    class="btn btn-sm border bg-transparent border-default-200 text-default-600 hover:bg-primary/10 hover:text-primary hover:border-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+    [disabled]="currentPage() <= 1"
+    (click)="goTo(currentPage() - 1)"
+  >
+    <div class="size-4 me-1"><ng-icon name="lucideChevronLeft"></ng-icon></div>
+    Anterior
+  </button>
+
+  @for (page of pages(); track page) {
+    <button
+      type="button"
+      class="btn size-7.5 border"
+      [class]="page === currentPage()
+        ? 'bg-primary text-white border-primary'
+        : 'bg-transparent border-default-200 text-default-600 hover:bg-primary/10 hover:text-primary hover:border-primary/10'"
+      (click)="goTo(page)"
+    >
+      {{ page }}
+    </button>
+  }
+
+  <button
+    type="button"
+    class="btn btn-sm border bg-transparent border-default-200 text-default-600 hover:bg-primary/10 hover:text-primary hover:border-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+    [disabled]="currentPage() >= totalPages()"
+    (click)="goTo(currentPage() + 1)"
+  >
+    Siguiente
+    <div class="size-4 ms-1"><ng-icon name="lucideChevronRight"></ng-icon></div>
+  </button>
+
+</nav>

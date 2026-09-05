@@ -1,0 +1,124 @@
+﻿<main>
+  <app-page-title title="Cuentas Zoom" subtitle="Gestión de cuentas Zoom conectadas" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header">
+        <span class="text-sm text-default-500">{{ cuentas().length }} cuenta(s) configurada(s)</span>
+        <button type="button" class="btn btn-sm bg-primary text-white" (click)="abrirFormNuevo()">
+          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div> Nueva Cuenta
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
+        </div>
+      } @else if (cuentas().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 gap-3">
+          <div class="size-10 text-default-300"><ng-icon name="lucideVideo"></ng-icon></div>
+          <p class="text-sm text-default-500">No hay cuentas Zoom configuradas.</p>
+          <button type="button" class="btn btn-sm bg-primary text-white" (click)="abrirFormNuevo()">Agregar primera cuenta</button>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
+          @for (c of cuentas(); track c.id) {
+            <div class="border rounded-xl p-4 space-y-3" [class.border-primary]="c.predeterminada" [class.bg-primary/5]="c.predeterminada">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="font-semibold text-sm text-default-800">{{ c.nombre }}</p>
+                  @if (c.descripcion) { <p class="text-xs text-default-400 mt-0.5">{{ c.descripcion }}</p> }
+                </div>
+                <div class="flex items-center gap-1">
+                  @if (c.predeterminada) { <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">Predeterminada</span> }
+                  @if (!c.activa) { <span class="badge bg-danger/10 text-danger text-xs px-2 py-0.5 rounded-full">Inactiva</span> }
+                </div>
+              </div>
+
+              <div class="text-xs text-default-500 font-mono bg-default-100 px-2 py-1 rounded truncate">{{ c.account_id }}</div>
+
+              <div class="flex items-center gap-1.5 flex-wrap">
+                
+                <button type="button" class="btn btn-sm bg-success/10 text-success hover:bg-success hover:text-white px-2 py-1 text-xs"
+                        [disabled]="testando() === c.id" (click)="testear(c)">
+                  @if (testando() === c.id) { <div class="size-3 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> }
+                  @else { <div class="size-3 me-1"><ng-icon name="lucidePlugZap"></ng-icon></div> }
+                  Probar
+                </button>
+                
+                @if (!c.predeterminada) {
+                  <button type="button" class="btn btn-sm bg-primary/10 text-primary hover:bg-primary hover:text-white px-2 py-1 text-xs" (click)="setPredeterminada(c)">
+                    <div class="size-3 me-1"><ng-icon name="lucideStar"></ng-icon></div> Predeterminar
+                  </button>
+                }
+                
+                <button type="button" class="btn btn-sm bg-default-200 text-default-600 hover:bg-default-300 px-2 py-1 text-xs" (click)="abrirFormEditar(c)">
+                  <div class="size-3 me-1"><ng-icon name="lucidePencil"></ng-icon></div> Editar
+                </button>
+                
+                <button type="button" class="btn btn-sm bg-danger/10 text-danger hover:bg-danger hover:text-white px-2 py-1 text-xs" (click)="eliminar(c)">
+                  <div class="size-3"><ng-icon name="lucideTrash2"></ng-icon></div>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (showForm()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg">
+        <div class="p-6 border-b border-default-100">
+          <h3 class="font-semibold text-default-800">{{ editando() ? 'Editar cuenta' : 'Nueva cuenta Zoom' }}</h3>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="guardar()" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Ej: Cuenta Principal CENEFCO">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Account ID <span class="text-danger">*</span></label>
+            <input type="text" formControlName="account_id" class="form-input w-full font-mono text-sm" placeholder="Tu Account ID de Zoom">
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">
+                Client ID {{ editando() ? '(dejar vacío para no cambiar)' : '' }} <span class="text-danger">*</span>
+              </label>
+              <input type="text" formControlName="client_id" class="form-input w-full font-mono text-sm" placeholder="Client ID">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">
+                Client Secret {{ editando() ? '(dejar vacío para no cambiar)' : '' }} <span class="text-danger">*</span>
+              </label>
+              <input type="password" formControlName="client_secret" class="form-input w-full font-mono text-sm" placeholder="Client Secret">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Timezone</label>
+              <input type="text" formControlName="timezone" class="form-input w-full" placeholder="America/La_Paz">
+            </div>
+            <div class="flex items-center gap-2 pt-6">
+              <input type="checkbox" formControlName="activa" id="activa" class="form-checkbox">
+              <label for="activa" class="text-sm text-default-700">Cuenta activa</label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Descripción</label>
+            <input type="text" formControlName="descripcion" class="form-input w-full" placeholder="Opcional">
+          </div>
+          <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { {{ editando() ? 'Guardar cambios' : 'Crear cuenta' }} }
+            </button>
+            <button type="button" class="btn bg-default-200 text-default-700" (click)="cerrarForm()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</main>

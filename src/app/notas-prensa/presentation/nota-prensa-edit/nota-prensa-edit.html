@@ -1,0 +1,58 @@
+<main>
+  <app-page-title title="Editar Nota de Prensa" subtitle="Notas de Prensa" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Nota</h4></div>
+      <div class="p-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Título <span class="text-danger">*</span></label>
+              <input type="text" formControlName="titulo" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Medio <span class="text-danger">*</span></label>
+              <input type="text" formControlName="medio" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Publicación <span class="text-danger">*</span></label>
+              <input type="date" formControlName="fecha_publicacion" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">URL Logo del Medio</label>
+              <input type="text" formControlName="logo_medio_url" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Alt del Logo</label>
+              <input type="text" formControlName="logo_medio_alt" class="form-input w-full">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">URL de la Noticia</label>
+              <input type="text" formControlName="url_noticia" class="form-input w-full">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Resumen</label>
+              <textarea formControlName="resumen" rows="3" class="form-input w-full"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+              <input type="number" formControlName="orden" class="form-input w-full" min="0">
+            </div>
+            <div class="flex items-center gap-4 pt-5">
+              <div class="flex items-center gap-2"><input type="checkbox" formControlName="destacada" id="destacada" class="form-checkbox"><label for="destacada" class="text-sm text-default-700">Destacada</label></div>
+              <div class="flex items-center gap-2"><input type="checkbox" formControlName="activo" id="activo" class="form-checkbox"><label for="activo" class="text-sm text-default-700">Activo</label></div>
+            </div>
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+                @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Actualizar Nota }
+              </button>
+              <a routerLink="/cenefco/notas-prensa" class="btn bg-default-200 text-default-700">Cancelar</a>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,166 @@
+﻿<main>
+  <app-page-title title="Verificaciones de Certificados" subtitle="Certificados" />
+
+  <div class="grid grid-cols-3 gap-4 mb-5">
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+          <ng-icon name="lucideSearch" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Total en página</p>
+          <p class="text-xl font-bold text-default-800">{{ total }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-success/10 flex items-center justify-center text-success shrink-0">
+          <ng-icon name="lucideCheckCircle" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Válidos (página)</p>
+          <p class="text-xl font-bold text-success">{{ totalValidos }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body flex items-center gap-3 py-4">
+        <div class="size-10 rounded-lg bg-danger/10 flex items-center justify-center text-danger shrink-0">
+          <ng-icon name="lucideXCircle" class="size-5" />
+        </div>
+        <div>
+          <p class="text-xs text-default-400">Inválidos (página)</p>
+          <p class="text-xl font-bold text-danger">{{ totalInvalidos }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h4 class="card-title">Log de Verificaciones</h4>
+        <p class="text-xs text-default-400 mt-0.5">
+          Cada consulta al QR o enlace de verificación de un certificado queda registrada aquí.
+        </p>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-default-500">Filtrar:</span>
+        @for (opt of [['todos','Todos','bg-default-200 text-default-700'],['valido','Válidos','bg-success/15 text-success'],['invalido','Inválidos','bg-danger/15 text-danger']]; track opt[0]) {
+          <button
+            class="btn btn-sm text-xs"
+            [ngClass]="filtro() === opt[0] ? opt[2] : 'bg-default-100 text-default-500 hover:bg-default-200'"
+            (click)="setFiltro($any(opt[0]))">
+            {{ opt[1] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      @if (isLoading) {
+        <div class="flex items-center justify-center py-16 text-default-400 gap-2 text-sm">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+          Cargando verificaciones…
+        </div>
+      } @else if (isError) {
+        <div class="flex items-center justify-center py-16 text-danger gap-2 text-sm">
+          <ng-icon name="lucideCircleX" /> Error al cargar los registros.
+        </div>
+      } @else if (items.length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-default-400 gap-2">
+          <div class="size-10 opacity-30"><ng-icon name="lucideSearch" /></div>
+          <p class="text-sm">Sin verificaciones registradas</p>
+          <p class="text-xs">Cuando alguien escanee un QR de certificado, aparecerá aquí.</p>
+        </div>
+      } @else {
+        <table class="min-w-full divide-y divide-default-200 text-sm">
+          <thead class="bg-default-100">
+            <tr class="text-xs font-medium text-default-500 uppercase tracking-wide">
+              <th class="px-4 py-3 text-start">Fecha</th>
+              <th class="px-4 py-3 text-start">Código consultado</th>
+              <th class="px-4 py-3 text-start">Resultado</th>
+              <th class="px-4 py-3 text-start">IP origen</th>
+              <th class="px-4 py-3 text-start">País</th>
+              <th class="px-4 py-3 text-start">Navegador</th>
+              <th class="px-4 py-3 text-start">Cert. ID</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-default-200">
+            @for (item of items; track item.id) {
+              <tr
+                class="hover:bg-default-50 transition-colors cursor-pointer"
+                (click)="toggleExpand(item.id)">
+                <td class="px-4 py-3 text-default-600 whitespace-nowrap">
+                  {{ formatFecha(item.created_at) }}
+                </td>
+                <td class="px-4 py-3">
+                  <code class="text-xs bg-default-100 px-2 py-0.5 rounded font-mono">
+                    {{ item.codigo_consultado }}
+                  </code>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="item.resultado === 'valido'
+                      ? 'bg-success/15 text-success'
+                      : 'bg-danger/15 text-danger'">
+                    <ng-icon
+                      [name]="item.resultado === 'valido' ? 'lucideCheckCircle' : 'lucideXCircle'"
+                      class="size-3" />
+                    {{ item.resultado === 'valido' ? 'Válido' : 'Inválido' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-default-500 font-mono text-xs">
+                  {{ item.ip_origen ?? '—' }}
+                </td>
+                <td class="px-4 py-3 text-default-500">
+                  {{ item.pais ?? '—' }}
+                </td>
+                <td class="px-4 py-3 text-default-500 text-xs">
+                  {{ browserFrom(item.user_agent) }}
+                </td>
+                <td class="px-4 py-3 text-default-400 text-xs">
+                  {{ item.certificado_id ?? '—' }}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="size-4 text-default-400 transition-transform"
+                    [class.rotate-180]="expandedId() === item.id">
+                    <ng-icon name="lucideChevronDown" />
+                  </div>
+                </td>
+              </tr>
+
+              @if (expandedId() === item.id) {
+                <tr class="bg-default-50">
+                  <td colspan="8" class="px-6 py-3">
+                    <div class="flex flex-col gap-1">
+                      <p class="text-xs text-default-500">
+                        <span class="font-medium text-default-700">User Agent:</span>
+                        {{ item.user_agent ?? 'No disponible' }}
+                      </p>
+                      <p class="text-xs text-default-400">
+                        Registro ID: {{ item.id }}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div class="card-footer">
+      <p class="text-xs text-default-400">{{ total }} verificaciones en total</p>
+      <app-pagination
+        [currentPage]="pageIndex()"
+        [pageSize]="pageSize()"
+        [total]="total"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

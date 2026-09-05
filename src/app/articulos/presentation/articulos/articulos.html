@@ -1,0 +1,91 @@
+﻿<main>
+  <app-page-title title="Artículos" subtitle="Blog" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header">
+        <div class="relative">
+          <input type="text" class="ps-11 form-input form-input-sm w-full sm:w-64" placeholder="Buscar artículo..." (input)="onSearch($event)">
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3"><div class="size-3.5 text-default-500"><ng-icon name="lucideSearch"></ng-icon></div></div>
+        </div>
+        <a routerLink="/cenefco/articulo-create" class="btn btn-sm bg-primary text-white">
+          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div> Nuevo Artículo
+        </a>
+      </div>
+      <div class="flex flex-col">
+        <div class="overflow-x-auto"><div class="min-w-full inline-block align-middle"><div class="overflow-visible">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+              No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (error) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2"><div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div> No se pudo cargar la lista.</div>
+          } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+            <table class="min-w-full divide-y divide-default-200 relative z-10">
+              <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
+                <th class="px-3.5 py-3 text-start">Artículo</th>
+                <th class="px-3.5 py-3 text-start">Slug</th>
+                <th class="px-3.5 py-3 text-start">Etiquetas</th>
+                <th class="px-3.5 py-3 text-start">Estado</th>
+                <th class="px-3.5 py-3 text-start">Fecha</th>
+                <th class="px-3.5 py-3 text-start">Acciones</th>
+              </tr></thead>
+              <tbody class="divide-y divide-default-200">
+                @for (item of items; track item.id_art) {
+                  <tr class="text-default-800 font-normal">
+                    <td class="px-3.5 py-2.5">
+                      <p class="text-sm font-medium text-default-800">{{ item.titulo }}</p>
+                      @if (item.entradilla) {
+                        <p class="text-xs text-default-400 mt-0.5 max-w-xs truncate">{{ item.entradilla }}</p>
+                      }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-xs text-default-400 font-mono">{{ item.slug || '—' }}</td>
+                    <td class="px-3.5 py-2.5">
+                      <div class="flex flex-wrap gap-1">
+                        @for (tag of item.etiquetas; track tag.id) {
+                          <span class="badge bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">{{ tag.nombre }}</span>
+                        }
+                        @if (!item.etiquetas || item.etiquetas.length === 0) {
+                          <span class="text-xs text-default-400">—</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm">
+                      @if (item.estado_web === 'publicado') {
+                        <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Publicado</span>
+                      } @else if (item.estado_web === 'archivado') {
+                        <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Archivado</span>
+                      } @else {
+                        <span class="badge bg-warning/10 text-warning text-xs px-2 py-0.5 rounded-full">Borrador</span>
+                      }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">
+                      {{ (item.fecha_publicacion || item.fecha_reg) | slice:0:10 }}
+                    </td>
+                    <td class="px-3.5 py-2.5"><div class="flex items-center gap-1.5">
+                      <a [routerLink]="['/cenefco/articulo-edit', item.slug]" class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white" title="Editar"><div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div></a>
+                      <button type="button" class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white" title="Eliminar" (click)="delete(item.id_art)"><div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div></button>
+                    </div></td>
+                  </tr>
+                }
+                @empty { <tr><td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron artículos.</td></tr> }
+              </tbody>
+            </table>
+            </div>
+          }
+        </div></div></div>
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">Mostrando <b>{{ items.length }}</b> de <b>{{ total }}</b> artículos</p>
+          <app-pagination [total]="total" [pageSize]="pageSize()" [currentPage]="pageIndex()" (pageChange)="onPageChange($event)" />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

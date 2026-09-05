@@ -1,0 +1,89 @@
+{
+  "name": "tailwink",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/cdk": "^20.2.14",
+    "@angular/common": "^20.1.0",
+    "@angular/compiler": "^20.1.0",
+    "@angular/core": "^20.1.0",
+    "@angular/forms": "^20.1.0",
+    "@angular/platform-browser": "^20.1.0",
+    "@angular/router": "^20.1.0",
+    "@ckeditor/ckeditor5-angular": "^11.1.0",
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@fullcalendar/angular": "^6.1.19",
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/list": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
+    "@iconify/tailwind4": "^1.0.6",
+    "@ng-icons/core": "^32.1.0",
+    "@ng-icons/lucide": "32.5.0",
+    "@ng-icons/tabler-icons": "^32.1.0",
+    "@ng-select/ng-select": "^20.0.0",
+    "@popperjs/core": "^2.11.8",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/qrcode": "^1.5.6",
+    "@types/three": "^0.183.1",
+    "angularx-flatpickr": "^8.1.0",
+    "apexcharts": "^5.3.5",
+    "flatpickr": "^4.6.13",
+    "granim": "^2.0.0",
+    "iconify-icon": "^3.0.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "ng-apexcharts": "^2.0.1",
+    "ngx-dropzone-wrapper": "^17.0.0",
+    "onscan.js": "^1.5.2",
+    "preline": "^3.2.3",
+    "qrcode": "^1.5.4",
+    "rxjs": "~7.8.0",
+    "simplebar": "^6.3.2",
+    "simplebar-angular": "^3.3.2",
+    "sweetalert2": "^11.26.22",
+    "swiper": "^12.0.2",
+    "three": "^0.183.2",
+    "tslib": "^2.3.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.1.0",
+    "@angular/cli": "^20.1.0",
+    "@angular/compiler-cli": "^20.1.0",
+    "@angular/localize": "^20.1.0",
+    "@types/jasmine": "~5.1.0",
+    "@types/onscan.js": "^1.5.6",
+    "autoprefixer": "^10.4.21",
+    "jasmine-core": "~5.8.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "typescript": "~5.8.2"
+  }
+}

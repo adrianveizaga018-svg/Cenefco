@@ -1,0 +1,130 @@
+﻿<main>
+  <app-page-title title="Vista Previa del Documento" subtitle="Cartas Generadas" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+      <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando documento...
+    </div>
+  } @else if (carta(); as c) {
+
+    <div class="flex items-center justify-between mb-6 no-print">
+      <a routerLink="/cenefco/cartas-generadas"
+         class="flex items-center gap-1.5 text-sm text-default-500 hover:text-primary">
+        <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver al listado
+      </a>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-default-400">
+          Carta #{{ c.id_cartagen }}
+          @if (modelo()) { · {{ modelo()!.nombremodelo }} }
+        </span>
+        <button type="button" (click)="imprimir()"
+                class="btn bg-primary text-white flex items-center gap-2">
+          <div class="size-4"><ng-icon name="lucidePrinter"></ng-icon></div>
+          Imprimir / PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <div id="documento-carta"
+           class="bg-white shadow-lg border border-default-200 rounded-lg overflow-hidden print-document">
+
+        @if (c.usar_encabezado_pie_estandar) {
+          <div class="bg-primary px-10 py-6 text-white flex items-center gap-5">
+            <div class="size-16 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <div class="size-10"><ng-icon name="lucideBuilding2"></ng-icon></div>
+            </div>
+            <div>
+              <p class="text-xl font-bold tracking-wide">CENEFCO</p>
+              <p class="text-primary-100 text-sm opacity-80">Centro de Formación Continua</p>
+            </div>
+            <div class="ml-auto text-end text-xs opacity-70 space-y-0.5">
+              @if (c.cp_nro_contrato) { <p>Contrato N° {{ c.cp_nro_contrato }}</p> }
+              @if (c.cp_gestion_contrato) { <p>Gestión: {{ c.cp_gestion_contrato }}</p> }
+            </div>
+          </div>
+        }
+
+        <div class="px-12 py-10 space-y-6">
+
+          <div class="flex justify-between items-start">
+            <div>
+              @if (modelo()) {
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-widest mb-1">{{ modelo()!.nombremodelo }}</p>
+              }
+              <p class="text-2xl font-bold text-default-900">Carta N° {{ c.num_carta }}</p>
+            </div>
+            <div class="text-end text-sm text-default-500">
+              <p>{{ fechaHoy }}</p>
+              @if (c.cp_gestion_contrato) {
+                <p class="text-xs text-default-400">Gestión {{ c.cp_gestion_contrato }}</p>
+              }
+            </div>
+          </div>
+
+          <div class="border-l-4 border-primary pl-5 py-2">
+            <p class="text-xs font-medium text-default-400 uppercase tracking-wider mb-1">Dirigido a</p>
+            <p class="text-xl font-bold text-default-900">{{ nombreAlumno() }}</p>
+            @if (alumno()?.ci) {
+              <p class="text-sm text-default-500">CI: {{ alumno()!.ci }}</p>
+            }
+          </div>
+
+          @if (c.textocarta) {
+            <div class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ c.textocarta }}</div>
+          }
+
+          @if (c.textocarta1) {
+            <div class="bg-default-50 rounded-lg p-5 border border-default-200">
+              <p class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ c.textocarta1 }}</p>
+            </div>
+          }
+
+          @if (c.textocarta3) {
+            <div class="text-default-700 leading-relaxed text-[15px] whitespace-pre-wrap">{{ c.textocarta3 }}</div>
+          }
+
+          <div class="pt-12 flex justify-between items-end">
+            <div class="text-center">
+              <div class="w-48 border-t-2 border-default-400 pt-2">
+                <p class="text-sm font-medium text-default-700">{{ nombreAlumno() }}</p>
+                <p class="text-xs text-default-400">Firma del Estudiante</p>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="w-48 border-t-2 border-default-400 pt-2">
+                <p class="text-sm font-medium text-default-700">Responsable</p>
+                <p class="text-xs text-default-400">Firma y Sello</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        @if (c.usar_encabezado_pie_estandar) {
+          <div class="bg-default-50 border-t border-default-200 px-10 py-3 flex items-center justify-between text-xs text-default-400">
+            <span>Documento generado el {{ c.fecha_reg | slice:0:10 }}</span>
+            <span>Carta #{{ c.id_cartagen }}</span>
+          </div>
+        }
+
+      </div>
+    </div>
+
+  }
+</main>
+
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    app-page-title { display: none !important; }
+    main { padding: 0 !important; }
+    #documento-carta {
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+  }
+</style>

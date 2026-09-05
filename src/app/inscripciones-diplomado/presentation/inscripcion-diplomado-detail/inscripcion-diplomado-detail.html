@@ -1,0 +1,331 @@
+<main>
+  <app-page-title title="Detalle de Inscripción a Diplomado" subtitle="Inscripciones y Pagos" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+      <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando inscripción a diplomado...
+    </div>
+  } @else if (inscripcion(); as d) {
+
+    <div class="flex items-center justify-between mb-5">
+      <a routerLink="/cenefco/inscripciones-diplomado" class="flex items-center gap-1.5 text-sm text-default-500 hover:text-primary">
+        <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver al listado
+      </a>
+      <button type="button" (click)="eliminar()" class="btn btn-sm border border-danger/30 text-danger hover:bg-danger/5 flex items-center gap-1.5">
+        <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+        Eliminar
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <div class="lg:col-span-2 flex flex-col gap-5">
+
+        <div class="card">
+          <div class="p-5 flex items-center gap-4">
+            <div class="size-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-lg font-bold shrink-0">
+              {{ iniciales() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-default-800 truncate">{{ d.nombre_completo || '—' }}</p>
+              <p class="text-xs text-default-400 truncate">{{ d.nombre_programa || 'Sin programa asociado' }}</p>
+            </div>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full shrink-0" [class]="estadoBadgeClass()">
+              {{ estadoLabel() }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Datos del solicitante</h6>
+            </div>
+          </div>
+          <div class="p-5">
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="flex flex-col gap-6">
+
+              <div>
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-3">Identidad</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Nombres <span class="text-danger">*</span></label>
+                    <input type="text" formControlName="nombre" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Correo <span class="text-danger">*</span></label>
+                    <input type="email" formControlName="email" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Apellido paterno</label>
+                    <input type="text" formControlName="apellido_paterno" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Apellido materno</label>
+                    <input type="text" formControlName="apellido_materno" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Fecha de nacimiento</label>
+                    <input type="date" formControlName="fecha_nacimiento" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Teléfono (grupo de inscritos)</label>
+                    <input type="text" formControlName="telefono_grupo_inscritos" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Carnet de identidad</label>
+                    <input type="text" formControlName="ci" class="form-input w-full">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Extensión</label>
+                    <select formControlName="expedido_id" class="form-input w-full">
+                      <option [ngValue]="null">— Sin especificar —</option>
+                      @for (e of expedidos(); track e.id) {
+                        <option [value]="e.id">{{ e.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-default-100 pt-5">
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-3">Residencia</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Ciudad de residencia</label>
+                    <select formControlName="ciudad_residencia_id" class="form-input w-full">
+                      <option [ngValue]="null">— Sin especificar —</option>
+                      @for (c of ciudades(); track c.id_ciudad) {
+                        <option [value]="c.id_ciudad">{{ c.nombre_ciudad }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Provincia (si aplica)</label>
+                    <input type="text" formControlName="provincia_especificar" class="form-input w-full">
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-default-100 pt-5">
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-3">Pago</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Medio de pago</label>
+                    <select formControlName="medio_pago_id" class="form-input w-full">
+                      <option [ngValue]="null">— Sin especificar —</option>
+                      @for (m of mediosPago(); track m.id) {
+                        <option [value]="m.id">{{ m.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Monto pagado (Bs.)</label>
+                    <input type="number" step="0.01" formControlName="monto_pagado" class="form-input w-full">
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-default-100 pt-5">
+                <p class="text-xs font-semibold text-default-400 uppercase tracking-wide mb-3">Seguimiento interno</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+                    <select formControlName="estado" class="form-input w-full">
+                      @for (e of estados; track e.value) {
+                        <option [value]="e.value">{{ e.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="flex items-end pb-1">
+                    <label class="flex items-center gap-2 text-sm text-default-700 cursor-pointer">
+                      <input type="checkbox" formControlName="notificado" class="form-checkbox">
+                      Notificado al solicitante
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 pt-2">
+                <button type="submit" class="btn bg-primary text-white" [disabled]="saving()">
+                  @if (saving()) {
+                    <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+                  } @else { Guardar cambios }
+                </button>
+                <a routerLink="/cenefco/inscripciones-diplomado" class="btn bg-default-200 text-default-700">Cancelar</a>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideMessageSquare"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Sugerencias del solicitante</h6>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-4">
+            <div>
+              <p class="text-sm font-medium text-default-700 mb-1">Curso de interés sugerido</p>
+              <p class="text-sm text-default-500">{{ d.sugerencia_curso || 'Sin observaciones.' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-default-700 mb-1 flex items-center gap-2">
+                Recomendación de docente
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full" [class]="d.recomendar_docente ? 'bg-success/10 text-success' : 'bg-default-100 text-default-500'">
+                  {{ d.recomendar_docente ? 'Sí' : 'No' }}
+                </span>
+              </p>
+              @if (d.recomendar_docente) {
+                <p class="text-sm text-default-500">{{ d.detalle_docente || '—' }}</p>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-5">
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideFileText"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Documentos adjuntos</h6>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-4">
+
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-default-700">Carnet de identidad</p>
+                @if (d.archivo_ci) {
+                  <a [href]="d.archivo_ci" target="_blank" class="text-xs text-primary hover:underline">Ver archivo</a>
+                } @else {
+                  <span class="text-xs text-default-400">No adjuntado</span>
+                }
+              </div>
+              <label class="btn btn-sm bg-default-100 text-default-700 cursor-pointer shrink-0">
+                @if (subiendoDoc() === 'archivo_ci') {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else { Reemplazar }
+                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="reemplazarDocumento($event, 'archivo_ci')">
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 border-t border-default-100 pt-4">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-default-700">Título de Licenciatura</p>
+                @if (d.archivo_titulo) {
+                  <a [href]="d.archivo_titulo" target="_blank" class="text-xs text-primary hover:underline">Ver archivo</a>
+                } @else {
+                  <span class="text-xs text-default-400">No adjuntado</span>
+                }
+              </div>
+              <label class="btn btn-sm bg-default-100 text-default-700 cursor-pointer shrink-0">
+                @if (subiendoDoc() === 'archivo_titulo') {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else { Reemplazar }
+                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="reemplazarDocumento($event, 'archivo_titulo')">
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 border-t border-default-100 pt-4">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-default-700">Currículum Vitae</p>
+                @if (d.archivo_cv) {
+                  <a [href]="d.archivo_cv" target="_blank" class="text-xs text-primary hover:underline">Ver archivo</a>
+                } @else {
+                  <span class="text-xs text-default-400">No adjuntado</span>
+                }
+              </div>
+              <label class="btn btn-sm bg-default-100 text-default-700 cursor-pointer shrink-0">
+                @if (subiendoDoc() === 'archivo_cv') {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else { Reemplazar }
+                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="reemplazarDocumento($event, 'archivo_cv')">
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 border-t border-default-100 pt-4">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-default-700">Fotografía 3x3</p>
+                @if (d.archivo_foto_3x3) {
+                  <a [href]="d.archivo_foto_3x3" target="_blank" class="text-xs text-primary hover:underline">Ver archivo</a>
+                } @else {
+                  <span class="text-xs text-default-400">No adjuntada</span>
+                }
+              </div>
+              <label class="btn btn-sm bg-default-100 text-default-700 cursor-pointer shrink-0">
+                @if (subiendoDoc() === 'archivo_foto_3x3') {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else { Reemplazar }
+                <input type="file" class="hidden" accept=".jpg,.jpeg,.png" (change)="reemplazarDocumento($event, 'archivo_foto_3x3')">
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 border-t border-default-100 pt-4">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-default-700">Comprobante de pago</p>
+                @if (d.archivo_comprobante_pago) {
+                  <a [href]="d.archivo_comprobante_pago" target="_blank" class="text-xs text-primary hover:underline">Ver archivo</a>
+                } @else {
+                  <span class="text-xs text-default-400">No adjuntado</span>
+                }
+              </div>
+              <label class="btn btn-sm bg-default-100 text-default-700 cursor-pointer shrink-0">
+                @if (subiendoDoc() === 'archivo_comprobante_pago') {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                } @else { Reemplazar }
+                <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="reemplazarDocumento($event, 'archivo_comprobante_pago')">
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserCheck"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Convertir a inscripción</h6>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-3">
+            @if (d.estado === 'inscrito') {
+              <div class="text-sm text-success flex items-center gap-2">
+                <div class="size-4"><ng-icon name="lucideCircleCheck"></ng-icon></div>
+                Esta inscripción a diplomado ya fue convertida a inscripción.
+              </div>
+            } @else {
+              @if (convertirError()) {
+                <div class="text-xs text-danger bg-danger/5 border border-danger/20 rounded p-2">
+                  {{ convertirError() }}
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-700 mb-1">ID de impartición (id_imp)</label>
+                  <input type="number" class="form-input form-input-sm w-full"
+                         (input)="idImpManual.set(+$any($event.target).value || null)">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-700 mb-1">ID de plan (id_plan, opcional)</label>
+                  <input type="number" class="form-input form-input-sm w-full"
+                         (input)="idPlanManual.set(+$any($event.target).value || null)">
+                </div>
+              }
+              <button type="button" class="btn bg-primary text-white" [disabled]="convirtiendo()" (click)="convertirInscripcion()">
+                @if (convirtiendo()) {
+                  <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Convirtiendo...
+                } @else {
+                  <div class="size-4 me-2"><ng-icon name="lucideUserCheck"></ng-icon></div> Convertir a Inscripción
+                }
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>

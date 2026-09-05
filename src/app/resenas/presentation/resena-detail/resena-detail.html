@@ -1,0 +1,194 @@
+﻿<main>
+  <app-page-title title="Detalle de Reseña" subtitle="Reseñas" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando reseña...
+    </div>
+  } @else if (item()) {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Información de la Reseña</h6></div>
+          <div class="card-body space-y-4">
+            
+            <div class="flex items-center gap-4 p-3 rounded-xl bg-default-50 border border-default-200">
+              @if (fotoUrl()) {
+                <img [src]="fotoUrl()" [alt]="nombreForm()" class="size-16 rounded-full object-cover border-2 border-primary/20 shrink-0">
+              } @else {
+                <div class="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+                  {{ nombreForm()[0] }}
+                </div>
+              }
+              <div class="min-w-0">
+                <p class="font-semibold text-default-800">{{ nombreForm() }}</p>
+                @if (cargoForm()) { <p class="text-sm text-default-500">{{ cargoForm() }}</p> }
+                @if (item()!.u_email) { <p class="text-xs text-default-400 font-mono">{{ item()!.u_email }}</p> }
+                <p class="text-xs text-default-400 mt-1">
+                  {{ item()!.nombre_programa ?? 'Sin programa' }}
+                  · {{ item()!.created_at ? (item()!.created_at! | slice:0:10) : 'Sin fecha' }}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Foto del Estudiante</label>
+              <label class="btn btn-sm bg-default-200 text-default-700 cursor-pointer inline-flex items-center gap-1.5">
+                @if (uploadingFoto()) {
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Subiendo...
+                } @else {
+                  <div class="size-4"><ng-icon name="lucideUpload"></ng-icon></div> {{ fotoUrl() ? 'Cambiar foto' : 'Subir foto' }}
+                }
+                <input type="file" accept="image/*" class="hidden" [disabled]="uploadingFoto()" (change)="onFotoSeleccionada($event)">
+              </label>
+              @if (fotoUrl()) {
+                <button type="button" class="ms-2 text-xs text-danger hover:underline" (click)="fotoUrl.set('')">Quitar foto</button>
+              }
+
+              <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido: <strong>400×400 px</strong> (máx. 300 KB). Fotos muy pesadas ralentizan la carga de la lista y del portal.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Autor</label>
+                <input type="text" class="form-input w-full" [value]="nombreForm()" (input)="nombreForm.set($any($event.target).value)">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Cargo actual</label>
+                <input type="text" class="form-input w-full" [value]="cargoForm()" (input)="cargoForm.set($any($event.target).value)">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Calificación</label>
+              <div class="flex items-center gap-1" (mouseleave)="calificacionHover.set(0)">
+                @for (s of estrellas(); track s) {
+                  <button
+                    type="button"
+                    class="size-7 flex items-center justify-center text-2xl leading-none transition-colors"
+                    [class.text-warning]="s <= (calificacionHover() || calificacionForm())"
+                    [class.text-default-300]="s > (calificacionHover() || calificacionForm())"
+                    (mouseenter)="calificacionHover.set(s)"
+                    (click)="setCalificacion(s)">
+                    ★
+                  </button>
+                }
+                <span class="ms-2 text-sm text-default-500">{{ calificacionLabel() }}</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Título</label>
+              <input type="text" class="form-input w-full" [value]="tituloForm()" (input)="tituloForm.set($any($event.target).value)">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Reseña</label>
+              <textarea class="form-input w-full" rows="4" [value]="resenaForm()" (input)="resenaForm.set($any($event.target).value)"></textarea>
+            </div>
+
+            @if (item()!.motivo_rechazo) {
+              <div class="p-3 bg-danger/10 rounded">
+                <p class="text-danger text-sm font-medium mb-1">Motivo de rechazo</p>
+                <p class="text-default-800 text-sm">{{ item()!.motivo_rechazo }}</p>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Estado</h6></div>
+          <div class="card-body">
+            <span
+              class="inline-flex items-center py-1 px-3 rounded text-sm font-medium capitalize"
+              [class]="estadoBadgeClass(item()!.estado)">
+              {{ item()!.estado }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Moderación</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Estado</label>
+              <select class="form-input" [value]="estadoForm()" (change)="onEstadoChange($event)">
+                <option value="pendiente">Pendiente</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="verificado"
+                class="form-checkbox"
+                [checked]="verificadoForm()"
+                (change)="verificadoForm.set($any($event.target).checked)">
+              <label for="verificado" class="text-sm font-medium text-default-800">Verificado</label>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="destacada"
+                class="form-checkbox"
+                [checked]="destacadaForm()"
+                (change)="destacadaForm.set($any($event.target).checked)">
+              <label for="destacada" class="text-sm font-medium text-default-800">Destacada</label>
+            </div>
+
+            @if (estadoForm() === 'rechazado') {
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Motivo de rechazo</label>
+                <textarea
+                  class="form-input"
+                  rows="3"
+                  placeholder="Explique el motivo de rechazo..."
+                  [value]="motivoRechazo()"
+                  (input)="motivoRechazo.set($any($event.target).value)"></textarea>
+              </div>
+            }
+
+            <button
+              type="button"
+              class="btn bg-primary text-white w-full"
+              [disabled]="submitting()"
+              (click)="guardar()">
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Guardar Cambios
+              }
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body">
+            <a routerLink="/cenefco/resenas" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Volver al listado
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+</main>

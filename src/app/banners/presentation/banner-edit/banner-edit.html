@@ -1,0 +1,158 @@
+﻿<main>
+  <app-page-title title="Editar Banner" subtitle="Gestión de Banners" />
+
+  <div class="grid grid-cols-1 gap-5">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title">Editar Datos del Banner</h6>
+      </div>
+
+      @if (loadingBanner()) {
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          Cargando banner...
+        </div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="card-body space-y-5">
+
+          <div class="grid lg:grid-cols-2 grid-cols-1 gap-5">
+
+            <div class="lg:col-span-2">
+              <label class="block mb-1.5 text-sm font-medium text-default-800">
+                Imagen <span class="text-danger">*</span>
+              </label>
+
+              @if (imgPreview()) {
+                <div class="relative inline-block">
+                  <img
+                    src="{{ imgPreview() }}"
+                    alt="Vista previa"
+                    class="h-40 w-full max-w-md rounded-lg object-cover border border-default-200"
+                  >
+                  @if (uploadingImg()) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                      <div class="size-5 animate-spin text-white"><ng-icon name="lucideLoader"></ng-icon></div>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="removeImagen()"
+                      class="absolute -top-2 -end-2 size-6 rounded-full bg-danger text-white flex items-center justify-center shadow"
+                      title="Quitar imagen"
+                    >
+                      <div class="size-3"><ng-icon name="lucideX"></ng-icon></div>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <label
+                  class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                >
+                  <div class="flex flex-col items-center gap-2 text-default-400">
+                    <div class="size-8"><ng-icon name="lucideImagePlus"></ng-icon></div>
+                    <span class="text-xs">Haz clic para subir una imagen</span>
+                    <span class="text-xs text-default-300">PNG, JPG, WEBP — máx. 20 MB</span>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden" (change)="onImagenSelected($event)">
+                </label>
+              }
+
+              @if (form.get('imagen_url')?.invalid && form.get('imagen_url')?.touched) {
+                <p class="mt-1 text-danger text-xs">La imagen es obligatoria.</p>
+              }
+
+              <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
+                <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+                <p class="text-xs text-default-600">
+                  Tamaño sugerido: <strong>1920×800 px</strong> (máx. 1 MB). Una imagen muy pesada ralentiza la carga del home para los visitantes.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Título</label>
+              <input type="text" class="form-input" placeholder="Título del banner" formControlName="titulo" maxlength="200">
+            </div>
+
+            <div class="lg:col-span-2 grid lg:grid-cols-2 grid-cols-1 gap-5 border border-default-200 rounded-lg p-4">
+              <div class="lg:col-span-2">
+                <p class="text-xs font-semibold text-default-500 uppercase tracking-wide">Botón principal</p>
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Texto del botón</label>
+                <input type="text" class="form-input" placeholder="Ver programas" formControlName="enlace_texto" maxlength="100">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace URL</label>
+                <input type="text" class="form-input" placeholder="/cursos o https://..." formControlName="enlace_url">
+              </div>
+            </div>
+
+            <div class="lg:col-span-2 grid lg:grid-cols-2 grid-cols-1 gap-5 border border-default-200 rounded-lg p-4">
+              <div class="lg:col-span-2">
+                <p class="text-xs font-semibold text-default-500 uppercase tracking-wide">Botón secundario</p>
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Texto del botón</label>
+                <input type="text" class="form-input" placeholder="Más información" formControlName="enlace_texto_2" maxlength="100">
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Enlace URL</label>
+                <input type="text" class="form-input" placeholder="/preguntas-frecuentes o https://..." formControlName="enlace_url_2">
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de Inicio</label>
+              <input type="date" class="form-input" formControlName="fecha_inicio">
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de Fin</label>
+              <input type="date" class="form-input" formControlName="fecha_fin">
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Orden</label>
+              <input type="number" class="form-input" formControlName="orden" min="0">
+            </div>
+
+            <div class="flex items-center gap-3 pt-5">
+              <label class="text-sm font-medium text-default-800">Estado</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" formControlName="activo">
+                <div class="w-11 h-6 bg-default-200 peer-checked:bg-primary rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <span class="ms-2 text-sm text-default-600">{{ form.get('activo')?.value ? 'Activo' : 'Inactivo' }}</span>
+              </label>
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Descripción</label>
+              <textarea class="form-input" placeholder="Descripción breve del banner" formControlName="descripcion" rows="3"></textarea>
+            </div>
+
+          </div>
+
+          <div class="flex items-center gap-3 pt-2">
+            <button
+              type="submit"
+              class="btn bg-primary text-white"
+              [disabled]="form.invalid || submitting() || uploadingImg()"
+            >
+              @if (submitting()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                Actualizar Banner
+              }
+            </button>
+            <a routerLink="/cenefco/banners" class="btn border border-default-300 text-default-600 hover:bg-default-100">
+              Cancelar
+            </a>
+          </div>
+
+        </form>
+      }
+    </div>
+  </div>
+</main>

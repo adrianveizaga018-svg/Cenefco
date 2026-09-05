@@ -1,0 +1,43 @@
+<main>
+  <app-page-title title="Nuevo Tipo de Postgrado" subtitle="Catálogos Académicos" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Tipo de Postgrado</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID Plan <span class="text-danger">*</span></label>
+            <input type="number" formControlName="id_plan" class="form-input w-full" placeholder="ID del plan académico">
+            @if (form.get('id_plan')?.invalid && form.get('id_plan')?.touched) { <p class="text-danger text-xs mt-1">El plan es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID Tipo de Pago</label>
+            <input type="number" formControlName="id_tipopago" class="form-input w-full" placeholder="ID tipo de pago">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Descuento Postgrado</label>
+            <input type="text" formControlName="descuentopostgrado" class="form-input w-full" placeholder="Ej: 10%">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Cálculo de Cuota</label>
+            <input type="text" formControlName="calculo_cuota" class="form-input w-full" placeholder="Fórmula o descripción">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar }
+            </button>
+            <a routerLink="/cenefco/tipos-postgrado" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

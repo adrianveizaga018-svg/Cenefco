@@ -1,0 +1,239 @@
+﻿<main>
+  <app-page-title title="Inscripciones" subtitle="Gestión Académica" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header flex-wrap gap-3">
+        <div class="relative">
+          <input
+            type="text"
+            class="ps-10 form-input form-input-sm w-full sm:w-72"
+            placeholder="Buscar por nombre, CI o materia..."
+            (input)="onSearch($event)"
+          >
+          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+            <div class="size-3.5 text-default-400"><ng-icon name="lucideSearch"></ng-icon></div>
+          </div>
+        </div>
+
+        @if (modelos().length > 0) {
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-violet-500 shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+            <select class="form-input form-input-sm text-sm"
+                    (change)="modeloId.set(+$any($event.target).value || null)">
+              <option value="">— Plantilla para generar cartas —</option>
+              @for (m of modelos(); track m.id_cartamod) {
+                <option [value]="m.id_cartamod">{{ m.nombremodelo }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <a routerLink="/cenefco/inscripciones/reportes" class="btn btn-sm bg-default-100 text-default-600 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucideBarChart2"></ng-icon></div>
+          Reportes
+        </a>
+
+        <a routerLink="/cenefco/reporte-cobros" class="btn btn-sm bg-default-100 text-default-600 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucideFileSpreadsheet"></ng-icon></div>
+          Reporte de Cobros
+        </a>
+
+        <a routerLink="/cenefco/inscripcion-create" class="btn btn-sm bg-primary text-white flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
+          Nueva Inscripción
+        </a>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (isLoading) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando inscripciones...
+                </div>
+              } @else if (forbidden) {
+                <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+                  No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+                </div>
+              } @else if (hasError) {
+                <div class="flex flex-col items-center justify-center py-16 text-danger text-sm gap-2">
+                  <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+                  <span>No se pudo cargar la lista.</span>
+                  @if (errorStatus) {
+                    <span class="text-xs text-default-400 font-mono">HTTP {{ errorStatus }} — {{ errorMsg }}</span>
+                  }
+                </div>
+              } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+                <table class="min-w-full divide-y divide-default-200 relative z-10">
+                  <thead class="bg-default-100">
+                    <tr class="text-xs font-semibold text-default-500 uppercase tracking-wide">
+                      <th class="px-4 py-3 text-start">#</th>
+                      <th class="px-4 py-3 text-start">Estudiante</th>
+                      <th class="px-4 py-3 text-start">Materia / Programa</th>
+                      <th class="px-4 py-3 text-start">Canal</th>
+                      <th class="px-4 py-3 text-start">Fecha Ins.</th>
+                      <th class="px-4 py-3 text-center">Pagos</th>
+                      <th class="px-4 py-3 text-end">Total Pagado</th>
+                      <th class="px-4 py-3 text-center">Estado</th>
+                      <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (item of items; track item.id_ins) {
+                      <tr
+                        class="hover:bg-default-50 cursor-pointer transition-colors"
+                        (click)="goToDetail(item.id_ins)"
+                      >
+                        <td class="px-4 py-3 text-sm text-primary font-semibold">{{ item.id_ins }}</td>
+
+                        <td class="px-4 py-3">
+                          <div class="flex items-center gap-2.5">
+                            <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+                              {{ (item.estudiante_nombre || '?')[0].toUpperCase() }}
+                            </div>
+                            <div>
+                              <p class="text-sm font-medium text-default-800">{{ item.estudiante_nombre || '—' }}</p>
+                              <p class="text-xs text-default-400 font-mono">CI: {{ item.estudiante_ci || '—' }}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                          <p class="text-sm font-medium text-default-700">{{ item.materia_nombre || '—' }}</p>
+                          @if (item.materia_sigla) {
+                            <p class="text-xs text-default-400 font-mono">{{ item.materia_sigla }}</p>
+                          }
+                        </td>
+
+                        <td class="px-4 py-3">
+                          @if (item.canal_venta && item.canal_venta !== 'admin') {
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                              [class]="item.canal_venta === 'portal'   ? 'bg-blue-100 text-blue-700' :
+                                       item.canal_venta === 'whatsapp' ? 'bg-green-100 text-green-700' :
+                                       'bg-default-100 text-default-500'">
+                              {{ item.canal_venta | titlecase }}
+                            </span>
+                          } @else {
+                            <span class="text-xs text-default-400">Presencial</span>
+                          }
+                        </td>
+
+                        <td class="px-4 py-3 text-sm text-default-500">
+                          {{ item.fecha_ins ? (item.fecha_ins | slice:0:10) : '—' }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center" (click)="$event.stopPropagation()">
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                            [class]="item.cuotas_pagadas > 0 ? 'bg-success/10 text-success' : 'bg-default-100 text-default-500'">
+                            <div class="size-3"><ng-icon name="lucideReceipt"></ng-icon></div>
+                            {{ item.cuotas_pagadas }} pago{{ item.cuotas_pagadas !== 1 ? 's' : '' }}
+                          </span>
+                        </td>
+
+                        <td class="px-4 py-3 text-end">
+                          <div class="flex items-center justify-end gap-2">
+                            <span class="text-sm font-semibold text-success">
+                              Bs. {{ item.total_pagado | number:'1.2-2' }}
+                            </span>
+                            @if (estadoCobro(item); as estado) {
+                              <span class="badge text-xs px-2 py-0.5 rounded-full"
+                                    [class]="'bg-' + estado.color + '/10 text-' + estado.color">
+                                {{ estado.label }}
+                              </span>
+                            }
+                          </div>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                          @if (item.estado === 1) {
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
+                              <div class="size-1.5 rounded-full bg-success"></div> Activo
+                            </span>
+                          } @else {
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-default-100 text-default-500">
+                              <div class="size-1.5 rounded-full bg-default-400"></div> Baja
+                            </span>
+                          }
+                        </td>
+
+                        <td class="px-4 py-3 text-center" (click)="$event.stopPropagation()">
+                          <div class="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              class="size-8 flex items-center justify-center rounded text-default-400 hover:text-primary hover:bg-primary/10"
+                              title="Ver detalle"
+                              (click)="goToDetail(item.id_ins)"
+                            >
+                              <div class="size-4"><ng-icon name="lucideEye"></ng-icon></div>
+                            </button>
+                            <a
+                              [routerLink]="['/cenefco/inscripcion-edit', item.id_ins]"
+                              class="size-8 flex items-center justify-center rounded text-default-400 hover:text-primary hover:bg-primary/10"
+                              title="Editar"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                            </a>
+                            @if (modeloId()) {
+                              <a
+                                [routerLink]="['/cenefco/carta-generada-create']"
+                                [queryParams]="{ id_us: item.id_us, id_cartamod: modeloId() }"
+                                class="size-8 flex items-center justify-center rounded text-violet-400 hover:text-violet-700 hover:bg-violet-50"
+                                title="Generar carta"
+                                (click)="$event.stopPropagation()"
+                              >
+                                <div class="size-4"><ng-icon name="lucideFilePlus"></ng-icon></div>
+                              </a>
+                            }
+                            <button
+                              type="button"
+                              class="size-8 flex items-center justify-center rounded text-default-400 hover:text-danger hover:bg-danger/10"
+                              title="Eliminar inscripción"
+                              (click)="delete(item.id_ins, item.estudiante_nombre || '')"
+                            >
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                    @empty {
+                      <tr>
+                        <td colspan="10" class="px-4 py-16 text-center">
+                          <div class="size-12 mx-auto mb-3 text-default-300"><ng-icon name="lucideClipboardX"></ng-icon></div>
+                          <p class="text-sm text-default-400">No se encontraron inscripciones.</p>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ items.length }}</b> de <b>{{ total }}</b> inscripciones
+          </p>
+          <app-pagination
+            [total]="total"
+            [pageSize]="pageSize()"
+            [currentPage]="pageIndex()"
+            (pageChange)="onPageChange($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

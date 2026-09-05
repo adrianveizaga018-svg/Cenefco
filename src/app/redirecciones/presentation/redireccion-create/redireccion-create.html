@@ -1,0 +1,43 @@
+<main>
+  <app-page-title title="Nueva Redirección" subtitle="Redirecciones" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Redirección</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">URL Origen <span class="text-danger">*</span></label>
+            <input type="text" formControlName="url_origen" class="form-input w-full" placeholder="/url-antigua">
+            @if (form.get('url_origen')?.invalid && form.get('url_origen')?.touched) { <p class="text-danger text-xs mt-1">La URL origen es requerida</p> }
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">URL Destino <span class="text-danger">*</span></label>
+            <input type="text" formControlName="url_destino" class="form-input w-full" placeholder="/url-nueva o https://...">
+            @if (form.get('url_destino')?.invalid && form.get('url_destino')?.touched) { <p class="text-danger text-xs mt-1">La URL destino es requerida</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Código HTTP</label>
+            <select formControlName="codigo_http" class="form-input w-full">
+              <option [value]="301">301 - Permanente</option>
+              <option [value]="302">302 - Temporal</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 pt-5">
+            <input type="checkbox" formControlName="activo" id="activo" class="form-checkbox">
+            <label for="activo" class="text-sm text-default-700">Activo</label>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Notas</label>
+            <input type="text" formControlName="notas" class="form-input w-full" placeholder="Notas internas">
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Guardar Redirección }
+            </button>
+            <a routerLink="/cenefco/redirecciones" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

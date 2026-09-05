@@ -1,0 +1,25 @@
+<div class="card h-full">
+  <div class="card-header">
+    <h6 class="card-title">Resumen</h6>
+  </div>
+  <div class="card-body space-y-4">
+    <div class="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
+      <div class="flex items-center justify-center rounded-lg size-11 bg-primary/10 shrink-0">
+        <div class="size-5 text-primary"><ng-icon name="lucideClipboardCheck"></ng-icon></div>
+      </div>
+      <div>
+        <p class="text-xs text-default-500 mb-0.5">Inscripciones</p>
+        <h5 class="font-bold text-default-800 text-base">{{ resumen?.total_inscripciones || 0 }}</h5>
+      </div>
+    </div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-success/5">
+      <div class="flex items-center justify-center rounded-lg size-11 bg-success/10 shrink-0">
+        <div class="size-5 text-success"><ng-icon name="lucideBookOpen"></ng-icon></div>
+      </div>
+      <div>
+        <p class="text-xs text-default-500 mb-0.5">Programas activos</p>
+        <h5 class="font-bold text-default-800 text-base">{{ resumen?.total_cursos || 0 }}</h5>
+      </div>
+    </div>
+  </div>
+</div>

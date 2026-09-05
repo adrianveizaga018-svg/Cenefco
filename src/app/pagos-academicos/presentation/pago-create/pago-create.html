@@ -1,0 +1,114 @@
+<main>
+  <app-page-title title="Registrar Pago" subtitle="Pagos Académicos" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Pago Académico</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estudiante <span class="text-danger">*</span></label>
+            <select formControlName="id_us" class="form-input w-full" (change)="onUsuarioChange($event)">
+              <option [ngValue]="null">— Seleccionar estudiante —</option>
+              @for (u of usuarios(); track u.id_us) {
+                <option [value]="u.id_us">{{ usuarioLabel(u) }}</option>
+              }
+            </select>
+            @if (form.get('id_us')?.invalid && form.get('id_us')?.touched) {
+              <p class="text-danger text-xs mt-1">Selecciona un estudiante</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Inscripción</label>
+            <select formControlName="id_ins" class="form-input w-full" (change)="onInscripcionChange($event)">
+              <option [ngValue]="null">— Seleccionar inscripción —</option>
+              @for (i of inscripciones(); track i.id_ins) {
+                <option [value]="i.id_ins">{{ inscripcionLabel(i) }}</option>
+              }
+            </select>
+            @if (inscripciones().length === 0 && form.get('id_us')?.value) {
+              <p class="text-default-400 text-xs mt-1">Sin inscripciones para este estudiante</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Pago / Cuota</label>
+            @if (cargandoCuotas()) {
+              <div class="form-input w-full flex items-center gap-2 text-default-400 text-sm">
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Cargando cuotas pendientes...
+              </div>
+            } @else {
+              <select formControlName="id_fechapago" class="form-input w-full" (change)="onFechaPagoChange($event)">
+                <option [ngValue]="null">— Seleccionar cuota —</option>
+                @for (f of fechasPago(); track f.id_fechapago) {
+                  <option [value]="f.id_fechapago">{{ fechaPagoLabel(f) }}</option>
+                }
+              </select>
+              @if (fechasPago().length === 0 && form.get('id_ins')?.value) {
+                <p class="text-success text-xs mt-1 flex items-center gap-1">
+                  <ng-icon name="lucideCircleCheck" class="size-3"></ng-icon>
+                  Todas las cuotas de esta inscripción ya fueron pagadas.
+                </p>
+              }
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado (Bs.) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" formControlName="monto_pagado" class="form-input w-full" placeholder="Ej: 500.00">
+            @if (form.get('monto_pagado')?.errors?.['required'] && form.get('monto_pagado')?.touched) {
+              <p class="text-danger text-xs mt-1">El monto es requerido</p>
+            }
+            @if (form.get('monto_pagado')?.errors?.['min'] && form.get('monto_pagado')?.touched) {
+              <p class="text-danger text-xs mt-1">El monto debe ser mayor a 0</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">N° Boleta Bancaria / Comprobante</label>
+            <input type="text" formControlName="nro_boleta_bancaria" class="form-input w-full" placeholder="Ej: BOL-001-2026">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Depósito</label>
+            <input type="date" formControlName="fecha_deposito" class="form-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">N° NIT (para factura)</label>
+            <input type="text" formControlName="nro_nit" class="form-input w-full" placeholder="Opcional">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre NIT</label>
+            <input type="text" formControlName="nombre_nit" class="form-input w-full" placeholder="Razón social para la factura">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Observación del Pago</label>
+            <textarea formControlName="observacion_pago" rows="2" class="form-input w-full" placeholder="Ej: Pago con descuento, beca parcial, etc."></textarea>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+              } @else { Registrar Pago }
+            </button>
+            <a routerLink="/cenefco/pagos-academicos" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

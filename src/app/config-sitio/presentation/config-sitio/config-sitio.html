@@ -1,0 +1,187 @@
+<main>
+  <app-page-title title="Configuración del Sitio" subtitle="CENEFCO" />
+
+  @if (loading()) {
+    <div class="card">
+      <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+        <div class="size-4 animate-spin">
+          <ng-icon name="lucideLoader"></ng-icon>
+        </div>
+        Cargando configuración...
+      </div>
+    </div>
+  } @else {
+    <div class="flex gap-6 items-start">
+
+      <aside class="w-52 shrink-0 sticky top-24">
+        <div class="card p-2">
+          @for (g of grupos(); track g.grupo) {
+            <button
+              type="button"
+              (click)="seleccionarGrupo(g.grupo)"
+              class="w-full text-left px-3 py-2.5 rounded-md text-sm font-medium transition-colors mb-0.5 last:mb-0"
+              [class.bg-primary]="grupoActivo() === g.grupo"
+              [class.text-white]="grupoActivo() === g.grupo"
+              [class.text-default-600]="grupoActivo() !== g.grupo"
+              [class.hover:bg-default-100]="grupoActivo() !== g.grupo"
+            >
+              {{ g.etiqueta }}
+            </button>
+          }
+        </div>
+      </aside>
+
+      <div class="flex-1 min-w-0">
+        <form (ngSubmit)="guardar()">
+          <div class="card">
+
+            <div class="card-header flex items-center justify-between">
+              <h4 class="card-title">{{ etiquetaGrupoActivo() }}</h4>
+              <button
+                type="submit"
+                [disabled]="saving() || uploading() !== null"
+                class="btn btn-sm bg-primary text-white"
+              >
+                @if (saving()) {
+                  <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                  Guardar cambios
+                }
+              </button>
+            </div>
+
+            <div class="p-6">
+              <div class="grid grid-cols-1 gap-6">
+
+                @for (item of itemsGrupoActivo(); track item.clave) {
+                  <div>
+                    <label class="block text-sm font-medium text-default-900 mb-1.5">
+                      {{ item.etiqueta ?? item.clave }}
+                      @if (!item.es_publica) {
+                        <span class="ml-1.5 text-xs font-normal text-default-400 bg-default-100 px-1.5 py-0.5 rounded">privado</span>
+                      }
+                    </label>
+
+                    @if (item.tipo === 'image') {
+                      <div class="flex gap-4 items-start">
+                        <div class="shrink-0 w-32 h-24 rounded-lg overflow-hidden border border-default-200 bg-default-50 flex items-center justify-center relative">
+                          @if (item.valor) {
+                            <img [src]="item.valor" alt="preview" class="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              (click)="updateValor(item.clave, '')"
+                              class="absolute top-1 right-1 size-5 bg-danger text-white rounded-full flex items-center justify-center text-xs hover:bg-danger/80"
+                              title="Quitar imagen"
+                            >✕</button>
+                          } @else {
+                            <div class="size-8 text-default-300">
+                              <ng-icon name="lucideImage"></ng-icon>
+                            </div>
+                          }
+                        </div>
+                        <div class="flex-1">
+                          <label
+                            [for]="'img-' + item.clave"
+                            class="btn btn-sm bg-default-100 text-default-700 hover:bg-default-200 cursor-pointer inline-flex"
+                          >
+                            @if (uploading() === item.clave) {
+                              <div class="size-4 me-1.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                              Subiendo...
+                            } @else {
+                              <div class="size-4 me-1.5"><ng-icon name="lucideUpload"></ng-icon></div>
+                              Seleccionar imagen
+                            }
+                          </label>
+                          <input
+                            [id]="'img-' + item.clave"
+                            type="file"
+                            accept="image/*"
+                            class="sr-only"
+                            [disabled]="uploading() !== null"
+                            (change)="onImageSelect($event, item.clave)"
+                          />
+                          @if (item.valor) {
+                            <p class="mt-2 text-xs text-default-400 break-all">{{ item.valor }}</p>
+                          } @else {
+                            <p class="mt-2 text-xs text-default-400">PNG, JPG, WEBP — máx. 2 MB</p>
+                          }
+                        </div>
+                      </div>
+
+                    } @else if (item.tipo === 'textarea') {
+                      <textarea
+                        rows="4"
+                        class="form-input"
+                        [ngModel]="item.valor"
+                        [name]="item.clave"
+                        (ngModelChange)="updateValor(item.clave, $event)"
+                      ></textarea>
+
+                    } @else if (item.tipo === 'color') {
+                      <div class="flex items-center gap-3">
+                        <input
+                          type="color"
+                          class="h-9 w-14 rounded-md border border-default-200 cursor-pointer p-0.5"
+                          [ngModel]="item.valor || '#000000'"
+                          [name]="item.clave"
+                          (ngModelChange)="updateValor(item.clave, $event)"
+                        />
+                        <span class="text-sm text-default-500 font-mono">{{ item.valor }}</span>
+                      </div>
+
+                    } @else if (item.tipo === 'boolean') {
+                      <label class="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="form-switch"
+                          [ngModel]="item.valor === '1'"
+                          [name]="item.clave"
+                          (ngModelChange)="updateValor(item.clave, $event ? '1' : '0')"
+                        />
+                        <span class="text-sm text-default-700">Activado</span>
+                      </label>
+
+                    } @else {
+                      <input
+                        type="text"
+                        class="form-input"
+                        [ngModel]="item.valor"
+                        [name]="item.clave"
+                        (ngModelChange)="updateValor(item.clave, $event)"
+                      />
+                    }
+
+                    @if (item.descripcion) {
+                      <p class="mt-1 text-xs text-default-400">{{ item.descripcion }}</p>
+                    }
+                  </div>
+                }
+
+              </div>
+            </div>
+
+            <div class="card-footer flex justify-end">
+              <button
+                type="submit"
+                [disabled]="saving() || uploading() !== null"
+                class="btn bg-primary text-white"
+              >
+                @if (saving()) {
+                  <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Guardando...
+                } @else {
+                  <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                  Guardar cambios
+                }
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+    </div>
+  }
+</main>

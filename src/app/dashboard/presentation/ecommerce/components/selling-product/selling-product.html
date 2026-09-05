@@ -1,0 +1,43 @@
+<div class="card h-full">
+  <div class="card-header">
+    <h6 class="card-title">Más Solicitados</h6>
+    <a routerLink="/cenefco/tramites" class="btn btn-sm border-0 text-primary/90 hover:text-primary">
+      Ver todos
+      <div class="ms-1 size-4"><ng-icon name="lucideMoveRight"></ng-icon></div>
+    </a>
+  </div>
+
+  <div class="card-body">
+    @if (chartOptions) {
+      <app-apexchart [getOptions]="chartOptions" />
+    }
+
+    <div class="space-y-3 mt-1">
+      @for (tramite of topTramites; track tramite.id; let i = $index) {
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="size-2.5 rounded-full shrink-0"
+                [style.backgroundColor]="getColor(i)"></span>
+              <span class="text-xs font-medium text-default-700 truncate">{{ tramite.nombre }}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 ml-2">
+              <span class="text-xs font-bold text-default-800">{{ tramite.total_solicitudes }}</span>
+              <span class="text-xs text-default-400">solicitudes</span>
+            </div>
+          </div>
+          <div class="h-1.5 rounded-full bg-default-100 overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-700 ease-out"
+              [style.width.%]="getPct(tramite.total_solicitudes)"
+              [style.backgroundColor]="getColor(i)"
+            ></div>
+          </div>
+        </div>
+      }
+      @empty {
+        <p class="text-center text-sm text-default-400 py-4">Sin datos de trámites aún.</p>
+      }
+    </div>
+  </div>
+</div>

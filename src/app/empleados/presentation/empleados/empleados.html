@@ -1,0 +1,100 @@
+<main>
+  <app-page-title title="Empleados de planta" subtitle="Sueldos" />
+
+  <div class="grid grid-cols-1 gap-5">
+    <div class="card">
+      <div class="card-header flex flex-wrap items-center justify-between gap-3">
+        <input
+          type="text"
+          class="form-input max-w-xs"
+          placeholder="Buscar por nombre..."
+          [ngModel]="query()"
+          (ngModelChange)="onBuscar($event)" />
+
+        <a routerLink="/cenefco/empleado-create" class="btn btn-sm bg-primary text-white">
+          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+          Nuevo empleado
+        </a>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando empleados...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Nombre</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">CI</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Cargo</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Sueldo mensual</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Estado</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (empleado of empleados(); track empleado.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ empleado.nombre_completo }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ empleado.ci }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ empleado.cargo }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-end font-medium">Bs. {{ empleado.sueldo_mensual }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          <button type="button" class="transition" (click)="toggleActivo(empleado)">
+                            @if (empleado.activo) {
+                              <div class="size-7 text-success mx-auto"><ng-icon name="lucideToggleRight"></ng-icon></div>
+                            } @else {
+                              <div class="size-7 text-default-400 mx-auto"><ng-icon name="lucideToggleLeft"></ng-icon></div>
+                            }
+                          </button>
+                        </td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <a
+                              [routerLink]="['/cenefco/empleado-edit', empleado.id]"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Editar">
+                              <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                            </a>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                              title="Eliminar"
+                              [disabled]="deleting() === empleado.id"
+                              (click)="eliminar(empleado)">
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No hay empleados registrados.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize"
+        [total]="total()"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

@@ -1,0 +1,121 @@
+<main>
+  <app-page-title title="Configurar honorarios por programa" subtitle="Honorarios docentes" />
+
+  <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+    <div class="lg:col-span-2 space-y-5">
+      <div class="card">
+        <div class="card-header"><h6 class="card-title">Programas configurados</h6></div>
+        <div class="flex flex-col">
+          <div class="overflow-x-auto">
+            <div class="min-w-full inline-block align-middle">
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Programa</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Tipo de honorario</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Tarifa</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (c of configuraciones(); track c.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ c.nombre_programa || ('Programa #' + c.id_programa) }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">
+                            {{ etiquetaTipo(c.tipo_honorario) }}
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-end font-medium">
+                          Bs. {{ c.tipo_honorario === 'diplomado_fijo' ? c.monto_fijo : c.monto_por_dia }}
+                          {{ c.tipo_honorario === 'diplomado_fijo' ? '' : ' / día' }}
+                        </td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center justify-center">
+                            <button type="button"
+                                    class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                                    title="Eliminar"
+                                    [disabled]="eliminando() === c.id_programa"
+                                    (click)="eliminar(c)">
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="4" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No hay programas configurados aún.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-5">
+      <div class="card">
+        <div class="card-header"><h6 class="card-title">Configurar programa</h6></div>
+        <div class="card-body space-y-4">
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Programa</label>
+            <app-searchable-select
+              [options]="programaOptions()"
+              [ngModel]="form().id_programa" (ngModelChange)="updateForm('id_programa', $event)"
+              placeholder="Buscar programa..." />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Tipo de honorario</label>
+            <select class="form-input" [ngModel]="form().tipo_honorario" (ngModelChange)="updateForm('tipo_honorario', $event)">
+              <option value="diplomado_fijo">Diplomado (monto fijo)</option>
+              <option value="rm_por_dia">Curso con R.M. (por día)</option>
+              <option value="aval_por_dia">Curso con aval (por día)</option>
+            </select>
+          </div>
+
+          @if (form().tipo_honorario === 'diplomado_fijo') {
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Monto fijo (Bs.)</label>
+              <input type="number" class="form-input" min="0" step="0.01"
+                     [ngModel]="form().monto_fijo" (ngModelChange)="updateForm('monto_fijo', +$event)" />
+            </div>
+          } @else {
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Monto por día (Bs.)</label>
+              <input type="number" class="form-input" min="0" step="0.01"
+                     [ngModel]="form().monto_por_dia" (ngModelChange)="updateForm('monto_por_dia', +$event)" />
+            </div>
+          }
+
+          <button type="button" (click)="guardar()" [disabled]="saving()" class="btn bg-primary text-white w-full">
+            @if (saving()) {
+              <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Guardando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+              Guardar configuración
+            }
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>

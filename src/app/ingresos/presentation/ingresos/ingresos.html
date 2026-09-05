@@ -1,0 +1,170 @@
+﻿<main>
+  <app-page-title title="Panel de Ingresos" subtitle="Finanzas" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+
+    @if (resumenLoading) {
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        @for (_ of [1,2,3,4,5]; track $index) {
+          <div class="card p-5 animate-pulse">
+            <div class="h-2.5 bg-default-200 rounded mb-3 w-1/2"></div>
+            <div class="h-6 bg-default-200 rounded w-3/4"></div>
+          </div>
+        }
+      </div>
+    } @else if (resumen) {
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="card p-5">
+          <p class="text-xs text-default-500 font-medium uppercase tracking-wide mb-1">Total General</p>
+          <p class="text-lg font-bold text-default-800">Bs. {{ resumen.total_general | number:'1.2-2' }}</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-default-500 font-medium uppercase tracking-wide mb-1">Este Mes</p>
+          <p class="text-lg font-bold text-primary">Bs. {{ resumen.total_mes | number:'1.2-2' }}</p>
+          <p class="text-xs text-default-400 mt-0.5">{{ resumen.n_pagos_mes }} pagos</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-default-500 font-medium uppercase tracking-wide mb-1">Este Año</p>
+          <p class="text-lg font-bold text-default-800">Bs. {{ resumen.total_ano | number:'1.2-2' }}</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-default-500 font-medium uppercase tracking-wide mb-1">Total Pagos</p>
+          <p class="text-lg font-bold text-default-800">{{ resumen.n_pagos | number }}</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs text-default-500 font-medium uppercase tracking-wide mb-1">Promedio</p>
+          <p class="text-lg font-bold text-default-800">Bs. {{ resumen.promedio | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    }
+
+    @if (meses.length > 0) {
+      <div class="card">
+        <div class="card-header"><h4 class="card-title">Ingresos por Mes (últimos 12 meses)</h4></div>
+        <div class="p-4 overflow-x-auto">
+          <table class="table-auto w-full text-sm">
+            <thead>
+              <tr class="border-b border-default-200 text-default-500 text-xs uppercase">
+                <th class="text-start py-2 px-3 font-medium">Mes</th>
+                <th class="text-center py-2 px-3 font-medium">N° Pagos</th>
+                <th class="text-end py-2 px-3 font-medium">Total (Bs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (mes of meses; track mes.mes) {
+                <tr class="border-b border-default-100 hover:bg-default-50 transition-colors">
+                  <td class="py-2 px-3 font-medium text-default-700">{{ mes.mes }}</td>
+                  <td class="py-2 px-3 text-center text-default-600">{{ mes.n_pagos }}</td>
+                  <td class="py-2 px-3 text-end font-mono font-semibold text-success">{{ mes.total | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <div class="card">
+      <div class="card-header flex-col items-start gap-3">
+        <div class="flex w-full items-center justify-between">
+          <h4 class="card-title">Pagos Registrados</h4>
+          @if (filtersActive && totalPeriodo !== null) {
+            <span class="text-sm text-default-500">
+              Total período: <span class="font-bold text-success">Bs. {{ totalPeriodo | number:'1.2-2' }}</span>
+            </span>
+          }
+        </div>
+        <div class="flex flex-wrap items-center gap-3 w-full">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-default-500 whitespace-nowrap">Desde:</label>
+            <input type="date" [(ngModel)]="desdeInput" class="form-input form-input-sm py-1.5 text-sm">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-default-500 whitespace-nowrap">Hasta:</label>
+            <input type="date" [(ngModel)]="hastaInput" class="form-input form-input-sm py-1.5 text-sm">
+          </div>
+          <button type="button" class="btn btn-sm bg-primary text-white flex items-center gap-1" (click)="onFiltrar()">
+            <div class="size-3.5"><ng-icon name="lucideSearch"></ng-icon></div> Filtrar
+          </button>
+          @if (filtersActive) {
+            <button type="button" class="btn btn-sm bg-default-200 text-default-600 flex items-center gap-1" (click)="onLimpiar()">
+              <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div> Limpiar
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto"><div class="min-w-full inline-block align-middle"><div class="overflow-visible">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
+            </div>
+          } @else if (forbidden) {
+            <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div> No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+            </div>
+          } @else if (error) {
+            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+              <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div> No se pudo cargar.
+            </div>
+          } @else {
+                <div class="relative">
+                  <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    <img src="/assets/images/logo-sm.png" alt="" aria-hidden="true"
+                         class="w-64 h-64 object-contain opacity-[0.04] select-none" />
+                  </div>
+            <table class="min-w-full divide-y divide-default-200 relative z-10">
+              <thead class="bg-default-150">
+                <tr class="text-sm font-normal text-default-700">
+                  <th class="px-3.5 py-3 text-start">Estudiante</th>
+                  <th class="px-3.5 py-3 text-start">Plan / Cuota</th>
+                  <th class="px-3.5 py-3 text-end">Monto</th>
+                  <th class="px-3.5 py-3 text-start">N° Boleta</th>
+                  <th class="px-3.5 py-3 text-start">Fecha Depósito</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-200">
+                @for (item of items; track item.id_pago) {
+                  <tr class="text-default-800 font-normal hover:bg-default-50 transition-colors">
+                    <td class="px-3.5 py-2.5 text-sm">
+                      <span class="font-medium text-default-800">{{ item.estudiante_nombre?.trim() || '—' }}</span>
+                      @if (item.estudiante_ci) {
+                        <span class="block text-xs text-default-400 font-mono">CI: {{ item.estudiante_ci }}</span>
+                      }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm">
+                      @if (item.plan_titulo) {
+                        <span class="block text-default-700 text-xs font-medium">{{ item.plan_titulo }}</span>
+                      }
+                      @if (item.cuota_nro || item.tipo_tramite) {
+                        <span class="block text-xs text-default-400">
+                          @if (item.cuota_nro) { Cuota {{ item.cuota_nro }} }
+                          @if (item.tipo_tramite) { · {{ item.tipo_tramite }} }
+                        </span>
+                      }
+                      @if (!item.plan_titulo && !item.cuota_nro && !item.tipo_tramite) { <span class="text-default-400">—</span> }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-end text-sm font-semibold text-success whitespace-nowrap">
+                      @if (item.monto_pagado != null) { Bs. {{ item.monto_pagado | number:'1.2-2' }} } @else { — }
+                    </td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500 font-mono">{{ item.nro_boleta_bancaria || '—' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.fecha_deposito || '—' }}</td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron pagos.</td></tr>
+                }
+              </tbody>
+            </table>
+            </div>
+          }
+        </div></div></div>
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">Mostrando <b>{{ items.length }}</b> de <b>{{ total }}</b> pagos</p>
+          <app-pagination [total]="total" [pageSize]="pageSize()" [currentPage]="pageIndex()" (pageChange)="onPageChange($event)" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>

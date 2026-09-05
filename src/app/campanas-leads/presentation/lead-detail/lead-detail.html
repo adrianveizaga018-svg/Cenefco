@@ -1,0 +1,240 @@
+﻿<main>
+  <app-page-title title="Detalle del Lead" subtitle="CRM Seguimiento" />
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+      Cargando...
+    </div>
+  } @else if (hasError()) {
+    <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+      No se pudo cargar el lead.
+    </div>
+  } @else if (lead(); as l) {
+
+    <div class="mb-4">
+      <a [routerLink]="['/cenefco/campana-lead-detail', campanaLeadId]"
+         class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5 inline-flex items-center">
+        <div class="size-3.5"><ng-icon name="lucideArrowLeft" /></div>
+        Volver a la campaña
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <!-- Columna izquierda: info del lead + cambiar estado -->
+      <div class="space-y-4">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="flex items-center gap-3">
+              <div class="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <div class="size-5"><ng-icon name="lucideUser" /></div>
+              </div>
+              <div>
+                <h5 class="font-semibold text-default-800">{{ l.nombre }}</h5>
+                <span class="text-xs px-2 py-0.5 rounded-full font-medium" [ngClass]="estadoClass[l.estado]">
+                  {{ estadoLabel[l.estado] }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body space-y-3 text-sm">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-default-400"><ng-icon name="lucidePhone" /></div>
+              <a [href]="'https://wa.me/' + l.celular" target="_blank" class="text-primary hover:underline">
+                {{ l.celular }}
+              </a>
+            </div>
+            @if (l.correo) {
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-default-400"><ng-icon name="lucideMail" /></div>
+                <span class="text-default-600">{{ l.correo }}</span>
+              </div>
+            }
+            @if (l.profesion) {
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-default-400"><ng-icon name="lucideUsers" /></div>
+                <span class="text-default-600">{{ l.profesion }}</span>
+              </div>
+            }
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-default-400"><ng-icon name="lucideCalendar" /></div>
+              <span class="text-default-500 text-xs">Registrado: {{ formatFecha(l.created_at) }}</span>
+            </div>
+            <div class="text-xs text-default-400">
+              {{ l.total_seguimientos }} seguimiento(s) registrado(s)
+            </div>
+          </div>
+        </div>
+
+        <!-- Cambiar estado -->
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Cambiar estado</h6></div>
+          <div class="card-body space-y-2">
+            @for (est of estados; track est) {
+              <button type="button"
+                class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between"
+                [ngClass]="l.estado === est ? estadoClass[est] + ' ring-1 ring-inset ring-current' : 'hover:bg-default-100 text-default-600'"
+                [disabled]="cambiandoEstado()"
+                (click)="cambiarEstado(est)">
+                {{ estadoLabel[est] }}
+                @if (l.estado === est) {
+                  <div class="size-4"><ng-icon name="lucideCheck" /></div>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Columna derecha: historial de seguimientos -->
+      <div class="lg:col-span-2 space-y-4">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="flex items-center gap-2">
+              <h5 class="card-title">Historial de contactos</h5>
+              <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">
+                {{ seguimientos().length }}
+              </span>
+            </div>
+            <button type="button" (click)="abrirModal()"
+              class="btn btn-sm bg-primary text-white gap-1.5">
+              <div class="size-4"><ng-icon name="lucidePlus" /></div>
+              Registrar contacto
+            </button>
+          </div>
+
+          <div class="card-body">
+            @if (seguimientos().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-10 text-default-400">
+                <div class="size-10"><ng-icon name="lucideClipboardList" /></div>
+                <p class="text-sm">Sin contactos registrados aún</p>
+                <button type="button" (click)="abrirModal()"
+                  class="btn btn-sm bg-primary/10 text-primary hover:bg-primary hover:text-white gap-1.5 mt-2">
+                  <div class="size-4"><ng-icon name="lucidePlus" /></div>
+                  Registrar primer contacto
+                </button>
+              </div>
+            } @else {
+              <div class="space-y-4">
+                @for (s of seguimientos(); track s.id) {
+                  <div class="flex gap-3">
+                    <!-- Icono tipo -->
+                    <div class="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <div class="size-4"><ng-icon [name]="tipoIcon[s.tipo]" /></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-sm font-medium text-default-800 capitalize">{{ capitalize(s.tipo) }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="resultadoClass[s.resultado]">
+                          {{ resultadoLabel[s.resultado] }}
+                        </span>
+                        <span class="text-xs text-default-400 ml-auto">{{ formatFecha(s.created_at) }}</span>
+                      </div>
+                      @if (s.nota) {
+                        <p class="text-sm text-default-600 mt-1">{{ s.nota }}</p>
+                      }
+                      @if (s.proxima_accion) {
+                        <div class="mt-1.5 flex items-center gap-1.5 text-xs text-warning">
+                          <div class="size-3"><ng-icon name="lucideCalendar" /></div>
+                          Próxima acción: {{ s.proxima_accion }}
+                          @if (s.fecha_proxima_accion) { — {{ s.fecha_proxima_accion }} }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+</main>
+
+<!-- Modal registrar seguimiento -->
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarModal()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-default-800">Registrar contacto</h3>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarModal()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <!-- Tipo -->
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Tipo de contacto *</label>
+        <div class="flex flex-wrap gap-2">
+          @for (t of tipos; track t) {
+            <button type="button"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors capitalize"
+              [ngClass]="nuevoTipo() === t ? 'bg-primary text-white border-primary' : 'border-default-200 text-default-600 hover:border-primary'"
+              (click)="nuevoTipo.set(t)">
+              {{ capitalize(t) }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Resultado *</label>
+        <select class="form-input" [ngModel]="nuevoResult()" (ngModelChange)="nuevoResult.set($event)">
+          @for (r of resultados; track r.value) {
+            <option [value]="r.value">{{ r.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Nota -->
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Nota / Comentario</label>
+        <textarea class="form-input" rows="2" placeholder="Ej: Dijo que llamaría el viernes..."
+          [ngModel]="nuevaNota()" (ngModelChange)="nuevaNota.set($event)"></textarea>
+      </div>
+
+      <!-- Próxima acción -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Próxima acción</label>
+          <input type="text" class="form-input" placeholder="Ej: Volver a llamar"
+            [ngModel]="nuevaAccion()" (ngModelChange)="nuevaAccion.set($event)">
+        </div>
+        <div>
+          <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Fecha</label>
+          <input type="date" class="form-input"
+            [ngModel]="nuevaFecha()" (ngModelChange)="nuevaFecha.set($event)">
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button type="button"
+          class="btn btn-primary flex-1 gap-1.5"
+          [disabled]="guardando()"
+          (click)="guardarSeguimiento()">
+          @if (guardando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+            Guardando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideCheck" /></div>
+            Guardar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

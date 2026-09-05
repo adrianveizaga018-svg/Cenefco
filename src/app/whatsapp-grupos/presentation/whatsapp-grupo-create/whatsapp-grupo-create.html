@@ -1,0 +1,58 @@
+<main>
+  <app-page-title title="Nuevo Grupo de WhatsApp" subtitle="Grupos de WhatsApp" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Grupo</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre del Grupo <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Ej: Diplomado MBA - Grupo 1">
+            @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) { <p class="text-danger text-xs mt-1">El nombre es requerido</p> }
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Enlace de Invitación <span class="text-danger">*</span></label>
+            <input type="url" formControlName="enlace_invitacion" class="form-input w-full" placeholder="https://chat.whatsapp.com/...">
+            @if (form.get('enlace_invitacion')?.invalid && form.get('enlace_invitacion')?.touched) { <p class="text-danger text-xs mt-1">El enlace es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID de Impartición <span class="text-danger">*</span></label>
+            <input type="number" formControlName="imparte_id" class="form-input w-full" placeholder="ID del curso asignado">
+            @if (form.get('imparte_id')?.invalid && form.get('imparte_id')?.touched) { <p class="text-danger text-xs mt-1">El ID de impartición es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Capacidad Máxima</label>
+            <input type="number" formControlName="capacidad_maxima" class="form-input w-full" placeholder="Ej: 256">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Miembros Actuales</label>
+            <input type="number" formControlName="miembros_actuales" class="form-input w-full" min="0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+            <input type="number" formControlName="orden" class="form-input w-full" min="0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Expiración del Enlace</label>
+            <input type="datetime-local" formControlName="fecha_expiracion_enlace" class="form-input w-full">
+          </div>
+          <div class="flex items-center gap-2 pt-5">
+            <input type="checkbox" formControlName="activo" id="activo" class="form-checkbox">
+            <label for="activo" class="text-sm text-default-700">Activo</label>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Descripción</label>
+            <textarea formControlName="descripcion" rows="3" class="form-input w-full" placeholder="Descripción opcional del grupo"></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Grupo }
+            </button>
+            <a routerLink="/cenefco/whatsapp-grupos" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

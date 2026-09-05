@@ -1,0 +1,23 @@
+<main>
+  <app-page-title title="Nueva Fecha de Documentación" subtitle="Fechas de Documentación" />
+  <div class="grid grid-cols-1 gap-5 mb-5"><div class="card">
+    <div class="card-header"><h4 class="card-title">Datos</h4></div>
+    <div class="p-6"><form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-medium text-default-700 mb-1">ID PlanDoc</label><input type="number" formControlName="id_plandoc" class="form-input w-full"></div>
+      <div><label class="block text-sm font-medium text-default-700 mb-1">N° Documento</label><input type="text" formControlName="nro_doc" class="form-input w-full"></div>
+      <div><label class="block text-sm font-medium text-default-700 mb-1">Tipo de Documento</label><input type="text" formControlName="tipo_documento" class="form-input w-full" placeholder="Ej: CI, Título, Foto"></div>
+      <div><label class="block text-sm font-medium text-default-700 mb-1">Fecha Inicio</label><input type="date" formControlName="fecha_inicio" class="form-input w-full"></div>
+      <div><label class="block text-sm font-medium text-default-700 mb-1">Fecha Fin</label><input type="date" formControlName="fecha_fin" class="form-input w-full"></div>
+      <div><label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+        <select formControlName="estado" class="form-input w-full"><option [value]="1">Activo</option><option [value]="0">Inactivo</option></select>
+      </div>
+      <div class="flex items-center gap-2 pt-4"><input type="checkbox" formControlName="obligatorio" id="oblig" class="form-checkbox"><label for="oblig" class="text-sm text-default-700">Obligatorio</label></div>
+      <div class="md:col-span-2 flex items-center gap-3">
+        <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+          @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Guardar Fecha }
+        </button>
+        <a routerLink="/cenefco/fechas-doc" class="btn bg-default-200 text-default-700">Cancelar</a>
+      </div>
+    </form></div>
+  </div></div>
+</main>

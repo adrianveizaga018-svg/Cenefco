@@ -1,0 +1,470 @@
+<main>
+  <app-page-title [title]="campana()?.nombre || 'Detalle de campaña de leads'" subtitle="Campañas de Leads" />
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else if (forbidden()) {
+    <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+      <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+      No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+    </div>
+  } @else if (hasError()) {
+    <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+      <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+      No se pudo cargar la campaña.
+    </div>
+  } @else if (campana(); as c) {
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Total de leads</p>
+            <h5 class="font-semibold">{{ c.total_leads }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideUsers"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Estado</p>
+            <span class="badge text-xs px-2 py-0.5 rounded-full" [ngClass]="estadoBadgeClass(c.estado)">
+              {{ c.estado | titlecase }}
+            </span>
+          </div>
+          <div class="size-10 rounded-full bg-success/10 text-success flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideActivity"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Fecha de inicio</p>
+            <h5 class="font-semibold">{{ c.fecha_inicio ?? '—' }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-info/10 text-info flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <p class="text-xs text-default-500 mb-1">Fecha de fin</p>
+            <h5 class="font-semibold">{{ c.fecha_fin ?? 'Sin definir' }}</h5>
+          </div>
+          <div class="size-10 rounded-full bg-warning/10 text-warning flex items-center justify-center">
+            <div class="size-5"><ng-icon name="lucideCalendarCheck"></ng-icon></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="flex items-center gap-2">
+              <h5 class="card-title">Leads</h5>
+              <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">
+                {{ c.total_leads }}
+              </span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="relative">
+                <input
+                  type="text"
+                  class="ps-9 form-input form-input-sm w-full sm:w-52"
+                  placeholder="Buscar por nombre o celular..."
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="onBuscar($event)">
+                <div class="absolute inset-y-0 start-0 flex items-center ps-3">
+                  <div class="size-3.5 flex items-center text-default-500">
+                    <ng-icon name="lucideSearch"></ng-icon>
+                  </div>
+                </div>
+              </div>
+              <button type="button" (click)="abrirModalExcel()"
+                class="btn btn-sm bg-success/10 hover:bg-success/20 text-success gap-1.5 shrink-0">
+                <div class="size-4"><ng-icon name="lucideSheet"></ng-icon></div>
+                Importar Excel
+              </button>
+              <button type="button" (click)="abrirModal()"
+                class="btn btn-sm bg-primary text-white gap-1.5 shrink-0">
+                <div class="size-4"><ng-icon name="lucideUserPlus"></ng-icon></div>
+                Agregar
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col">
+            <div class="overflow-x-auto">
+              <div class="min-w-full inline-block align-middle">
+                <div class="overflow-hidden">
+
+                  @if (leadsLoading()) {
+                    <div class="flex items-center justify-center py-12 text-default-500 text-sm gap-2">
+                      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                      Cargando leads...
+                    </div>
+                  } @else if (leads().length === 0) {
+                    <div class="flex items-center justify-center py-12 text-default-400 text-sm gap-2">
+                      <div class="size-5"><ng-icon name="lucideUsers"></ng-icon></div>
+                      Sin leads registrados
+                    </div>
+                  } @else {
+                    <table class="min-w-full divide-y divide-default-200">
+                      <thead class="bg-default-150">
+                        <tr class="text-sm font-normal text-default-700">
+                          <th scope="col" class="px-3.5 py-3 text-start">Nombre</th>
+                          <th scope="col" class="px-3.5 py-3 text-start">Celular</th>
+                          <th scope="col" class="px-3.5 py-3 text-start">Correo</th>
+                          <th scope="col" class="px-3.5 py-3 text-start">Profesión</th>
+                          <th scope="col" class="px-3.5 py-3 text-end w-24">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-default-200">
+                        @for (l of leads(); track l.id) {
+                          <tr class="text-default-800 font-normal group">
+                            <td class="px-3.5 py-2 text-sm font-medium">
+                              <a [routerLink]="['/cenefco/campana-lead-detail', c.id, 'lead', l.id]" class="text-primary hover:underline">
+                                {{ l.nombre }}
+                              </a>
+                              <div class="mt-0.5 flex items-center gap-2">
+                                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" 
+                                  [ngClass]="l.estado === 'inscrito' ? 'bg-success/10 text-success' : (l.estado === 'descartado' ? 'bg-default-200 text-default-500' : 'bg-primary/10 text-primary')">
+                                  {{ l.estado | uppercase }}
+                                </span>
+                                @if (l.total_seguimientos > 0) {
+                                  <span class="text-[10px] text-default-400">{{ l.total_seguimientos }} contacto(s)</span>
+                                }
+                              </div>
+                            </td>
+                            <td class="px-3.5 py-2 text-sm">
+                              <a [href]="'https://wa.me/' + l.celular" target="_blank"
+                                 class="text-default-600 hover:text-primary hover:underline flex items-center gap-1">
+                                 <div class="size-3.5 text-success"><ng-icon name="lucidePhone"></ng-icon></div>
+                                 {{ l.celular }}
+                              </a>
+                            </td>
+                            <td class="px-3.5 py-2 text-sm text-default-500">{{ l.correo ?? '—' }}</td>
+                            <td class="px-3.5 py-2 text-sm text-default-500">{{ l.profesion ?? '—' }}</td>
+                            <td class="px-3.5 py-2 text-end">
+                              <div class="flex items-center justify-end gap-1">
+                                <button type="button" (click)="abrirEditar(l)"
+                                  class="btn size-7 bg-default-200 hover:bg-warning text-default-500 hover:text-white"
+                                  title="Editar">
+                                  <div class="size-3.5"><ng-icon name="lucidePencil"></ng-icon></div>
+                                </button>
+                                <button type="button" (click)="confirmarEliminar(l)"
+                                  [disabled]="eliminando() === l.id"
+                                  class="btn size-7 bg-default-200 hover:bg-danger text-default-500 hover:text-white"
+                                  title="Eliminar">
+                                  @if (eliminando() === l.id) {
+                                    <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                                  } @else {
+                                    <div class="size-3.5"><ng-icon name="lucideTrash2"></ng-icon></div>
+                                  }
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <app-pagination
+            [currentPage]="currentPage()"
+            [pageSize]="pageSize"
+            [total]="total()"
+            (pageChange)="onPageChange($event)" />
+        </div>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Información de la campaña</h5>
+            <a routerLink="/cenefco/campanas-leads"
+               class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5">
+              <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Volver
+            </a>
+          </div>
+          <div class="card-body space-y-4">
+            <div>
+              <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Nombre del curso / campaña</p>
+              <p class="text-base font-semibold text-default-800">{{ c.nombre }}</p>
+            </div>
+            @if (c.descripcion) {
+              <div>
+                <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Descripción</p>
+                <p class="text-sm text-default-700">{{ c.descripcion }}</p>
+              </div>
+            }
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Estado</p>
+                <span class="badge text-xs px-2 py-0.5 rounded-full" [ngClass]="estadoBadgeClass(c.estado)">
+                  {{ c.estado | titlecase }}
+                </span>
+              </div>
+              <div>
+                <p class="text-xs text-default-400 uppercase tracking-wide mb-1">Período</p>
+                <p class="text-sm text-default-700 font-medium">
+                  @if (c.fecha_inicio) {
+                    {{ c.fecha_inicio }} @if (c.fecha_fin) { → {{ c.fecha_fin }} }
+                  } @else {
+                    —
+                  }
+                </p>
+              </div>
+            </div>
+            <a [routerLink]="['/cenefco/campana-lead-edit', c.id]"
+               class="btn btn-sm bg-default-200 hover:bg-primary text-default-600 hover:text-white w-full gap-1.5 justify-center">
+              <div class="size-3.5"><ng-icon name="lucidePencil"></ng-icon></div>
+              Editar datos de la campaña
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+</main>
+
+@if (editando()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarEditar()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-default-800">Editar lead</h3>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarEditar()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Nombre *</label>
+        <input type="text" class="form-input w-full"
+          [value]="editNombre()" (input)="editNombre.set($any($event.target).value)" autofocus>
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Celular *</label>
+        <input type="text" class="form-input w-full"
+          [value]="editCelular()" (input)="editCelular.set($any($event.target).value)">
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Correo</label>
+        <input type="email" class="form-input w-full"
+          [value]="editCorreo()" (input)="editCorreo.set($any($event.target).value)">
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Profesión</label>
+        <input type="text" class="form-input w-full"
+          [value]="editProfesion()" (input)="editProfesion.set($any($event.target).value)">
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarEditar()">
+          Cancelar
+        </button>
+        <button type="button"
+          class="btn btn-primary flex-1 gap-1.5"
+          [disabled]="editGuardando() || !editNombre().trim() || !editCelular().trim()"
+          (click)="guardarEdicion()">
+          @if (editGuardando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Guardando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+            Guardar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarModal()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-default-800">Agregar lead</h3>
+        <button type="button" class="text-default-400 hover:text-default-600" (click)="cerrarModal()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Nombre *</label>
+        <input type="text" class="form-input w-full" placeholder="Ej. Juan Pérez"
+          [value]="nuevoNombre()" (input)="nuevoNombre.set($any($event.target).value)" autofocus>
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Celular *</label>
+        <input type="text" class="form-input w-full" placeholder="Ej. 70011122"
+          [value]="nuevoCelular()" (input)="nuevoCelular.set($any($event.target).value)">
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Correo</label>
+        <input type="email" class="form-input w-full" placeholder="Ej. correo@ejemplo.com"
+          [value]="nuevoCorreo()" (input)="nuevoCorreo.set($any($event.target).value)">
+      </div>
+      <div>
+        <label class="block text-xs text-default-500 uppercase tracking-wide mb-1.5">Profesión</label>
+        <input type="text" class="form-input w-full" placeholder="Ej. Ingeniero Comercial"
+          [value]="nuevaProfesion()" (input)="nuevaProfesion.set($any($event.target).value)"
+          (keydown.enter)="guardarLead()">
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button type="button"
+          class="btn btn-primary flex-1 gap-1.5"
+          [disabled]="guardando() || !nuevoNombre().trim() || !nuevoCelular().trim()"
+          (click)="guardarLead()">
+          @if (guardando()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Guardando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideUserPlus"></ng-icon></div>
+            Guardar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+@if (modalExcelAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+       (click)="cerrarModalExcel()">
+    <div class="bg-white dark:bg-default-50 rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-5"
+         (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-semibold text-default-800">Importar leads desde Excel</h3>
+          <p class="text-xs text-default-400 mt-0.5">
+            La primera fila debe traer encabezados con al menos "Nombre" y "Celular".
+          </p>
+          <button type="button" class="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 mt-1.5"
+            (click)="descargarPlantillaExcel()">
+            <ng-icon name="lucideDownload" class="size-3" />
+            Descargar plantilla de ejemplo
+          </button>
+        </div>
+        <button type="button" class="text-default-400 hover:text-default-600 shrink-0" (click)="cerrarModalExcel()">
+          <ng-icon name="lucideX" class="size-5" />
+        </button>
+      </div>
+
+      <label class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-default-200
+                    hover:border-primary/50 rounded-xl p-6 cursor-pointer transition-colors group"
+             [class.border-primary]="archivoExcel()">
+        <div class="size-10 rounded-full bg-success/10 flex items-center justify-center
+                    group-hover:bg-success/20 transition-colors">
+          <div class="size-5 text-success"><ng-icon name="lucideSheet"></ng-icon></div>
+        </div>
+        @if (archivoExcel()) {
+          <div class="text-center">
+            <p class="text-sm font-medium text-default-700">{{ archivoExcel()!.name }}</p>
+            <p class="text-xs text-default-400 mt-0.5">
+              {{ (archivoExcel()!.size / 1024).toFixed(1) }} KB — Click para cambiar
+            </p>
+          </div>
+        } @else {
+          <div class="text-center">
+            <p class="text-sm font-medium text-default-600">Seleccionar archivo</p>
+            <p class="text-xs text-default-400 mt-0.5">XLSX, XLS o CSV · máx. 5 MB</p>
+          </div>
+        }
+        <input type="file" accept=".xlsx,.xls,.csv" class="hidden"
+               (change)="onArchivoExcelSeleccionado($event)">
+      </label>
+
+      <div class="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg">
+        <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+        <p class="text-xs text-default-600">
+          Las filas sin nombre o sin celular se omiten y se listan en "Errores", sin afectar al resto del archivo.
+        </p>
+      </div>
+
+      @if (resultadoExcel(); as r) {
+        <div class="rounded-xl border border-default-200 overflow-hidden">
+          <div class="grid grid-cols-3 divide-x divide-default-200">
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-success">{{ r.insertados }}</span>
+              <span class="text-[11px] text-default-400">Insertados</span>
+            </div>
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-warning">{{ r.omitidos }}</span>
+              <span class="text-[11px] text-default-400">Omitidos</span>
+            </div>
+            <div class="flex flex-col items-center py-3 gap-0.5">
+              <span class="text-xl font-bold text-danger">{{ r.errores.length }}</span>
+              <span class="text-[11px] text-default-400">Errores</span>
+            </div>
+          </div>
+          @if (r.errores.length > 0) {
+            <div class="border-t border-default-200 bg-danger/5 p-3 max-h-28 overflow-y-auto">
+              @for (e of r.errores; track $index) {
+                <p class="text-xs text-danger leading-relaxed">{{ e }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-default flex-1" (click)="cerrarModalExcel()">
+          Cerrar
+        </button>
+        <button type="button"
+          class="btn bg-success text-white flex-1 gap-1.5"
+          [disabled]="!archivoExcel() || importandoExcel()"
+          (click)="importarExcel()">
+          @if (importandoExcel()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Importando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideUpload"></ng-icon></div>
+            Importar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

@@ -1,0 +1,130 @@
+<main>
+  <app-page-title title="Generar planilla del mes" subtitle="Sueldos" />
+
+  <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+    <div class="lg:col-span-2 space-y-5">
+      <div class="card">
+        <div class="card-header flex items-center justify-between">
+          <h6 class="card-title">Empleados activos incluidos</h6>
+          <a routerLink="/cenefco/ajustes-sueldo" class="btn btn-sm bg-default-100 text-default-600 flex items-center gap-1.5 text-xs">
+            <ng-icon name="lucideCirclePlus" class="size-3.5" />
+            Registrar ajuste
+          </a>
+        </div>
+        <div class="card-body">
+          @if (isLoading) {
+            <div class="flex items-center justify-center py-10 text-default-400 gap-2 text-sm">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+              Calculando sueldos y ajustes...
+            </div>
+          } @else if (isError) {
+            <p class="text-sm text-danger">No se pudo cargar la vista previa de la planilla.</p>
+          } @else if (items.length === 0) {
+            <p class="text-sm text-default-400">No hay empleados activos. Registra empleados antes de generar la planilla.</p>
+          } @else {
+            <div class="space-y-2">
+              @for (e of items; track e.empleado_id) {
+                <div class="rounded-lg bg-default-50 overflow-hidden">
+                  <div class="flex items-center justify-between p-3"
+                       [class.cursor-pointer]="e.ajustes.length > 0"
+                       (click)="e.ajustes.length > 0 && toggleExpand(e.empleado_id)">
+                    <div class="flex items-center gap-3">
+                      <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <div class="size-4"><ng-icon name="lucideUsers"></ng-icon></div>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-default-800">{{ e.nombre_completo }}</p>
+                        <p class="text-xs text-default-500">{{ e.cargo }}</p>
+                      </div>
+                      @if (e.ajustes.length > 0) {
+                        <div class="size-4 text-default-400 transition-transform" [class.rotate-180]="isExpanded(e.empleado_id)">
+                          <ng-icon name="lucideChevronDown" />
+                        </div>
+                      }
+                    </div>
+                    <div class="text-end">
+                      @if (e.total_descuentos > 0 || e.total_bonos > 0) {
+                        <p class="text-xs text-default-400 line-through">Bs. {{ e.monto_base | number:'1.2-2' }}</p>
+                      }
+                      <span class="text-sm font-semibold text-default-800">Bs. {{ e.monto_neto | number:'1.2-2' }}</span>
+                    </div>
+                  </div>
+
+                  @if (isExpanded(e.empleado_id)) {
+                    <div class="px-3 pb-3 space-y-1.5">
+                      @for (a of e.ajustes; track a.id) {
+                        <div class="flex items-center justify-between text-xs px-3 py-2 rounded bg-white border border-default-200">
+                          <div class="flex items-center gap-1.5 text-default-600">
+                            <ng-icon [name]="a.tipo === 'descuento' ? 'lucideMinusCircle' : 'lucidePlusCircle'"
+                                     [class]="a.tipo === 'descuento' ? 'text-danger' : 'text-success'" class="size-3.5" />
+                            {{ a.motivo }}
+                          </div>
+                          <span class="font-medium" [class]="a.tipo === 'descuento' ? 'text-danger' : 'text-success'">
+                            {{ a.tipo === 'descuento' ? '-' : '+' }}Bs. {{ a.monto | number:'1.2-2' }}
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-5">
+      <div class="card">
+        <div class="card-header"><h6 class="card-title">Periodo</h6></div>
+        <div class="card-body space-y-4">
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Mes</label>
+              <select class="form-input" [ngModel]="mes()" (ngModelChange)="mes.set(+$event)">
+                @for (m of meses; track m.valor) {
+                  <option [value]="m.valor">{{ m.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Año</label>
+              <select class="form-input" [ngModel]="anio()" (ngModelChange)="anio.set(+$event)">
+                @for (a of anios; track a) {
+                  <option [value]="a">{{ a }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          @if (totalConAjustes() > 0) {
+            <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-center gap-1.5">
+              <ng-icon name="lucideMinusCircle" class="size-3.5 shrink-0" />
+              {{ totalConAjustes() }} empleado(s) con descuentos/bonos este mes.
+            </div>
+          }
+
+          <div class="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p class="text-xs text-default-500">Total a generar</p>
+            <p class="text-lg font-bold text-primary">Bs. {{ totalPlanilla() | number:'1.2-2' }}</p>
+          </div>
+
+          <button type="button" (click)="generar()" [disabled]="generando() || isLoading || items.length === 0"
+                  class="btn bg-primary text-white w-full disabled:opacity-50">
+            @if (generando()) {
+              <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Generando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucidePlayCircle"></ng-icon></div>
+              Generar planilla
+            }
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>

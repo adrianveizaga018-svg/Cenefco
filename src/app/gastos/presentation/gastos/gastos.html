@@ -1,0 +1,108 @@
+<main>
+  <app-page-title title="Gastos" subtitle="Control de gastos" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+          <input
+            type="text"
+            class="form-input"
+            placeholder="Buscar por concepto..."
+            [ngModel]="query()"
+            (ngModelChange)="onBuscar($event)" />
+          <div class="w-56">
+            <app-searchable-select
+              [options]="categoriaOptions()"
+              [ngModel]="categoriaFiltro()"
+              (ngModelChange)="onFiltrarCategoria($event)"
+              placeholder="Todas las categorías" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a routerLink="/cenefco/gasto-create" class="btn btn-sm bg-primary text-white">
+            <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+            Registrar gasto
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando gastos...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Fecha</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Concepto</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Categoría</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Monto</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Responsable</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (gasto of gastos(); track gasto.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ gasto.fecha }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ gasto.concepto }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <span class="badge bg-info/10 text-info text-xs px-2 py-0.5 rounded-full">
+                            {{ gasto.categoria_nombre || '—' }}
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-end font-medium">Bs. {{ gasto.monto }}</td>
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ gasto.responsable || '—' }}</td>
+                        <td class="px-3.5 py-2.5">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <a
+                              [routerLink]="['/cenefco/gasto-edit', gasto.id]"
+                              class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                              title="Editar">
+                              <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                            </a>
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                              title="Eliminar"
+                              [disabled]="deleting() === gasto.id"
+                              (click)="eliminar(gasto)">
+                              <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          No hay gastos registrados con estos filtros.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize"
+        [total]="total()"
+        (pageChange)="onPageChange($event)" />
+    </div>
+  </div>
+</main>

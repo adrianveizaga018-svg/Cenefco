@@ -1,0 +1,61 @@
+<app-page-title title="Editar Cita de Asesoría" subtitle="Citas de Asesoría" />
+
+@if (loading()) {
+  <div class="text-center py-4">Cargando...</div>
+} @else {
+  <div class="card" style="max-width:720px">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombres</label>
+          <input type="text" class="form-control" [(ngModel)]="form.nombres" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Apellidos</label>
+          <input type="text" class="form-control" [(ngModel)]="form.apellidos" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" [(ngModel)]="form.email" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Celular</label>
+          <input type="text" class="form-control" [(ngModel)]="form.celular" />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Programa de Interés</label>
+          <input type="text" class="form-control" [(ngModel)]="form.programa_interes" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Fecha Preferida</label>
+          <input type="date" class="form-control" [(ngModel)]="form.fecha_preferida" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Hora Preferida</label>
+          <input type="time" class="form-control" [(ngModel)]="form.hora_preferida" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Estado</label>
+          <select class="form-select" [(ngModel)]="form.estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="atendida">Atendida</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Mensaje</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="form.mensaje"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Observación</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="form.observacion"></textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving()">Guardar</button>
+        <a routerLink="/cenefco/citas-asesoria" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </div>
+  </div>
+}

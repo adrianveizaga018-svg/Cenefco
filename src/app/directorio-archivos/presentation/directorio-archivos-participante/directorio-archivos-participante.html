@@ -1,0 +1,76 @@
+<main>
+  <app-page-title title="Archivos del Participante" subtitle="Directorio de Archivos" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header">
+        <a [routerLink]="['/cenefco/directorio-archivos', idImp, 'participantes']" class="btn btn-sm bg-default-200 hover:bg-default-300 text-default-600 gap-1.5">
+          <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+          Volver a Participantes
+        </a>
+      </div>
+
+      <div class="card-body">
+        @if (isLoading) {
+          <div class="flex items-center justify-center py-16 text-default-400 text-sm gap-2">
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            Cargando archivos...
+          </div>
+        } @else if (forbidden) {
+          <div class="flex items-center justify-center py-16 text-warning text-sm gap-2">
+            <div class="size-4"><ng-icon name="lucideLock"></ng-icon></div>
+            No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+          </div>
+        } @else if (notFound) {
+          <div class="flex items-center justify-center py-16 text-default-400 text-sm gap-2">
+            <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+            No se encontró la inscripción solicitada.
+          </div>
+        } @else if (error) {
+          <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+            <div class="size-4"><ng-icon name="lucideCircleX"></ng-icon></div>
+            No se pudo cargar la información. Intente nuevamente.
+          </div>
+        } @else if (participante; as p) {
+          <div class="flex items-center gap-3 mb-5">
+            <div class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0">
+              {{ p.nombre_completo ? p.nombre_completo[0].toUpperCase() : '?' }}
+            </div>
+            <div>
+              <p class="font-semibold text-default-800">{{ p.nombre_completo || '—' }}</p>
+              <p class="text-sm text-default-500">
+                CI: {{ p.ci || '—' }} · Curso: {{ p.curso_nombre || '—' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header border-b border-default-200">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-primary"><ng-icon name="lucideFileText"></ng-icon></div>
+                <h6 class="text-sm font-semibold text-default-800">Documentos Subidos</h6>
+              </div>
+            </div>
+            <div class="p-4">
+              @if ((p.archivos | keyvalue)?.length === 0) {
+                <p class="text-sm text-default-400 text-center py-2">
+                  Este participante no tiene documentos adjuntos registrados.
+                </p>
+              } @else {
+                <div class="flex flex-wrap gap-2">
+                  @for (archivo of p.archivos | keyvalue; track archivo.key) {
+                    <a [href]="archivo.value" target="_blank"
+                      class="flex items-center gap-1.5 text-xs bg-default-100 hover:bg-default-200 text-default-700 px-2.5 py-1.5 rounded-lg transition-colors">
+                      <div class="size-3.5 text-primary shrink-0"><ng-icon name="lucidePaperclip"></ng-icon></div>
+                      {{ archivo.key }}
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</main>

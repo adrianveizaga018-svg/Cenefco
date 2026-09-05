@@ -1,0 +1,189 @@
+<div class="p-6 space-y-5 animate-in fade-in duration-300">
+
+  <!-- === ALERTAS DE PAGO === -->
+  @if (tieneAlertas()) {
+    <div class="space-y-3">
+      @if (alertasVencidas().length > 0) {
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-red-600 to-rose-500 p-4 text-white shadow-md animate-in slide-in-from-top-3 duration-300">
+          <div class="relative z-10 flex items-center gap-4">
+            <div class="shrink-0 w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+              <ng-icon name="lucideAlertTriangle" class="text-white"></ng-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-sm">Tienes cuotas vencidas</h3>
+              <p class="text-red-100 text-xs mt-0.5 truncate">
+                <strong>{{ alertasVencidas()[0].nombre_programa }}{{ alertasVencidas().length > 1 ? ' y otros' : '' }}</strong> — regulariza tu situación cuanto antes.
+              </p>
+            </div>
+            <a routerLink="/estudiante/mis-pagos" class="shrink-0 px-3 py-1.5 bg-white text-red-600 rounded-lg font-bold text-xs hover:bg-red-50 transition-colors">
+              Ver Pagos
+            </a>
+          </div>
+        </div>
+      }
+      @if (alertasProximas().length > 0) {
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 p-4 text-white shadow-md animate-in slide-in-from-top-3 duration-300">
+          <div class="relative z-10 flex items-center gap-4">
+            <div class="shrink-0 w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+              <ng-icon name="lucideCalendarClock" class="text-white"></ng-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-sm">Tu próxima cuota vence pronto</h3>
+              <p class="text-amber-100 text-xs mt-0.5 truncate">
+                <strong>{{ alertasProximas()[0].nombre_programa }}</strong> — vence en los próximos 7 días.
+              </p>
+            </div>
+            <a routerLink="/estudiante/mis-pagos" class="shrink-0 px-3 py-1.5 bg-white text-amber-600 rounded-lg font-bold text-xs hover:bg-amber-50 transition-colors">
+              Revisar
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Banner de Bienvenida -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-primary-600 to-violet-800 p-6 sm:p-8 text-white shadow-lg shadow-primary-900/20 border border-white/10 group">
+    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"></div>
+    <div class="absolute -top-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-3xl mix-blend-overlay"></div>
+    <div class="absolute -bottom-16 -right-16 w-56 h-56 bg-violet-400/20 rounded-full blur-3xl mix-blend-overlay"></div>
+
+    <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="space-y-2">
+        <div class="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
+          <ng-icon name="lucideSparkles" class="text-amber-300"></ng-icon>
+          Estudiante CENEFCO
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+          ¡Hola, {{ data()?.usuario?.nombre || 'Estudiante' }}! 👋
+        </h2>
+        <p class="max-w-xl text-primary-100 text-sm leading-relaxed">
+          Desde este panel puedes consultar tus cursos activos, ver las grabaciones de tus clases de Zoom y descargar tus certificados oficiales.
+        </p>
+      </div>
+      <div class="hidden sm:flex shrink-0 relative transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
+        <ng-icon name="lucideGraduationCap" class="text-white/80" style="font-size: 100px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));"></ng-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjetas de Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Cursos Activos -->
+    <div class="group relative overflow-hidden rounded-2xl bg-white p-5 border border-default-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[140px]">
+      <div class="absolute -right-8 -top-8 w-24 h-24 bg-gradient-to-br from-blue-50 to-transparent rounded-full opacity-60 group-hover:scale-150 transition-transform duration-700"></div>
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-3">
+          <ng-icon name="lucideBookOpen" style="font-size: 26px;"></ng-icon>
+        </div>
+        <p class="text-[10px] font-bold text-default-500 uppercase tracking-wider">Cursos Activos</p>
+        <h3 class="text-3xl font-black text-default-900 tracking-tight mt-1">{{ data()?.resumen?.cursos_activos || 0 }}</h3>
+      </div>
+      <div class="relative z-10 border-t border-default-100 pt-3 flex justify-center">
+        <a routerLink="/estudiante/mis-cursos" class="text-xs text-default-500 hover:text-blue-600 font-semibold inline-flex items-center gap-1 group/link">
+          Ver mis cursos <ng-icon name="lucideArrowRight" class="group-hover/link:translate-x-1 transition-transform"></ng-icon>
+        </a>
+      </div>
+    </div>
+
+    <!-- Mis Certificados -->
+    <div class="group relative overflow-hidden rounded-2xl bg-white p-5 border border-default-200 hover:border-amber-300 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[140px]">
+      <div class="absolute -right-8 -top-8 w-24 h-24 bg-gradient-to-br from-amber-50 to-transparent rounded-full opacity-60 group-hover:scale-150 transition-transform duration-700"></div>
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-500 mb-3">
+          <ng-icon name="lucideAward" style="font-size: 26px;"></ng-icon>
+        </div>
+        <p class="text-[10px] font-bold text-default-500 uppercase tracking-wider">Mis Certificados</p>
+        <h3 class="text-3xl font-black text-default-900 tracking-tight mt-1">{{ data()?.resumen?.certificados || 0 }}</h3>
+      </div>
+      <div class="relative z-10 border-t border-default-100 pt-3 flex justify-center">
+        <a routerLink="/estudiante/mis-certificados" class="text-xs text-default-500 hover:text-amber-600 font-semibold inline-flex items-center gap-1 group/link">
+          Descargar certificados <ng-icon name="lucideArrowRight" class="group-hover/link:translate-x-1 transition-transform"></ng-icon>
+        </a>
+      </div>
+    </div>
+
+    <!-- Estado de Pagos -->
+    <div class="group relative overflow-hidden rounded-2xl bg-white p-5 border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[140px]"
+      [ngClass]="alertasVencidas().length > 0 ? 'border-red-200' : 'border-default-200 hover:border-emerald-300'">
+      <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full opacity-60 group-hover:scale-150 transition-transform duration-700"
+        [ngClass]="alertasVencidas().length > 0 ? 'bg-gradient-to-br from-red-50 to-transparent' : 'bg-gradient-to-br from-emerald-50 to-transparent'"></div>
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="relative mb-3">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl"
+            [ngClass]="alertasVencidas().length > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'">
+            <ng-icon name="lucideCreditCard" style="font-size: 26px;"></ng-icon>
+          </div>
+          @if (alertasVencidas().length > 0) {
+            <span class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm animate-bounce ring-2 ring-white">
+              {{ alertasVencidas().length }}
+            </span>
+          }
+        </div>
+        <p class="text-[10px] font-bold uppercase tracking-wider" [ngClass]="alertasVencidas().length > 0 ? 'text-red-500' : 'text-default-500'">Estado de Pagos</p>
+        <h3 class="text-2xl font-black tracking-tight mt-1" [ngClass]="alertasVencidas().length > 0 ? 'text-red-600' : 'text-default-900'">
+          {{ alertasVencidas().length > 0 ? 'En mora' : 'Al día' }}
+        </h3>
+      </div>
+      <div class="relative z-10 border-t pt-3 flex justify-center" [ngClass]="alertasVencidas().length > 0 ? 'border-red-100' : 'border-default-100'">
+        <a routerLink="/estudiante/mis-pagos" class="text-xs font-semibold inline-flex items-center gap-1 group/link"
+          [ngClass]="alertasVencidas().length > 0 ? 'text-red-500 hover:text-red-700' : 'text-emerald-600 hover:text-emerald-800'">
+          {{ alertasVencidas().length > 0 ? 'Regularizar pagos' : 'Ver mis pagos' }}
+          <ng-icon name="lucideArrowRight" class="group-hover/link:translate-x-1 transition-transform"></ng-icon>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accesos Rápidos -->
+  <div class="bg-white p-5 rounded-2xl border border-default-200">
+    <h3 class="text-sm font-bold text-default-900 mb-4">Accesos Rápidos</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <a routerLink="/estudiante/catalogo" class="group flex items-center gap-3 p-3.5 rounded-xl border border-default-200 bg-white hover:border-rose-300 hover:bg-rose-50/30 transition-all">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+          <ng-icon name="lucideStore" style="font-size: 18px;"></ng-icon>
+        </div>
+        <div>
+          <p class="font-bold text-sm text-default-900">Catálogo</p>
+          <p class="text-[10px] text-default-500">Nuevos cursos</p>
+        </div>
+      </a>
+      <a routerLink="/estudiante/mis-cursos" class="group flex items-center gap-3 p-3.5 rounded-xl border border-default-200 bg-white hover:border-blue-300 hover:bg-blue-50/30 transition-all">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <ng-icon name="lucideMonitorPlay" style="font-size: 18px;"></ng-icon>
+        </div>
+        <div>
+          <p class="font-bold text-sm text-default-900">Mis Clases</p>
+          <p class="text-[10px] text-default-500">Accede a tu materia</p>
+        </div>
+      </a>
+      <a routerLink="/estudiante/mis-certificados" class="group flex items-center gap-3 p-3.5 rounded-xl border border-default-200 bg-white hover:border-amber-300 hover:bg-amber-50/30 transition-all">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+          <ng-icon name="lucideFileCheck" style="font-size: 18px;"></ng-icon>
+        </div>
+        <div>
+          <p class="font-bold text-sm text-default-900">Certificados</p>
+          <p class="text-[10px] text-default-500">Descarga tu PDF oficial</p>
+        </div>
+      </a>
+      <a routerLink="/estudiante/mis-pagos" class="group flex items-center gap-3 p-3.5 rounded-xl border border-default-200 bg-white transition-all"
+        [ngClass]="alertasVencidas().length > 0 ? 'hover:border-red-300 hover:bg-red-50/30' : 'hover:border-emerald-300 hover:bg-emerald-50/30'">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg relative transition-colors"
+          [ngClass]="alertasVencidas().length > 0 ? 'bg-red-50 text-red-500 group-hover:bg-red-500 group-hover:text-white' : 'bg-emerald-50 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white'">
+          <ng-icon name="lucideReceipt" style="font-size: 18px;"></ng-icon>
+          @if (alertasVencidas().length > 0) {
+            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-600 border border-white rounded-full"></span>
+          }
+        </div>
+        <div>
+          <p class="font-bold text-sm" [ngClass]="alertasVencidas().length > 0 ? 'text-red-600' : 'text-default-900'">Mis Pagos</p>
+          <p class="text-[10px]" [ngClass]="alertasVencidas().length > 0 ? 'text-red-500' : 'text-default-500'">
+            {{ alertasVencidas().length > 0 ? '¡Acción requerida!' : 'Historial y comprobantes' }}
+          </p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>

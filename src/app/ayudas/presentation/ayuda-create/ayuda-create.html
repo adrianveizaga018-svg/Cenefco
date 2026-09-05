@@ -1,0 +1,55 @@
+<main>
+  <app-page-title title="Nueva Ayuda" subtitle="Ayudas / Soporte" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Ayuda</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID de Usuario <span class="text-danger">*</span></label>
+            <input type="number" formControlName="id_us" class="form-input w-full" placeholder="ID del estudiante">
+            @if (form.get('id_us')?.invalid && form.get('id_us')?.touched) { <p class="text-danger text-xs mt-1">El usuario es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">N° de Recibo</label>
+            <input type="text" formControlName="nro_recibo" class="form-input w-full" placeholder="Número de recibo">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Gestión</label>
+            <input type="text" formControlName="gestion" class="form-input w-full" placeholder="Ej: 2025-I">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado</label>
+            <input type="text" formControlName="monto_pagado" class="form-input w-full" placeholder="0.00">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Recibo</label>
+            <input type="date" formControlName="fecha_recibo" class="form-input w-full">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Categoría (ID)</label>
+            <input type="number" formControlName="id_categoriatipoayuda" class="form-input w-full" placeholder="ID de categoría">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Observación del Pago</label>
+            <textarea formControlName="observacion_pago" rows="3" class="form-input w-full" placeholder="Observaciones adicionales..."></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Ayuda }
+            </button>
+            <a routerLink="/cenefco/ayudas" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

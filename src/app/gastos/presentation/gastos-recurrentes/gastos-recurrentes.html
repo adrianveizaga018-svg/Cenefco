@@ -1,0 +1,145 @@
+<main>
+  <app-page-title title="Gastos recurrentes" subtitle="Gastos" />
+
+  <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+    <div class="lg:col-span-2 space-y-5">
+      <div class="card">
+        <div class="card-header"><h6 class="card-title">Recurrencias activas</h6></div>
+        <div class="card-body space-y-3">
+
+          @if (loading()) {
+            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Cargando...
+            </div>
+          } @else if (recurrentes().length === 0) {
+            <p class="text-sm text-default-400">No hay gastos recurrentes configurados aún.</p>
+          } @else {
+            @for (r of recurrentes(); track r.id) {
+              <div class="flex items-center justify-between p-3 rounded-lg bg-default-50">
+                <div class="flex items-center gap-3">
+                  <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <div class="size-4"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-default-800">{{ r.concepto }}</p>
+                    <p class="text-xs text-default-500">{{ r.categoria_nombre }} · Día {{ r.dia_del_mes }} de cada mes · Bs. {{ r.monto }}</p>
+                  </div>
+                </div>
+
+                @if (yaConfirmadoEsteMes(r)) {
+                  <span class="badge bg-success/10 text-success text-xs px-2.5 py-1 rounded-full font-medium">
+                    Confirmado este mes
+                  </span>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn-sm bg-warning/10 hover:bg-warning text-warning hover:text-white disabled:opacity-50"
+                    [disabled]="confirming() === r.id"
+                    (click)="abrirConfirmar(r)">
+                    @if (confirming() === r.id) {
+                      <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    } @else {
+                      <div class="size-4 me-1"><ng-icon name="lucideCheck"></ng-icon></div>
+                    }
+                    Confirmar este mes
+                  </button>
+                }
+              </div>
+            }
+          }
+
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-5">
+      <div class="card">
+        <div class="card-header"><h6 class="card-title">Nueva recurrencia</h6></div>
+        <div class="card-body space-y-4">
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Categoría</label>
+            <app-searchable-select
+              [options]="categoriaOptions()"
+              [ngModel]="nuevo().categoria_gasto_id"
+              (ngModelChange)="updateNuevo('categoria_gasto_id', $event)"
+              placeholder="Selecciona una categoría..." />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Concepto</label>
+            <input type="text" class="form-input" [ngModel]="nuevo().concepto"
+                   (ngModelChange)="updateNuevo('concepto', $event)"
+                   placeholder="Ej. Alquiler mensual de oficina" />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Monto (Bs.)</label>
+            <input type="number" class="form-input" min="0" step="0.01"
+                   [ngModel]="nuevo().monto" (ngModelChange)="updateNuevo('monto', +$event)" />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Día del mes</label>
+            <input type="number" class="form-input" min="1" max="31"
+                   [ngModel]="nuevo().dia_del_mes" (ngModelChange)="updateNuevo('dia_del_mes', +$event)" />
+          </div>
+
+          <button type="button" (click)="crear()" [disabled]="creating()"
+                  class="btn bg-primary text-white w-full">
+            @if (creating()) {
+              <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Guardando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
+              Crear recurrencia
+            }
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  @if (confirmando(); as r) {
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-md">
+        <div class="card-header">
+          <h6 class="card-title">Confirmar gasto del mes</h6>
+        </div>
+        <div class="card-body space-y-4">
+          <p class="text-sm text-default-600">
+            Se registrará un gasto de <b>Bs. {{ r.monto }}</b> por "<b>{{ r.concepto }}</b>" correspondiente al mes actual.
+          </p>
+
+          <div>
+            <label class="block mb-1.5 text-sm font-medium text-default-800">Comprobante (opcional)</label>
+            <input type="file" class="form-input" accept=".pdf,.jpg,.jpeg,.png"
+                   (change)="onComprobanteConfirmarSeleccionado($event)" />
+            <p class="text-xs text-default-400 mt-1">Factura o recibo escaneado (PDF, JPG o PNG, máx. 5 MB).</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="confirmar()" [disabled]="confirming() === r.id"
+                    class="btn bg-primary text-white flex-1">
+              @if (confirming() === r.id) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Confirmando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideCheck"></ng-icon></div>
+                Confirmar
+              }
+            </button>
+            <button type="button" (click)="cerrarConfirmar()"
+                    class="btn border border-default-300 text-default-600 hover:bg-default-100">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>

@@ -1,0 +1,162 @@
+<main>
+  <app-page-title title="Solicitudes de Certificados" subtitle="Certificados" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="relative">
+          <select [ngModel]="estadoFiltro()" (ngModelChange)="onEstadoChange($event)"
+                  class="form-input form-input-sm w-full sm:w-56">
+            @for (e of estados; track e.value) {
+              <option [value]="e.value">{{ e.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-default-500">{{ total() }} solicitud(es)</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="min-w-full inline-block align-middle">
+            <div class="overflow-visible">
+
+              @if (loading()) {
+                <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+                  <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                  Cargando solicitudes...
+                </div>
+              } @else {
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-150">
+                    <tr class="text-sm font-normal text-default-700">
+                      <th scope="col" class="px-3.5 py-3 text-start">Programa</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Certificado</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Inscrito</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Tipo</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Estado</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Comprobante</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Certificado</th>
+                      <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (sol of solicitudes(); track sol.id) {
+                      <tr class="text-default-800 font-normal">
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">{{ sol.nombre_programa || '—' }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ sol.nombre_cert || '—' }}</td>
+                        <td class="px-3.5 py-2.5 text-sm">
+                          <div class="font-medium">{{ sol.usuario_nombre }}</div>
+                          <div class="text-default-400 text-xs">CI: {{ sol.usuario_ci }}</div>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          @if (sol.es_gratuito) {
+                            <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Gratis</span>
+                          } @else {
+                            <span class="badge bg-warning/10 text-warning text-xs px-2 py-0.5 rounded-full">Bs. {{ sol.monto_pagado }}</span>
+                          }
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          <span [class]="estadoBadgeClass(sol.estado)" class="badge text-xs px-2 py-0.5 rounded-full font-medium">
+                            {{ sol.estado.replace('_', ' ') }}
+                          </span>
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          @if (sol.comprobante_url) {
+                            <a [href]="sol.comprobante_url" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                              <div class="size-3.5"><ng-icon name="lucideDownload"></ng-icon></div>
+                              Ver
+                            </a>
+                          } @else {
+                            <span class="text-default-400 text-xs">—</span>
+                          }
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-center">
+                          @if (sol.certificado_url) {
+                            <a [href]="sol.certificado_url" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                              <div class="size-3.5"><ng-icon name="lucideDownload"></ng-icon></div>
+                              PDF
+                            </a>
+                          } @else {
+                            <span class="text-default-400 text-xs">—</span>
+                          }
+                        </td>
+                        <td class="px-3.5 py-2.5">
+                          @if (sol.estado === 'pendiente_revision') {
+                            <div class="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                class="btn size-7.5 bg-success/10 hover:bg-success text-success hover:text-white"
+                                title="Aprobar"
+                                (click)="aprobar(sol)">
+                                <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+                              </button>
+                              <button
+                                type="button"
+                                class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
+                                title="Rechazar"
+                                (click)="iniciarRechazo(sol.id)">
+                                <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+                              </button>
+                            </div>
+                          } @else {
+                            <span class="text-default-400 text-xs text-center block">—</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+
+                    @empty {
+                      <tr>
+                        <td colspan="8" class="px-3.5 py-12 text-center text-sm text-default-400">
+                          Sin solicitudes.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <p class="text-default-500 text-sm">
+            Mostrando <b>{{ solicitudes().length }}</b> de <b>{{ total() }}</b> solicitudes
+          </p>
+          <app-pagination
+            [currentPage]="pageIndex()"
+            [pageSize]="pageSize"
+            [total]="total()"
+            (pageChange)="onPageChange($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+@if (rechazandoId()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" (click)="rechazandoId.set(null)">
+    <div class="bg-white dark:bg-default-100 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" (click)="$event.stopPropagation()">
+      <h3 class="font-semibold text-default-800">Motivo del rechazo</h3>
+      <textarea [ngModel]="notaRechazo()" (ngModelChange)="notaRechazo.set($event)"
+                rows="3" placeholder="Escribe el motivo para que el usuario pueda corregirlo..."
+                class="form-input w-full resize-none"></textarea>
+      <div class="flex gap-3 justify-end">
+        <button type="button" (click)="rechazandoId.set(null)" class="btn btn-sm bg-default-200 text-default-700 hover:bg-default-300">
+          Cancelar
+        </button>
+        <button type="button" (click)="confirmarRechazo()" [disabled]="!notaRechazo()"
+                class="btn btn-sm bg-danger text-white hover:opacity-90 disabled:opacity-50">
+          Confirmar rechazo
+        </button>
+      </div>
+    </div>
+  </div>
+}

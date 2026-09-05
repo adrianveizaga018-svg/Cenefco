@@ -1,0 +1,36 @@
+<main>
+  <app-page-title title="Nuevo Tipo de Banco" subtitle="Catálogo de Pagos" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Tipo de Banco</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Ej: Banco Unión, Western Union, Tigo Money...">
+            @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) { <p class="text-danger text-xs mt-1">El nombre es requerido</p> }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+            <input type="number" formControlName="orden" class="form-input w-full" min="0">
+            <p class="mt-1 text-default-400 text-xs">Define el orden en el selector del registro de pagos.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="activo" class="form-input w-full">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Tipo de Banco }
+            </button>
+            <a routerLink="/cenefco/tipos-banco" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

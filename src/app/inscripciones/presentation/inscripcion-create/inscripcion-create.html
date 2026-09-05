@@ -1,0 +1,124 @@
+﻿<main>
+  <app-page-title title="Nueva Inscripción" subtitle="Inscripciones" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Inscripción</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estudiante <span class="text-danger">*</span></label>
+            <select formControlName="id_us" class="form-input w-full">
+              <option [ngValue]="null">— Seleccionar estudiante —</option>
+              @for (u of usuarios(); track u.id_us) {
+                <option [value]="u.id_us">{{ usuarioLabel(u) }}</option>
+              }
+            </select>
+            @if (form.get('id_us')?.invalid && form.get('id_us')?.touched) {
+              <p class="text-danger text-xs mt-1">Selecciona un estudiante</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Impartición / Curso <span class="text-danger">*</span></label>
+            <select formControlName="id_imp" class="form-input w-full" (change)="onImparticionChange($event)">
+              <option [ngValue]="null">— Seleccionar impartición —</option>
+              @for (imp of imparticiones(); track imp.id_imp) {
+                <option [value]="imp.id_imp">{{ imparticionLabel(imp) }}</option>
+              }
+            </select>
+            @if (form.get('id_imp')?.invalid && form.get('id_imp')?.touched) {
+              <p class="text-danger text-xs mt-1">Selecciona una impartición</p>
+            }
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">
+              Plan de Pago
+              <span class="text-default-400 font-normal ms-1 text-xs">(se carga al seleccionar la impartición)</span>
+            </label>
+            @if (loadingPlanes()) {
+              <div class="flex items-center gap-2 text-default-400 text-xs py-2">
+                <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Cargando planes disponibles...
+              </div>
+            } @else if (planes().length > 0) {
+              <select formControlName="id_plan" class="form-input w-full">
+                <option [ngValue]="null">— Sin asignar —</option>
+                @for (p of planes(); track p.id_plan) {
+                  <option [value]="p.id_plan">{{ planLabel(p) }}</option>
+                }
+              </select>
+            } @else if (form.get('id_imp')?.value) {
+              <p class="text-xs text-warning bg-warning/5 border border-warning/20 rounded p-2">
+                No se encontraron planes de pago para esta materia. Puedes asignarlo después desde el detalle.
+              </p>
+            } @else {
+              <p class="text-xs text-default-400 italic">Selecciona primero la impartición para ver los planes disponibles.</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Inscripción</label>
+            <input type="date" formControlName="fecha_ins" class="form-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Período</label>
+            <input type="text" formControlName="periodo" class="form-input w-full" placeholder="Se autocompleta">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Gestión</label>
+            <input type="text" formControlName="gestion" class="form-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Canal de Venta</label>
+            <select formControlName="canal_venta" class="form-input w-full">
+              @for (c of canales; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">
+              Asesor / Vendedor
+              <span class="text-default-400 font-normal ms-1 text-xs">(opcional)</span>
+            </label>
+            <select formControlName="id_vendedor" class="form-input w-full">
+              <option [ngValue]="null">— Sin asignar —</option>
+              @for (u of usuarios(); track u.id_us) {
+                <option [value]="u.id_us">{{ usuarioLabel(u) }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Observación</label>
+            <textarea formControlName="observacion_ins" rows="2" class="form-input w-full" placeholder="Observaciones adicionales..."></textarea>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+              } @else { Guardar Inscripción }
+            </button>
+            <a routerLink="/cenefco/inscripciones" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

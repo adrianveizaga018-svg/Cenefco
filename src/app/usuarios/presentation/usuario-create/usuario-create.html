@@ -1,0 +1,86 @@
+<main>
+  <app-page-title title="Nuevo Usuario" subtitle="Usuarios y RBAC" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Usuario</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+            <input type="text" formControlName="nombre" class="form-input w-full" placeholder="Ej: Juan">
+            @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+              <p class="text-danger text-xs mt-1">El nombre es requerido</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Apellido <span class="text-danger">*</span></label>
+            <input type="text" formControlName="apellido" class="form-input w-full" placeholder="Ej: Pérez">
+            @if (form.get('apellido')?.invalid && form.get('apellido')?.touched) {
+              <p class="text-danger text-xs mt-1">El apellido es requerido</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Email <span class="text-danger">*</span></label>
+            <input type="email" formControlName="email" class="form-input w-full" placeholder="correo@ejemplo.com">
+            @if (form.get('email')?.invalid && form.get('email')?.touched) {
+              <p class="text-danger text-xs mt-1">Ingrese un email válido</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Contraseña <span class="text-danger">*</span></label>
+            <input type="password" formControlName="password" class="form-input w-full" placeholder="Mínimo 8 caracteres">
+            @if (form.get('password')?.invalid && form.get('password')?.touched) {
+              <p class="text-danger text-xs mt-1">La contraseña debe tener al menos 8 caracteres</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Tipo de usuario</label>
+            <select formControlName="tipo" class="form-input w-full">
+              @for (t of tiposUsuario; track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+            <p class="text-xs text-default-400 mt-1">Solo informativo/categorización — no afecta permisos ni el menú.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Rol <span class="text-danger">*</span></label>
+            <select formControlName="rol_id" class="form-input w-full">
+              <option [ngValue]="null">Sin rol asignado</option>
+              @for (r of roles(); track r.id) {
+                <option [ngValue]="r.id">{{ r.nombre }}</option>
+              }
+            </select>
+            <p class="text-xs text-default-400 mt-1">Esto sí controla los permisos y qué ve en el menú.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="activo" class="form-input w-full">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) {
+                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+              } @else {
+                Crear Usuario
+              }
+            </button>
+            <a routerLink="/cenefco/usuarios" class="btn bg-default-200 text-default-700">Cancelar</a>
+            <button type="button" class="btn bg-default-100 text-default-600" (click)="onReset()">Limpiar</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

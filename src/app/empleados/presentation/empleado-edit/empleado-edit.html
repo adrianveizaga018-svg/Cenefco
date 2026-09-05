@@ -1,0 +1,121 @@
+<main>
+  <app-page-title [title]="isNew() ? 'Nuevo empleado' : 'Editar empleado'" subtitle="Empleados de planta" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+    <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+      <div class="lg:col-span-2 space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos del empleado</h6></div>
+          <div class="card-body space-y-4">
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Nombre completo</label>
+                <input type="text" class="form-input" [ngModel]="form().nombre_completo"
+                       (ngModelChange)="updateForm('nombre_completo', $event)" />
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Cargo</label>
+                <input type="text" class="form-input" [ngModel]="form().cargo"
+                       (ngModelChange)="updateForm('cargo', $event)" placeholder="Ej. Secretaria académica" />
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Sueldo mensual (Bs.)</label>
+                <input type="number" class="form-input" min="0" step="0.01" [ngModel]="form().sueldo_mensual"
+                       (ngModelChange)="updateForm('sueldo_mensual', +$event)" />
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">CI</label>
+                <input type="text" class="form-input" [ngModel]="form().ci"
+                       (ngModelChange)="updateForm('ci', $event)" placeholder="Ej. 6950564" />
+              </div>
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de ingreso (opcional)</label>
+                <input type="date" class="form-input" [ngModel]="form().fecha_ingreso"
+                       (ngModelChange)="updateForm('fecha_ingreso', $event)" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Carné de identidad (PDF)</label>
+              @if (carnetActualUrl() && !carnetFile()) {
+                <a [href]="'/storage/' + carnetActualUrl()" target="_blank"
+                   class="text-sm text-primary hover:underline flex items-center gap-1.5 mb-2">
+                  <div class="size-3.5"><ng-icon name="lucideFileText"></ng-icon></div>
+                  Ver carné actual
+                </a>
+              }
+              <input type="file" class="form-input" accept=".pdf"
+                     (change)="onCarnetSeleccionado($event)" />
+              <p class="text-xs text-default-400 mt-1">Archivo PDF, máx. 5 MB.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Datos de contacto</h6></div>
+          <div class="card-body space-y-4">
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Correo (opcional)</label>
+              <input type="email" class="form-input" [ngModel]="form().correo"
+                     (ngModelChange)="updateForm('correo', $event)" placeholder="correo@cenefco.com" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Celular personal (opcional)</label>
+                <input type="text" class="form-input" [ngModel]="form().celular_personal"
+                       (ngModelChange)="updateForm('celular_personal', $event)" />
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Celular corporativo (opcional)</label>
+                <input type="text" class="form-input" [ngModel]="form().celular_corporativo"
+                       (ngModelChange)="updateForm('celular_corporativo', $event)" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-1.5 text-sm font-medium text-default-800">Dirección (opcional)</label>
+              <input type="text" class="form-input" [ngModel]="form().direccion"
+                     (ngModelChange)="updateForm('direccion', $event)" />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="card">
+          <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+          <div class="card-body flex flex-col gap-2">
+            <button type="button" (click)="guardar()" [disabled]="saving()" class="btn bg-primary text-white w-full">
+              @if (saving()) {
+                <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1"><ng-icon name="lucideSave"></ng-icon></div>
+                Guardar empleado
+              }
+            </button>
+            <a routerLink="/cenefco/empleados" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+              Volver al listado
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+</main>

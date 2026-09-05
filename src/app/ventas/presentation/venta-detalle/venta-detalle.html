@@ -1,0 +1,746 @@
+﻿<main>
+  <app-page-title title="Detalle de Inscripción" subtitle="Inscripciones" />
+
+  @if (isLoading) {
+    <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+      <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando comprobante...
+    </div>
+  } @else if (hasError || !venta) {
+    <div class="flex items-center justify-center py-24 text-danger gap-3">
+      <div class="size-6"><ng-icon name="lucideCircleX"></ng-icon></div>
+      No se encontró el comprobante.
+    </div>
+  } @else {
+
+    <div class="screen-only">
+
+      <div class="flex items-center justify-between mb-5">
+        <a routerLink="/cenefco/ventas" class="flex items-center gap-1.5 text-sm text-default-500 hover:text-primary">
+          <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+          Volver al listado
+        </a>
+        <div class="flex items-center gap-2">
+          @if (!reglamento() && !reglamentoLoading()) {
+            <button type="button" (click)="cargarReglamento()"
+                    class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+              <div class="size-4"><ng-icon name="lucideFileEdit"></ng-icon></div>
+              Editar Reglamento
+            </button>
+          }
+          @if (reglamento() && !showEditor()) {
+            <button type="button" (click)="abrirEditor()"
+                    class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+              <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+              Editar Reglamento
+            </button>
+          }
+          @if (reglamentoLoading()) {
+            <div class="flex items-center gap-1.5 text-sm text-default-400">
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Cargando...
+            </div>
+          }
+          @if (!showPago()) {
+            <button type="button" (click)="abrirPago()"
+                    class="btn btn-sm bg-primary text-white flex items-center gap-1.5">
+              <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
+              Registrar Pago
+            </button>
+          }
+          <button type="button" (click)="descargarPdf()" [disabled]="descargandoPdf()"
+                  class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
+            @if (descargandoPdf()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Generando...
+            } @else {
+              <div class="size-4"><ng-icon name="lucideFileDown"></ng-icon></div>
+              Descargar PDF
+            }
+          </button>
+          <button type="button" (click)="imprimir()"
+                  class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
+            <div class="size-4"><ng-icon name="lucidePrinter"></ng-icon></div>
+            Imprimir
+          </button>
+        </div>
+      </div>
+
+      @if (showPago()) {
+        <div class="card mb-5 border border-primary/30">
+          <div class="card-header border-b border-primary/20">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideBanknote"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-primary">Registrar Pago</h6>
+            </div>
+            <button type="button" (click)="cerrarPago()" class="text-default-400 hover:text-default-700">
+              <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+            </button>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Monto <span class="text-danger">*</span></label>
+                <input type="number" class="form-input"
+                       [ngModel]="pagoMonto()" (ngModelChange)="pagoMonto.set($event)"
+                       placeholder="0.00" min="0.01" step="0.01" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Método de Pago</label>
+                <select class="form-input"
+                        [ngModel]="pagoMetodo()" (ngModelChange)="pagoMetodo.set($event)">
+                  @for (m of metodosPago; track m.value) {
+                    <option [value]="m.value">{{ m.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Fecha</label>
+                <input type="date" class="form-input"
+                       [ngModel]="pagoFecha()" (ngModelChange)="pagoFecha.set($event)" />
+              </div>
+
+              @if (pagoMetodo() === 'deposito_bancario') {
+                <div>
+                  <label class="block text-xs font-semibold text-default-700 mb-1.5">N° Boleta <span class="text-danger">*</span></label>
+                  <input type="text" class="form-input"
+                         [ngModel]="pagoBoleta()" (ngModelChange)="pagoBoleta.set($event)"
+                         placeholder="0000000" />
+                </div>
+              }
+
+              <div class="sm:col-span-2 lg:col-span-2">
+                <label class="block text-xs font-semibold text-default-700 mb-1.5">Observación</label>
+                <input type="text" class="form-input"
+                       [ngModel]="pagoObs()" (ngModelChange)="pagoObs.set($event)"
+                       placeholder="Referencia o nota opcional..." />
+              </div>
+
+            </div>
+
+            <div class="flex justify-end gap-2 mt-4">
+              <button type="button" (click)="cerrarPago()"
+                      class="btn btn-sm border border-default-300 text-default-600">
+                Cancelar
+              </button>
+              <button type="button" (click)="guardarPago()" [disabled]="guardandoPago()"
+                      class="btn btn-sm bg-primary text-white flex items-center gap-1.5 disabled:opacity-60">
+                @if (guardandoPago()) {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                }
+                Registrar Pago
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showEditor()) {
+        <div class="card mb-5 border border-violet-200">
+          <div class="card-header border-b border-violet-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-violet-600"><ng-icon name="lucideFileEdit"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-violet-900">Editar Reglamento — {{ venta.nombre_programa }}</h6>
+              <span class="text-xs text-default-400 ms-1">(Use Shift+Enter para separar ítems por línea)</span>
+            </div>
+            <button type="button" (click)="cerrarEditor()" class="text-default-400 hover:text-default-700">
+              <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+            </button>
+          </div>
+          <div class="p-5 space-y-4">
+
+            <div>
+              <label class="block text-xs font-semibold text-default-700 mb-1.5">
+                Texto de Bienvenida
+                <span class="font-normal text-default-400 ms-1">(usa &#123;nombre&#125; y &#123;programa&#125; como variables)</span>
+              </label>
+              <textarea rows="3" class="form-input w-full resize-none text-sm"
+                        placeholder="Estimado/a {nombre}, es un honor darle la bienvenida al programa {programa}..."
+                        [ngModel]="getDraft('bienvenida')"
+                        (ngModelChange)="setDraft('bienvenida', $event)"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (s of secciones; track s.campo) {
+                <div>
+                  <label class="block text-xs font-semibold text-default-700 mb-1.5">
+                    {{ s.icono }} {{ s.titulo }}
+                  </label>
+                  <textarea rows="5" class="form-input w-full text-xs"
+                            placeholder="Un ítem por línea..."
+                            [ngModel]="getDraft(s.campo)"
+                            (ngModelChange)="setDraft(s.campo, $event)"></textarea>
+                </div>
+              }
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" (click)="cerrarEditor()"
+                      class="btn btn-sm border border-default-300 text-default-600">
+                Cancelar
+              </button>
+              <button type="button" (click)="guardar()" [disabled]="guardando()"
+                      class="btn btn-sm bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-60">
+                @if (guardando()) {
+                  <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                }
+                Guardar Reglamento
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="card border-2 border-default-200">
+
+        <div class="p-6 border-b border-default-200 flex items-start justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <img src="/assets/images/cenefco.png" alt="CENEFCO" class="h-14 object-contain" />
+            <div>
+              <p class="text-xs text-default-400 uppercase tracking-wide">Centro Nacional de Educación y Formación Continua</p>
+              <h2 class="text-lg font-bold text-default-900 leading-tight">Comprobante de Pago</h2>
+              <p class="text-sm font-semibold text-primary mt-1 leading-snug">{{ venta.nombre_programa || '—' }}</p>
+              <p class="text-xs text-default-400 mt-0.5">cenefco.com</p>
+            </div>
+          </div>
+          <div class="text-end shrink-0">
+            <p class="text-xs text-default-400 mb-0.5">N° de inscripción</p>
+            <p class="text-2xl font-bold font-mono text-primary">#{{ venta.id_ins }}</p>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold mt-1"
+                  [class]="badgeClass(venta.estado_pago)">
+              {{ badgeLabel(venta.estado_pago) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <div class="space-y-5">
+
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+                <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Datos del Estudiante</h6>
+              </div>
+              <div class="flex items-center gap-3 mb-3">
+                <div class="size-11 rounded-full bg-primary/10 text-primary flex items-center justify-center text-base font-bold shrink-0">
+                  {{ (venta.estudiante_nombre || '?')[0].toUpperCase() }}
+                </div>
+                <div>
+                  <p class="font-semibold text-default-800 leading-tight">{{ venta.estudiante_nombre || '—' }}</p>
+                  <p class="text-xs text-default-400 font-mono mt-0.5">CI: {{ venta.estudiante_ci || '—' }}</p>
+                </div>
+              </div>
+              <div class="space-y-2">
+                @if (venta.estudiante_celular) {
+                  <div class="flex items-center gap-2">
+                    <div class="size-3.5 shrink-0 text-default-400"><ng-icon name="lucidePhone"></ng-icon></div>
+                    <span class="text-xs text-default-600">{{ venta.estudiante_celular }}</span>
+                  </div>
+                }
+                @if (venta.estudiante_email) {
+                  <div class="flex items-center gap-2">
+                    <div class="size-3.5 shrink-0 text-default-400"><ng-icon name="lucideMail"></ng-icon></div>
+                    <span class="text-xs text-default-600 truncate">{{ venta.estudiante_email }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="border-t border-default-100"></div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <div class="size-4 text-primary"><ng-icon name="lucidePresentation"></ng-icon></div>
+                <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Programa</h6>
+              </div>
+              <p class="font-semibold text-default-800 text-sm leading-snug mb-2">{{ venta.nombre_programa || '—' }}</p>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <div>
+                  <p class="text-default-400">Período</p>
+                  <p class="font-medium text-default-700">{{ venta.periodo || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-default-400">Gestión</p>
+                  <p class="font-medium text-default-700">{{ venta.gestion || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-default-400">Fecha inscripción</p>
+                  <p class="font-medium text-default-700">{{ venta.fecha_ins || '—' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-default-100"></div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <div class="size-4 text-primary"><ng-icon name="lucideCreditCard"></ng-icon></div>
+                <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Resumen Financiero</h6>
+              </div>
+              @if (venta.total_a_pagar > 0) {
+                <div class="mb-3">
+                  <div class="flex justify-between text-xs text-default-500 mb-1.5">
+                    <span>Progreso de pago</span>
+                    <span class="font-semibold">{{ porcentaje() }}%</span>
+                  </div>
+                  <div class="w-full bg-default-100 rounded-full h-2.5 overflow-hidden">
+                    <div class="h-2.5 rounded-full transition-all" [class]="barraClass()" [style.width]="porcentaje() + '%'"></div>
+                  </div>
+                </div>
+              }
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <div class="bg-success/5 border border-success/20 rounded-lg p-3 text-center">
+                  <p class="text-base font-bold text-success">Bs. {{ venta.total_pagado | number:'1.2-2' }}</p>
+                  <p class="text-xs text-default-500 mt-0.5">Total pagado</p>
+                </div>
+                <div class="bg-danger/5 border border-danger/20 rounded-lg p-3 text-center"
+                     [class.opacity-40]="venta.saldo_pendiente === 0">
+                  <p class="text-base font-bold text-danger">Bs. {{ venta.saldo_pendiente | number:'1.2-2' }}</p>
+                  <p class="text-xs text-default-500 mt-0.5">Pendiente</p>
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-sm border-t border-default-100 pt-3">
+                <span class="text-default-500">Total del plan</span>
+                <span class="font-bold text-default-800">Bs. {{ venta.total_a_pagar | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="lg:col-span-2 space-y-5">
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <div class="size-4 text-primary"><ng-icon name="lucideBanknote"></ng-icon></div>
+                <h6 class="text-xs font-bold text-default-500 uppercase tracking-wide">Historial de Pagos</h6>
+                <span class="ms-auto text-xs font-semibold px-2 py-0.5 rounded-full"
+                      [class]="venta.pagos.length > 0 ? 'bg-success/10 text-success' : 'bg-default-100 text-default-500'">
+                  {{ venta.pagos.length }} pago{{ venta.pagos.length !== 1 ? 's' : '' }}
+                </span>
+              </div>
+              @if (venta.pagos.length === 0) {
+                <div class="flex flex-col items-center justify-center py-10 text-default-400 border border-dashed border-default-200 rounded-xl">
+                  <div class="size-10 mb-2 opacity-40"><ng-icon name="lucideReceiptText"></ng-icon></div>
+                  <p class="text-sm">Sin pagos registrados.</p>
+                </div>
+              } @else {
+                <div class="overflow-x-auto rounded-xl border border-default-200">
+                  <table class="min-w-full divide-y divide-default-100">
+                    <thead class="bg-default-50">
+                      <tr class="text-xs text-default-500 uppercase">
+                        <th class="px-4 py-2.5 text-start">Cuota</th>
+                        <th class="px-4 py-2.5 text-end">Monto Cuota</th>
+                        <th class="px-4 py-2.5 text-start">N° Boleta</th>
+                        <th class="px-4 py-2.5 text-start">Fecha Depósito</th>
+                        <th class="px-4 py-2.5 text-end">Pagado</th>
+                        <th class="px-4 py-2.5 text-start">Método</th>
+                        <th class="px-4 py-2.5 text-start">NIT / Nombre</th>
+                        <th class="px-4 py-2.5 text-start">Obs.</th>
+                        <th class="px-4 py-2.5 text-center">PDF</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default-100">
+                      @for (p of venta.pagos; track p.id_pago) {
+                        <tr class="hover:bg-default-50 transition-colors">
+                          <td class="px-4 py-3 text-sm font-medium text-default-800">Cuota {{ p.nro_pago ?? '—' }}</td>
+                          <td class="px-4 py-3 text-end text-sm font-mono text-default-500">
+                            @if (p.monto_a_pagar) { Bs. {{ (+p.monto_a_pagar) | number:'1.2-2' }} } @else { — }
+                          </td>
+                          <td class="px-4 py-3 text-sm font-mono text-default-600">{{ p.nro_boleta_bancaria || '—' }}</td>
+                          <td class="px-4 py-3 text-sm text-default-600">{{ p.fecha_deposito || '—' }}</td>
+                          <td class="px-4 py-3 text-end text-sm font-bold font-mono text-success">
+                            @if (p.monto_pagado) { Bs. {{ (+p.monto_pagado) | number:'1.2-2' }} } @else { — }
+                          </td>
+                          <td class="px-4 py-3">
+                            @if (p.metodo_pago) {
+                              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                    [class]="metodoPagoBadge(p.metodo_pago)">
+                                {{ metodoPagoLabel(p.metodo_pago) }}
+                              </span>
+                            } @else { <span class="text-xs text-default-400">—</span> }
+                          </td>
+                          <td class="px-4 py-3 text-xs text-default-600">
+                            @if (p.nro_nit) { <p class="font-mono text-default-500">{{ p.nro_nit }}</p> }
+                            @if (p.nombre_nit) { <p>{{ p.nombre_nit }}</p> }
+                            @if (!p.nro_nit && !p.nombre_nit) { — }
+                          </td>
+                          <td class="px-4 py-3 text-xs text-default-400 max-w-32 truncate" [title]="p.observacion_pago ?? ''">
+                            {{ p.observacion_pago || '—' }}
+                          </td>
+                          <td class="px-4 py-3 text-center">
+                            <a [href]="'/api/v1/ventas/' + venta.id_ins + '/pdf'" target="_blank"
+                               title="Descargar comprobante PDF"
+                               class="inline-flex items-center justify-center size-7 rounded-lg bg-danger/10 text-danger hover:bg-danger/20 transition-colors">
+                              <div class="size-3.5"><ng-icon name="lucideFileDown"></ng-icon></div>
+                            </a>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot class="bg-success/5 border-t-2 border-success/20">
+                      <tr>
+                        <td colspan="4" class="px-4 py-3 text-sm font-semibold text-default-700 text-end">Total pagado:</td>
+                        <td class="px-4 py-3 text-end text-base font-bold font-mono text-success">Bs. {{ venta.total_pagado | number:'1.2-2' }}</td>
+                        <td colspan="4"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <div class="flex justify-end pt-2">
+              @if (venta.estado_pago === 'pagado') {
+                <div class="flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-success/40 bg-success/5">
+                  <div class="size-8 text-success"><ng-icon name="lucideCircleCheck"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-bold text-success">PAGADO COMPLETAMENTE</p>
+                    <p class="text-xs text-default-500">Bs. {{ venta.total_pagado | number:'1.2-2' }} de Bs. {{ venta.total_a_pagar | number:'1.2-2' }}</p>
+                  </div>
+                </div>
+              } @else if (venta.estado_pago === 'parcial') {
+                <div class="flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-warning/40 bg-warning/5">
+                  <div class="size-8 text-warning"><ng-icon name="lucideClock"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-bold text-warning">PAGO PARCIAL</p>
+                    <p class="text-xs text-default-500">Saldo pendiente: Bs. {{ venta.saldo_pendiente | number:'1.2-2' }}</p>
+                  </div>
+                </div>
+              } @else {
+                <div class="flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-danger/40 bg-danger/5">
+                  <div class="size-8 text-danger"><ng-icon name="lucideAlertCircle"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-bold text-danger">SIN PAGOS</p>
+                    <p class="text-xs text-default-500">Pendiente: Bs. {{ venta.total_a_pagar | number:'1.2-2' }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <div class="px-6 py-3 bg-default-50 border-t border-default-200 flex items-center justify-between text-xs text-default-400">
+          <span>Ins. #{{ venta.id_ins }} · Registrado: {{ venta.fecha_reg || '—' }}</span>
+          <span>CENEFCO — Centro Nacional de Educación y Formación Continua</span>
+        </div>
+
+      </div>
+    </div>
+    
+    <div class="print-only" id="comprobante" style="font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 0; margin: 0;">
+
+      <img src="/assets/images/logo-sm.png" alt="" class="print-watermark" />
+
+      <div [ngStyle]="{ background: venta.estado_pago === 'pagado' ? '#1a7a3f' : venta.estado_pago === 'parcial' ? '#b8860b' : '#c0392b' }"
+           style="height: 6px; width: 100%; margin-bottom: 0;"></div>
+
+      <table style="width: 100%; border-bottom: 1px solid #e0e0e0; padding: 10px 0 10px; margin-bottom: 0;">
+        <tr>
+          <td style="vertical-align: middle; width: 110px;">
+            <img src="/assets/images/cenefco.png" alt="CENEFCO" style="height: 52px; object-fit: contain;" />
+          </td>
+          <td style="vertical-align: middle; padding-left: 10px;">
+            <div style="font-size: 14px; font-weight: bold; color: #1e3a5f; letter-spacing: 0.5px;">CENEFCO</div>
+            <div style="font-size: 9px; color: #777; line-height: 1.5;">Centro Nacional de Educación y Formación Continua</div>
+            <div style="font-size: 9px; color: #aaa;">cenefco.com</div>
+          </td>
+          <td style="text-align: right; vertical-align: middle;">
+            <div style="font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">Comprobante de Inscripción</div>
+            <div style="font-size: 26px; font-weight: bold; color: #1e3a5f; font-family: 'Courier New', monospace; line-height: 1;"># {{ venta.id_ins }}</div>
+            <div style="font-size: 9px; color: #999; margin-top: 3px;">Generado: {{ fechaHoy }}</div>
+            <div [ngStyle]="estadoStyle()"
+                 style="display: inline-block; margin-top: 5px; padding: 3px 12px; border-radius: 3px; font-size: 9px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">
+              {{ badgeLabel(venta.estado_pago) }}
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <div [ngStyle]="{ background: venta.estado_pago === 'pagado' ? '#f0f9f3' : venta.estado_pago === 'parcial' ? '#fffbf0' : '#fff5f5' }"
+           style="border-left: 4px solid; padding: 8px 12px; margin: 10px 0 12px;"
+           [style.border-color]="venta.estado_pago === 'pagado' ? '#1a7a3f' : venta.estado_pago === 'parcial' ? '#b8860b' : '#c0392b'">
+        <div style="font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Por concepto de inscripción al programa</div>
+        <div style="font-size: 14px; font-weight: bold; color: #1e3a5f; line-height: 1.3;">{{ venta.nombre_programa || '—' }}</div>
+        <div style="font-size: 9.5px; color: #666; margin-top: 3px;">
+          Período: <strong>{{ venta.periodo || '—' }}</strong>
+          &nbsp;&nbsp;·&nbsp;&nbsp;
+          Gestión: <strong>{{ venta.gestion || '—' }}</strong>
+          &nbsp;&nbsp;·&nbsp;&nbsp;
+          Fecha de inscripción: <strong>{{ venta.fecha_ins || '—' }}</strong>
+        </div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+        <tr>
+          
+          <td style="width: 52%; vertical-align: top; padding-right: 12px; border-right: 1px solid #ebebeb;">
+            <div style="font-size: 9px; font-weight: bold; color: #1e3a5f; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #e8e8e8;">
+              Recibimos de
+            </div>
+            <div style="font-size: 13px; font-weight: bold; color: #111; margin-bottom: 4px;">{{ venta.estudiante_nombre || '—' }}</div>
+            <table style="border-collapse: collapse; font-size: 10.5px; width: 100%;">
+              <tr>
+                <td style="color: #999; padding: 1.5px 0; width: 55px;">C.I.:</td>
+                <td style="font-family: 'Courier New', monospace; color: #333; font-weight: bold;">{{ venta.estudiante_ci || '—' }}</td>
+              </tr>
+              @if (venta.estudiante_celular) {
+                <tr>
+                  <td style="color: #999; padding: 1.5px 0;">Celular:</td>
+                  <td style="color: #444;">{{ venta.estudiante_celular }}</td>
+                </tr>
+              }
+              @if (venta.estudiante_email) {
+                <tr>
+                  <td style="color: #999; padding: 1.5px 0;">Email:</td>
+                  <td style="color: #444; font-size: 10px;">{{ venta.estudiante_email }}</td>
+                </tr>
+              }
+            </table>
+          </td>
+          
+          <td style="width: 48%; vertical-align: top; padding-left: 14px;">
+            <div style="font-size: 9px; font-weight: bold; color: #1e3a5f; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #e8e8e8;">
+              Referencia
+            </div>
+            <table style="border-collapse: collapse; font-size: 10.5px; width: 100%;">
+              <tr>
+                <td style="color: #999; padding: 1.5px 0; width: 70px;">N° Inscripción:</td>
+                <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #1e3a5f;">#{{ venta.id_ins }}</td>
+              </tr>
+              <tr>
+                <td style="color: #999; padding: 1.5px 0;">Período:</td>
+                <td style="color: #333;">{{ venta.periodo || '—' }}</td>
+              </tr>
+              <tr>
+                <td style="color: #999; padding: 1.5px 0;">Gestión:</td>
+                <td style="color: #333;">{{ venta.gestion || '—' }}</td>
+              </tr>
+              <tr>
+                <td style="color: #999; padding: 1.5px 0;">Fecha Ins.:</td>
+                <td style="color: #333;">{{ venta.fecha_ins || '—' }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <div style="font-size: 9px; font-weight: bold; color: #1e3a5f; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 4px; border-bottom: 2px solid #1e3a5f; margin-bottom: 0;">
+        Detalle de Cuotas
+      </div>
+
+      @if (venta.pagos.length === 0) {
+        <div style="text-align: center; padding: 16px; color: #bbb; font-style: italic; font-size: 10.5px; border: 1px dashed #e0e0e0; margin: 8px 0 12px;">
+          Sin pagos registrados.
+        </div>
+      } @else {
+        <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 0;">
+          <thead>
+            <tr style="background: #f5f7fa; border-bottom: 1px solid #d8dde6;">
+              <th style="padding: 6px 8px; text-align: left; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Cuota</th>
+              <th style="padding: 6px 8px; text-align: right; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Monto</th>
+              <th style="padding: 6px 8px; text-align: left; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">N° Boleta</th>
+              <th style="padding: 6px 8px; text-align: left; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Fecha Depósito</th>
+              <th style="padding: 6px 8px; text-align: right; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">Monto Pagado</th>
+              <th style="padding: 6px 8px; text-align: left; font-weight: bold; color: #555; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px;">NIT / Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of venta.pagos; track p.id_pago; let even = $even) {
+              <tr style="border-bottom: 1px solid #f0f0f0;" [style.background]="even ? '#fafafa' : 'white'">
+                <td style="padding: 5px 8px; color: #1e3a5f; font-weight: bold;">
+                  {{ p.nro_pago ?? '—' }}ª cuota
+                </td>
+                <td style="padding: 5px 8px; text-align: right; font-family: 'Courier New', monospace; color: #666;">
+                  @if (p.monto_a_pagar) { Bs. {{ (+p.monto_a_pagar) | number:'1.2-2' }} } @else { — }
+                </td>
+                <td style="padding: 5px 8px; font-family: 'Courier New', monospace; font-size: 10px; color: #444;">{{ p.nro_boleta_bancaria || '—' }}</td>
+                <td style="padding: 5px 8px; color: #444;">{{ p.fecha_deposito || '—' }}</td>
+                <td style="padding: 5px 8px; text-align: right; font-family: 'Courier New', monospace; font-weight: bold;"
+                    [style.color]="p.monto_pagado ? '#1a7a3f' : '#aaa'">
+                  @if (p.monto_pagado) { Bs. {{ (+p.monto_pagado) | number:'1.2-2' }} } @else { — }
+                </td>
+                <td style="padding: 5px 8px; font-size: 9.5px; color: #777;">
+                  @if (p.nro_nit || p.nombre_nit) {
+                    <span style="font-family: 'Courier New', monospace;">{{ p.nro_nit || '' }}</span>
+                    @if (p.nombre_nit) { <span style="color: #999;"> · {{ p.nombre_nit }}</span> }
+                  } @else { — }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 14px;">
+        <tr style="vertical-align: top;">
+
+          <td style="padding-right: 14px; border-right: 1px solid #ebebeb;">
+            <table style="border-collapse: collapse; font-size: 11px; width: 100%; min-width: 200px;">
+              <tr style="border-bottom: 1px solid #f0f0f0;">
+                <td style="color: #999; padding: 4px 0; padding-right: 16px;">Total del plan:</td>
+                <td style="text-align: right; font-family: 'Courier New', monospace; color: #555;">Bs. {{ venta.total_a_pagar | number:'1.2-2' }}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0f0f0;">
+                <td style="color: #999; padding: 4px 0;">Total pagado:</td>
+                <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: bold; color: #1a7a3f;">Bs. {{ venta.total_pagado | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td style="color: #555; padding: 5px 0; font-weight: bold;">Saldo pendiente:</td>
+                <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: bold;"
+                    [style.color]="venta.saldo_pendiente === 0 ? '#1a7a3f' : '#c0392b'">
+                  Bs. {{ venta.saldo_pendiente | number:'1.2-2' }}
+                </td>
+              </tr>
+            </table>
+          </td>
+
+          <td style="text-align: center; vertical-align: middle; padding: 0 20px; width: 200px;">
+            <div [ngStyle]="selloStyle()"
+                 style="border-radius: 6px; padding: 10px 16px; display: inline-block; min-width: 160px;">
+              <div style="font-size: 15px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">
+                {{ badgeLabel(venta.estado_pago) | uppercase }}
+              </div>
+              <div style="font-size: 12px; font-family: 'Courier New', monospace; font-weight: bold; margin-top: 4px;">
+                Bs. {{ venta.total_pagado | number:'1.2-2' }}
+              </div>
+              @if (venta.estado_pago !== 'pagado') {
+                <div style="font-size: 9px; margin-top: 2px; opacity: 0.8;">
+                  Saldo: Bs. {{ venta.saldo_pendiente | number:'1.2-2' }}
+                </div>
+              }
+            </div>
+          </td>
+
+          <td style="text-align: center; vertical-align: bottom; padding-left: 14px; width: 180px; border-left: 1px solid #ebebeb;">
+            <div style="height: 36px;"></div>
+            <div style="border-top: 1px solid #555; padding-top: 5px; font-size: 10px; color: #333;">
+              <div style="font-weight: bold;">Secretaría Académica</div>
+              <div style="font-size: 9px; color: #888; margin-top: 1px;">CENEFCO · Sello y Firma Oficial</div>
+            </div>
+          </td>
+
+        </tr>
+      </table>
+
+      <div style="margin-top: 16px; padding-top: 10px; border-top: 2px dashed #e0e0e0; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #bbb;">
+        <span style="font-family: 'Courier New', monospace;">REC-{{ venta.id_ins }}-{{ fechaHoy }}</span>
+        <span style="font-size: 8px; letter-spacing: 0.5px;">✦ ─ ─ ─ ─ ─ Conserve este comprobante ─ ─ ─ ─ ─ ✦</span>
+        <span>Centro Nacional de Educación y Formación Continua</span>
+      </div>
+
+      <div style="page-break-before: always; padding-top: 4px;">
+
+        <table style="width:100%; border-bottom: 3px solid #1e3a5f; margin-bottom: 16px; padding-bottom: 10px;">
+          <tr>
+            <td style="width: 100px; vertical-align: middle;">
+              <img src="/assets/images/cenefco.png" alt="CENEFCO" style="height: 50px; object-fit: contain;" />
+            </td>
+            <td style="vertical-align: middle; padding-left: 10px;">
+              <div style="font-size: 12px; font-weight: bold; color: #1e3a5f;">CENEFCO</div>
+              <div style="font-size: 9px; color: #777;">Centro Nacional de Educación y Formación Continua</div>
+            </td>
+            <td style="text-align: right; vertical-align: middle;">
+              <div style="font-size: 14px; font-weight: bold; color: #1e3a5f; text-transform: uppercase; letter-spacing: 1px;">Bienvenida al Programa</div>
+              <div style="font-size: 9px; color: #999; margin-top: 2px;">Código de Conducta e Información Importante</div>
+            </td>
+          </tr>
+        </table>
+
+        <div style="border: 1px solid #c8d8e8; border-radius: 6px; padding: 16px; margin-bottom: 16px; background: #f7fafd;">
+          <div style="font-size: 11px; color: #1e3a5f; font-weight: bold; margin-bottom: 8px; font-style: italic;">
+            Estimado/a {{ venta.estudiante_nombre || 'Estudiante' }}:
+          </div>
+          <div style="font-size: 11px; color: #333; line-height: 1.7; text-align: justify;">
+            {{ bienvenidaTexto(venta.estudiante_nombre || '', venta.nombre_programa || 'programa de formación continua') }}
+          </div>
+          <div style="font-size: 11px; color: #333; line-height: 1.7; text-align: justify; margin-top: 8px;">
+            Su inscripción ha sido registrada con el N° <strong>#{{ venta.id_ins }}</strong>
+            para el período <strong>{{ venta.periodo || '—' }} – Gestión {{ venta.gestion || '—' }}</strong>.
+          </div>
+          <div style="font-size: 11px; color: #333; line-height: 1.7; margin-top: 8px;">
+            Le invitamos a leer detenidamente el presente reglamento, el cual rige la convivencia
+            académica y garantiza el aprovechamiento óptimo de su experiencia formativa.
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; vertical-align: top;">
+          <tr>
+            
+            <td style="width: 50%; vertical-align: top; padding-right: 12px;">
+              @for (s of secciones.slice(0,3); track s.campo) {
+                <div style="margin-bottom: 12px;">
+                  <div [ngStyle]="s.color === 'verde' ? {background:'#2e7d32',color:'white'} : {background:'#1e3a5f',color:'white'}"
+                       style="padding: 5px 10px; border-radius: 3px 3px 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {{ s.icono }} {{ s.titulo }}
+                  </div>
+                  <div [ngStyle]="s.color === 'verde' ? {border:'1px solid #c8e6c9',background:'#f9fbe7'} : {border:'1px solid #c8d8e8',background:'white'}"
+                       style="border-top: none; padding: 10px; border-radius: 0 0 3px 3px; font-size: 10.5px; line-height: 1.6; color: #333;">
+                    <ul style="margin: 0; padding-left: 14px;">
+                      @for (item of getSeccionItems(s.campo); track $index) {
+                        <li>{{ item }}</li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              }
+            </td>
+            
+            <td style="width: 50%; vertical-align: top; padding-left: 12px; border-left: 1px solid #eee;">
+              @for (s of secciones.slice(3,6); track s.campo) {
+                <div style="margin-bottom: 12px;">
+                  <div [ngStyle]="s.color === 'verde' ? {background:'#2e7d32',color:'white'} : {background:'#1e3a5f',color:'white'}"
+                       style="padding: 5px 10px; border-radius: 3px 3px 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {{ s.icono }} {{ s.titulo }}
+                  </div>
+                  <div [ngStyle]="s.color === 'verde' ? {border:'1px solid #c8e6c9',background:'#f9fbe7'} : {border:'1px solid #c8d8e8',background:'white'}"
+                       style="border-top: none; padding: 10px; border-radius: 0 0 3px 3px; font-size: 10.5px; line-height: 1.6; color: #333;">
+                    <ul style="margin: 0; padding-left: 14px;">
+                      @for (item of getSeccionItems(s.campo); track $index) {
+                        <li>{{ item }}</li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              }
+            </td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 14px; border: 1px solid #ddd; border-radius: 4px; padding: 12px; background: #fafafa;">
+          <div style="font-size: 10px; font-weight: bold; color: #333; margin-bottom: 6px;">DECLARACIÓN DE ACEPTACIÓN</div>
+          <div style="font-size: 10px; color: #555; line-height: 1.6; text-align: justify; margin-bottom: 14px;">
+            Al inscribirse en el programa, el/la estudiante declara haber leído, comprendido y aceptado el presente
+            reglamento, comprometiéndose a cumplirlo en su totalidad durante toda la duración del programa.
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="text-align: center; width: 48%; padding-top: 32px; border-top: 1px solid #555;">
+                <div style="font-size: 10px; color: #333;">
+                  <strong>{{ venta.estudiante_nombre || '________________________________' }}</strong>
+                </div>
+                <div style="font-size: 9px; color: #777; margin-top: 2px;">Firma del Estudiante · C.I. {{ venta.estudiante_ci || '—' }}</div>
+              </td>
+              <td style="width: 4%;"></td>
+              <td style="text-align: center; width: 48%; padding-top: 32px; border-top: 1px solid #555;">
+                <div style="font-size: 10px; color: #333;"><strong>Secretaría Académica</strong></div>
+                <div style="font-size: 9px; color: #777; margin-top: 2px;">CENEFCO · Sello y Firma Oficial</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 9px; color: #aaa;">
+          <span>Ins. #{{ venta.id_ins }} · {{ fechaHoy }}</span>
+          <span>Este documento tiene validez como constancia de inscripción y aceptación del reglamento — CENEFCO</span>
+        </div>
+
+      </div>
+      
+    </div>
+    
+  }
+</main>

@@ -1,0 +1,82 @@
+@media print {
+
+    /* ── Ocultar todo el chrome del layout ────────── */
+    aside#app-menu,
+    app-sidenav,
+    app-topbar,
+    app-footer,
+    app-customizer,
+    app-route-loader,
+    .app-header,
+    .footer {
+        display: none !important;
+        width: 0 !important;
+    }
+
+    /* ── Reset del wrapper y page-content ─────────── */
+    .wrapper {
+        display: block !important;
+    }
+
+    .page-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body, html {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* ── Ocultar elementos marcados como no imprimibles */
+    .no-print {
+        display: none !important;
+    }
+
+    /* ── Ocultar la vista de pantalla, mostrar solo el PDF */
+    .screen-only {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    /* ── Tarjetas sin sombra ───────────────────────── */
+    .card {
+        box-shadow: none !important;
+    }
+
+    /* ── Evitar cortes de página en el comprobante ─── */
+    #comprobante {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    /* ── Marca de agua: se fija en el centro de cada hoja ─ */
+    .print-watermark {
+        display: block !important;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 320px;
+        opacity: 0.06;
+        z-index: 0;
+        pointer-events: none;
+    }
+}
+
+/* En pantalla, ocultar siempre la vista de impresión */
+.print-only {
+    display: none;
+}

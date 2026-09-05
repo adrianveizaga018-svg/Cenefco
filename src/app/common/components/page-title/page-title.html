@@ -1,0 +1,22 @@
+<div class="flex items-center md:justify-between flex-wrap gap-2 mb-4 print:hidden">
+    <div>
+        <h4 class="text-default-900 text-lg font-semibold">{{title}}</h4>
+        @if (subtitle && !shouldShowBreadcrumb) {
+            <p class="text-sm text-default-500 mt-1">{{subtitle}}</p>
+        }
+    </div>
+
+    @if (shouldShowBreadcrumb) {
+        <div class="md:flex hidden items-center gap-2 text-sm font-semibold">
+            <a [routerLink]="[]" class="text-sm font-medium text-default-700">cenefco</a>
+
+            @if (subtitle) {
+                <div class="size-4 text-sm flex-shrink-0 text-default-500 rtl:rotate-180"><ng-icon name="tablerChevronRight"></ng-icon></div>
+                <a [routerLink]="[]" class="text-sm font-medium text-default-700">{{subtitle}}</a>
+            }
+
+            <div class="size-4 text-sm flex-shrink-0 text-default-500 rtl:rotate-180"><ng-icon name="tablerChevronRight" ></ng-icon></div>
+            <a [routerLink]="[]" class="text-sm font-medium text-default-700" aria-current="page">{{title}}</a>
+        </div>
+    }
+</div>

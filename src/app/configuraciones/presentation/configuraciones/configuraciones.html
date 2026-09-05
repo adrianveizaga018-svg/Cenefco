@@ -1,0 +1,221 @@
+<main>
+  <app-page-title title="Configuraciones" subtitle="Configuración General del Sistema" />
+
+  <div class="grid grid-cols-1 gap-5 mb-5">
+
+    @if (loading()) {
+      <div class="card">
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin">
+            <ng-icon name="lucideLoader"></ng-icon>
+          </div>
+          Cargando configuraciones...
+        </div>
+      </div>
+    }
+
+    @else if (settings()) {
+      <form (ngSubmit)="onSubmit()" #settingsForm="ngForm">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Configuraciones Generales</h4>
+          </div>
+
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div class="col-span-full">
+                <label for="site_name" class="block text-sm font-medium text-default-900 mb-2">
+                  Nombre del Sitio
+                </label>
+                <input
+                  type="text"
+                  id="site_name"
+                  name="site_name"
+                  [(ngModel)]="settings()!.site_name"
+                  class="form-input"
+                  placeholder="Ej: Mi Sistema de cenefco"
+                  required
+                >
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label for="contact_email" class="block text-sm font-medium text-default-900 mb-2">
+                  Email de Contacto
+                </label>
+                <input
+                  type="email"
+                  id="contact_email"
+                  name="contact_email"
+                  [(ngModel)]="settings()!.contact_email"
+                  class="form-input"
+                  placeholder="admin@example.com"
+                  required
+                >
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label for="items_per_page" class="block text-sm font-medium text-default-900 mb-2">
+                  Items por Página
+                </label>
+                <input
+                  type="number"
+                  id="items_per_page"
+                  name="items_per_page"
+                  [(ngModel)]="settings()!.items_per_page"
+                  class="form-input"
+                  min="5"
+                  max="100"
+                  required
+                >
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="site_active"
+                    name="site_active"
+                    [(ngModel)]="settings()!.site_active"
+                    class="form-switch"
+                  >
+                  <span class="text-sm font-medium text-default-900">
+                    Sitio Activo
+                  </span>
+                </label>
+                <p class="text-xs text-default-500 mt-1">
+                  Habilita o deshabilita el acceso público al sistema
+                </p>
+              </div>
+
+              <div class="col-span-full md:col-span-1">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="maintenance_mode"
+                    name="maintenance_mode"
+                    [(ngModel)]="settings()!.maintenance_mode"
+                    class="form-switch"
+                  >
+                  <span class="text-sm font-medium text-default-900">
+                    Modo de Mantenimiento
+                  </span>
+                </label>
+                <p class="text-xs text-default-500 mt-1">
+                  Muestra una página de mantenimiento a los usuarios
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card-footer flex justify-end gap-3">
+            <button
+              type="button"
+              (click)="resetForm()"
+              class="btn btn-sm bg-default-200 text-default-700 hover:bg-default-300"
+              [disabled]="saving()"
+            >
+              <div class="size-4 me-1">
+                <ng-icon name="lucideRotateCcw"></ng-icon>
+              </div>
+              Restablecer
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-sm bg-primary text-white"
+              [disabled]="!settingsForm.valid || saving()"
+            >
+              @if (saving()) {
+                <div class="size-4 me-1 animate-spin">
+                  <ng-icon name="lucideLoader"></ng-icon>
+                </div>
+                Guardando...
+              } @else {
+                <div class="size-4 me-1">
+                  <ng-icon name="lucideSave"></ng-icon>
+                </div>
+                Guardar Cambios
+              }
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+        <div class="card">
+          <div class="p-6">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <div class="size-6 text-primary">
+                    <ng-icon name="lucideSettings"></ng-icon>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-default-500">Estado del Sistema</p>
+                <h5 class="text-base font-semibold text-default-900">
+                  {{ settings()!.site_active ? 'Activo' : 'Inactivo' }}
+                </h5>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="p-6">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="size-12 rounded-lg bg-success/10 flex items-center justify-center">
+                  <div class="size-6 text-success">
+                    <ng-icon name="lucideMail"></ng-icon>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-default-500">Email de Contacto</p>
+                <h5 class="text-sm font-semibold text-default-900 truncate">
+                  {{ settings()!.contact_email }}
+                </h5>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="p-6">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="size-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <div class="size-6 text-warning">
+                    <ng-icon name="lucideWrench"></ng-icon>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-default-500">Modo Mantenimiento</p>
+                <h5 class="text-base font-semibold text-default-900">
+                  {{ settings()!.maintenance_mode ? 'Activado' : 'Desactivado' }}
+                </h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @else {
+      <div class="card">
+        <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
+          <div class="size-4">
+            <ng-icon name="lucideCircleX"></ng-icon>
+          </div>
+          Error al cargar las configuraciones
+        </div>
+      </div>
+    }
+
+  </div>
+</main>

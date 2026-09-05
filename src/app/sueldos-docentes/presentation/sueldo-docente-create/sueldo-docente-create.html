@@ -1,0 +1,150 @@
+﻿<main>
+  <app-page-title title="Registrar Sueldo" subtitle="Sueldos Docentes" />
+
+  <div class="flex items-center gap-1.5 text-sm text-default-500 mb-5">
+    <a routerLink="/cenefco/sueldos-docentes" class="hover:text-primary">Sueldos Docentes</a>
+    <div class="size-3.5 text-default-300"><ng-icon name="lucideChevronRight"></ng-icon></div>
+    <span class="text-default-700 font-medium">Nuevo Sueldo</span>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+
+    <div class="card">
+        <div class="card-header border-b border-default-200">
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-primary"><ng-icon name="lucideBanknote"></ng-icon></div>
+            <h6 class="text-sm font-semibold text-default-800">Datos del Sueldo Docente</h6>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Docente <span class="text-danger">*</span>
+              </label>
+              <select [(ngModel)]="form.id_us" class="form-input w-full">
+                <option [ngValue]="null">Seleccionar docente...</option>
+                @for (d of docentes(); track d.id_us) {
+                  <option [ngValue]="d.id_us">
+                    {{ d.nombre_completo }}{{ d.ci ? ' — CI: ' + d.ci : '' }}{{ d.fuente === 'perfil' ? ' ★' : '' }}
+                  </option>
+                }
+              </select>
+              @if (docentes().length === 0) {
+                <p class="text-xs text-warning mt-1.5">No se encontraron docentes en el sistema.</p>
+              }
+              <p class="text-xs text-default-400 mt-1.5">★ = perfil web (sin cuenta de usuario)</p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Concepto <span class="text-danger">*</span>
+              </label>
+              <input type="text" [(ngModel)]="form.concepto"
+                     placeholder="Ej: Sueldo Docente — Diplomado en Gestión Pública"
+                     class="form-input w-full" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Monto Total (Bs.) <span class="text-danger">*</span>
+              </label>
+              <input type="number" [(ngModel)]="form.monto_total"
+                     min="0" step="0.01" placeholder="0.00"
+                     class="form-input w-full font-mono text-lg" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Curso / Impartición
+                <span class="font-normal text-default-400 text-xs ms-1">(opcional)</span>
+              </label>
+              <select [(ngModel)]="form.id_imp" class="form-input w-full">
+                <option [ngValue]="null">Sin vincular</option>
+                @for (i of imparticiones(); track i.id_imp) {
+                  <option [ngValue]="i.id_imp">{{ i.nombre_curso }} — {{ i.periodo }} {{ i.gestion }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-default-700 mb-2">Período</label>
+              <input type="text" [(ngModel)]="form.periodo"
+                     placeholder="Ej: 2026-I"
+                     class="form-input w-full" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-default-700 mb-2">Gestión</label>
+              <input type="number" [(ngModel)]="form.gestion"
+                     class="form-input w-full" />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Observación
+                <span class="font-normal text-default-400 text-xs ms-1">(opcional)</span>
+              </label>
+              <input type="text" [(ngModel)]="form.observacion"
+                     placeholder="Notas adicionales..."
+                     class="form-input w-full" />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-default-700 mb-2">
+                Documento / Contrato PDF
+                <span class="font-normal text-default-400 text-xs ms-1">(opcional, máx. 10 MB)</span>
+              </label>
+              @if (archivoNombre()) {
+                <div class="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div class="size-4 text-danger flex-shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                  <span class="text-sm text-default-700 truncate flex-1">{{ archivoNombre() }}</span>
+                  <button type="button" (click)="limpiarArchivo()"
+                          class="size-5 text-default-400 hover:text-danger flex-shrink-0">
+                    <ng-icon name="lucideX"></ng-icon>
+                  </button>
+                </div>
+              } @else {
+                <label class="flex items-center gap-3 p-4 border-2 border-dashed border-default-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="size-5 text-default-400"><ng-icon name="lucideUpload"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-medium text-default-600">Subir archivo PDF</p>
+                    <p class="text-xs text-default-400">Haz clic para seleccionar</p>
+                  </div>
+                  <input type="file" accept=".pdf" class="hidden" (change)="onArchivoChange($event)" />
+                </label>
+              }
+            </div>
+
+          </div>
+
+          <div class="flex items-center justify-end gap-3 mt-6 pt-5 border-t border-default-100">
+            <button type="button" (click)="cancelar()"
+                    class="btn bg-default-200 text-default-600 flex items-center gap-1.5">
+              <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+              Cancelar
+            </button>
+            <button type="button" (click)="guardar()" [disabled]="saving()"
+                    class="btn bg-primary text-white flex items-center gap-1.5 disabled:opacity-60">
+              @if (saving()) {
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                Guardando...
+              } @else {
+                <div class="size-4"><ng-icon name="lucideCheck"></ng-icon></div>
+                Registrar Sueldo
+              }
+            </button>
+          </div>
+        </div>
+
+    </div>
+
+  }
+</main>

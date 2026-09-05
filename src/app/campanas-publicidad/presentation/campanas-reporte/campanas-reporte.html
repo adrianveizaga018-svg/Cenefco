@@ -1,0 +1,113 @@
+<main>
+  <app-page-title title="Reporte de Campañas" subtitle="Inversión vs. resultados por curso" />
+
+  <div class="card mb-5">
+    <div class="card-header flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div>
+          <label class="block mb-1 text-xs font-medium text-default-800">Desde</label>
+          <input type="date" class="form-input" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" />
+        </div>
+        <div>
+          <label class="block mb-1 text-xs font-medium text-default-800">Hasta</label>
+          <input type="date" class="form-input" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" />
+        </div>
+        <button type="button" (click)="filtrar()" class="btn bg-primary text-white self-end">Filtrar</button>
+      </div>
+      <a routerLink="/cenefco/campanas-publicidad" class="btn btn-sm border border-default-300 text-default-600 hover:bg-default-100">
+        <div class="size-4 me-1"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver a campañas
+      </a>
+    </div>
+  </div>
+
+  @if (!loading() && filas().length > 0) {
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+      <div class="card p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Total invertido</p>
+        <p class="text-2xl font-bold text-danger">Bs. {{ totalInvertido() }}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Alcance total</p>
+        <p class="text-2xl font-bold text-info">{{ totalAlcance() }}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Resultados totales</p>
+        <p class="text-2xl font-bold text-success">{{ totalResultados() }}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-default-400 mb-1">Retorno global</p>
+        <p class="text-2xl font-bold"
+           [class.text-success]="(retornoGlobal() ?? 0) >= 1"
+           [class.text-danger]="(retornoGlobal() ?? 1) < 1"
+           [class.text-default-700]="retornoGlobal() === null">
+          {{ retornoGlobal() !== null ? (retornoGlobal() + 'x') : '—' }}
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="overflow-x-auto">
+      @if (loading()) {
+        <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          Cargando reporte...
+        </div>
+      } @else {
+        <table class="min-w-full divide-y divide-default-200">
+          <thead class="bg-default-150">
+            <tr class="text-sm font-normal text-default-700">
+              <th class="px-3.5 py-3 text-start">Curso / Campaña</th>
+              <th class="px-3.5 py-3 text-end">Invertido</th>
+              <th class="px-3.5 py-3 text-end">Alcance</th>
+              <th class="px-3.5 py-3 text-end">Resultados</th>
+              <th class="px-3.5 py-3 text-end">Costo/resultado</th>
+              <th class="px-3.5 py-3 text-end">Inscritos</th>
+              <th class="px-3.5 py-3 text-end">Recaudado</th>
+              <th class="px-3.5 py-3 text-end">Retorno aprox.</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-default-200">
+            @for (f of filas(); track f.programa_id ?? f.programa_nombre) {
+              <tr class="text-sm text-default-800">
+                <td class="px-3.5 py-2.5 font-medium">{{ f.programa_nombre }}</td>
+                <td class="px-3.5 py-2.5 text-end">Bs. {{ f.total_invertido }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ f.total_alcance }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ f.total_resultados }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ f.costo_por_resultado_promedio ?? '—' }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ f.total_inscritos_curso ?? '—' }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ f.total_recaudado_curso !== null ? ('Bs. ' + f.total_recaudado_curso) : '—' }}</td>
+                <td class="px-3.5 py-2.5 text-end font-semibold" [class.text-success]="(f.retorno_aproximado ?? 0) >= 1" [class.text-danger]="f.retorno_aproximado !== null && f.retorno_aproximado < 1">
+                  {{ f.retorno_aproximado !== null ? (f.retorno_aproximado + 'x') : '—' }}
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="8" class="px-3.5 py-12 text-center text-sm text-default-400">
+                  No hay campañas con datos para este rango de fechas.
+                </td>
+              </tr>
+            }
+          </tbody>
+          @if (filas().length > 0) {
+            <tfoot class="bg-default-50 border-t-2 border-default-200">
+              <tr class="text-sm font-bold text-default-800">
+                <td class="px-3.5 py-2.5">Total</td>
+                <td class="px-3.5 py-2.5 text-end">Bs. {{ totalInvertido() }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ totalAlcance() }}</td>
+                <td class="px-3.5 py-2.5 text-end">{{ totalResultados() }}</td>
+                <td colspan="4"></td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      }
+    </div>
+  </div>
+
+  <p class="text-xs text-default-400">
+    "Retorno aproximado" = recaudado del curso ÷ invertido en sus campañas — cuántos bolivianos generó cada boliviano gastado en publicidad. Solo se calcula cuando hay inversión registrada y el curso tiene programa asociado.
+  </p>
+</main>

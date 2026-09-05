@@ -1,0 +1,54 @@
+<app-page-title title="Citas de Asesoría" subtitle="Solicitudes" />
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="input-group" style="max-width:320px">
+      <input type="text" class="form-control" placeholder="Buscar nombre, email..."
+        [value]="search()" (input)="onSearch($any($event.target).value)" />
+    </div>
+  </div>
+  <div class="card-body p-0">
+    @if (isLoading) {
+      <div class="text-center py-4">Cargando...</div>
+    } @else if (items.length === 0) {
+      <div class="text-center py-4 text-muted">Sin solicitudes</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Nombres</th>
+              <th>Email</th>
+              <th>Celular</th>
+              <th>Programa</th>
+              <th>Fecha preferida</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items; track item.id_cita_asesoria) {
+              <tr>
+                <td>{{ item.id_cita_asesoria }}</td>
+                <td>{{ item.nombres }} {{ item.apellidos }}</td>
+                <td>{{ item.email ?? '—' }}</td>
+                <td>{{ item.celular ?? '—' }}</td>
+                <td>{{ item.programa_interes ?? '—' }}</td>
+                <td>{{ item.fecha_preferida ?? '—' }}</td>
+                <td><span [class]="'badge bg-' + estadoBadge(item.estado)">{{ item.estado }}</span></td>
+                <td class="text-end">
+                  <a [routerLink]="['/cenefco/citas-asesoria/edit', item.id_cita_asesoria]" class="btn btn-sm btn-outline-secondary me-1">Editar</a>
+                  <button class="btn btn-sm btn-outline-danger" (click)="delete(item.id_cita_asesoria)">Eliminar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  <div class="card-footer">
+    <app-pagination [currentPage]="pageIndex()" [pageSize]="pageSize()" [total]="total" (pageChange)="onPageChange($event)" />
+  </div>
+</div>

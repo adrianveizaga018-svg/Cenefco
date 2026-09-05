@@ -1,0 +1,108 @@
+<main>
+  <app-page-title title="Editar Efecto Especial" subtitle="Portal Web" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 gap-5">
+
+        <div class="lg:col-span-2 space-y-5">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos del Efecto</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Nombre <span class="text-danger">*</span></label>
+                <input type="text" formControlName="nombre" class="form-input w-full">
+                @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+                  <p class="text-danger text-xs mt-1">El nombre es requerido</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Tipo de Efecto <span class="text-danger">*</span></label>
+                <select formControlName="tipo_efecto" class="form-input w-full">
+                  @for (t of tipos; track t.value) {
+                    <option [value]="t.value">{{ t.emoji }} {{ t.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Color primario</label>
+                  <div class="flex items-center gap-3">
+                    <input type="color" formControlName="color_primario"
+                      class="h-10 w-14 rounded border border-default-200 cursor-pointer p-0.5">
+                    <span class="text-sm text-default-500 font-mono">{{ form.value.color_primario }}</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-default-700 mb-1">Color secundario</label>
+                  <div class="flex items-center gap-3">
+                    <input type="color" formControlName="color_secundario"
+                      class="h-10 w-14 rounded border border-default-200 cursor-pointer p-0.5">
+                    <span class="text-sm text-default-500 font-mono">{{ form.value.color_secundario || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5 self-start">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Período de Activación</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Fecha de inicio <span class="text-danger">*</span></label>
+                <input type="date" formControlName="fecha_inicio" class="form-input w-full">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Fecha de fin <span class="text-danger">*</span></label>
+                <input type="date" formControlName="fecha_fin" class="form-input w-full">
+                <p class="text-xs text-default-400 mt-1">El efecto se activa automáticamente en este rango de fechas.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Intensidad y Estado</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">
+                  Intensidad: <b>{{ form.value.intensidad }}%</b>
+                </label>
+                <input type="range" formControlName="intensidad" min="0" max="100" step="5"
+                  class="w-full accent-primary">
+                <div class="flex justify-between text-xs text-default-400 mt-0.5">
+                  <span>Sutil</span><span>Moderado</span><span>Intenso</span>
+                </div>
+              </div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" formControlName="activo" class="form-checkbox">
+                <div>
+                  <p class="text-sm font-medium text-default-700">Efecto activo</p>
+                  <p class="text-xs text-default-400">Desactiva para suspender temporalmente.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <button type="submit" class="btn bg-primary text-white w-full disabled:opacity-60" [disabled]="submitting()">
+              @if (submitting()) { Guardando... } @else { Guardar Cambios }
+            </button>
+            <a routerLink="/cenefco/efectos-especiales" class="btn btn-outline-default w-full text-center">Cancelar</a>
+          </div>
+
+        </div>
+      </div>
+    </form>
+  }
+</main>

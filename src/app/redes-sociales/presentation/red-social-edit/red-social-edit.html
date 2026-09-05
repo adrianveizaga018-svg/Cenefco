@@ -1,0 +1,106 @@
+<main>
+  <app-page-title title="Editar Red Social" subtitle="Portal Institucional" />
+
+  @if (loadingRedSocial()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando red social...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+        <div class="lg:col-span-2">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos de la Red Social</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Plataforma <span class="text-danger">*</span>
+                </label>
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center justify-center size-10 rounded-lg bg-default-100 text-default-600 flex-shrink-0">
+                    <ng-icon [name]="iconoPlataforma" class="size-5"></ng-icon>
+                  </div>
+                  <select class="form-input" formControlName="red">
+                    @for (p of plataformas; track p) {
+                      <option [value]="p" class="capitalize">{{ p }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">
+                    Nombre / Descripción
+                  </label>
+                  <input type="text" class="form-input" placeholder="Ej: Facebook Oficial" formControlName="nombre_display">
+                  @if (form.get('nombre_display')?.invalid && form.get('nombre_display')?.touched) {
+                    <p class="mt-1 text-danger text-xs">Máximo 100 caracteres</p>
+                  }
+                </div>
+
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">
+                    URL <span class="text-danger">*</span>
+                  </label>
+                  <input type="url" class="form-input" placeholder="https://facebook.com/cenefco..." formControlName="url">
+                  @if (form.get('url')?.invalid && form.get('url')?.touched) {
+                    <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+                  }
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Configuración</h6></div>
+            <div class="card-body space-y-4">
+
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Orden de visualización</label>
+                <input type="number" min="0" class="form-input" placeholder="0" formControlName="orden">
+              </div>
+
+              <div class="flex items-center gap-3">
+                <label class="text-sm font-medium text-default-800">Activo</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" formControlName="activo">
+                  <div class="w-11 h-6 bg-default-200 peer-checked:bg-primary rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  <span class="ms-2 text-sm text-default-600">{{ form.get('activo')?.value ? 'Sí' : 'No' }}</span>
+                </label>
+              </div>
+
+              <div class="pt-2 flex flex-col gap-2">
+                <button
+                  type="submit"
+                  class="btn bg-primary text-white w-full"
+                  [disabled]="form.invalid || submitting()"
+                >
+                  @if (submitting()) {
+                    <div class="size-4 me-1 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+                    Guardando...
+                  } @else {
+                    Actualizar Red Social
+                  }
+                </button>
+                <a routerLink="/cenefco/redes-sociales" class="btn border border-default-300 text-default-600 hover:bg-default-100 w-full text-center">
+                  Cancelar
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  }
+</main>

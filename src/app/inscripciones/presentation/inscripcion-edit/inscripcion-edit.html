@@ -1,0 +1,186 @@
+<main>
+  <app-page-title title="Editar Inscripción" subtitle="Inscripciones" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 gap-5">
+
+      @if (formularioCampos().length > 0) {
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Respuestas del Formulario</h4>
+            <p class="text-xs text-default-400 mt-0.5">Exactamente lo que el estudiante llenó al inscribirse — varía según el formulario del curso. Los datos personales (nombre, CI, correo, celular) se actualizan para todas sus inscripciones.</p>
+          </div>
+          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            @for (campo of formularioCampos(); track campo.nombre_campo) {
+              <div [class.md:col-span-2]="campo.tipo === 'textarea' || campo.tipo === 'file'">
+                <label class="block text-sm font-medium text-default-700 mb-1">
+                  {{ campo.etiqueta }}
+                  @if (campo.requerido) { <span class="text-danger">*</span> }
+                </label>
+
+                @switch (campo.tipo) {
+                  @case ('file') {
+                    @if (documentos()[campo.nombre_campo]) {
+                      <div class="flex items-center justify-between gap-3 bg-default-50 border border-default-200 rounded-lg px-3 py-2 mb-2">
+                        <a [href]="documentos()[campo.nombre_campo]" target="_blank" class="flex items-center gap-2 text-sm text-default-700 hover:text-primary truncate">
+                          <div class="size-4 text-primary shrink-0"><ng-icon name="lucidePaperclip"></ng-icon></div>
+                          <span class="truncate">Ver archivo actual</span>
+                        </a>
+                        <button type="button" (click)="quitarDocumento(campo.nombre_campo)"
+                          class="shrink-0 text-danger hover:bg-danger/10 rounded p-1.5" title="Quitar documento">
+                          <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                        </button>
+                      </div>
+                    } @else {
+                      <p class="text-xs text-default-400 mb-2">No hay archivo cargado.</p>
+                    }
+                    <input type="file" accept=".pdf,image/*" (change)="onDocumentoCampoSeleccionado(campo, $event)"
+                      class="form-input w-full" [disabled]="subiendoDoc()">
+                  }
+                  @case ('textarea') {
+                    <textarea rows="2" class="form-input w-full"
+                      [value]="valorCampo(campo)"
+                      (input)="onCampoInput(campo, $event)"></textarea>
+                  }
+                  @case ('select') {
+                    <select class="form-input w-full"
+                      (change)="onCampoInput(campo, $event)">
+                      <option value="" [selected]="!valorCampo(campo)">— Seleccionar —</option>
+                      @for (op of (campo.opciones ?? []); track op) {
+                        <option [value]="op" [selected]="op === valorCampo(campo)">{{ op }}</option>
+                      }
+                    </select>
+                  }
+                  @case ('checkbox') {
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" class="form-checkbox rounded text-primary"
+                        [checked]="!!valorCampo(campo)"
+                        (change)="onCampoCheckbox(campo, $event)">
+                      <span class="text-sm text-default-700">Sí</span>
+                    </label>
+                  }
+                  @default {
+                    <input [type]="campo.tipo === 'email' ? 'email' : campo.tipo === 'tel' ? 'tel' : campo.tipo === 'number' ? 'number' : campo.tipo === 'date' ? 'date' : 'text'"
+                      class="form-input w-full"
+                      [value]="valorCampo(campo)"
+                      (input)="onCampoInput(campo, $event)">
+                  }
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Datos del Estudiante</h4>
+            <p class="text-xs text-default-400 mt-0.5">Este curso no tiene un formulario de inscripción asignado. Corrige el nombre, correo u otro dato que el estudiante haya ingresado mal.</p>
+          </div>
+          <div class="p-6">
+            <div [formGroup]="usuarioForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Nombre(s) <span class="text-danger">*</span></label>
+                <input type="text" formControlName="nombre" class="form-input w-full">
+                @if (usuarioForm.get('nombre')?.invalid && usuarioForm.get('nombre')?.touched) {
+                  <p class="mt-1 text-danger text-xs">El nombre es obligatorio</p>
+                }
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">CI</label>
+                <input type="text" formControlName="ci" class="form-input w-full">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Apellido Paterno</label>
+                <input type="text" formControlName="appaterno" class="form-input w-full">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Apellido Materno</label>
+                <input type="text" formControlName="apmaterno" class="form-input w-full">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Correo</label>
+                <input type="email" formControlName="email" class="form-input w-full">
+                @if (usuarioForm.get('email')?.invalid && usuarioForm.get('email')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Correo inválido</p>
+                }
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Celular</label>
+                <input type="text" formControlName="celular" class="form-input w-full">
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="card">
+        <div class="card-header"><h4 class="card-title">Datos de la Inscripción</h4></div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Inscripción</label>
+              <input type="date" formControlName="fecha_ins" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+              <select formControlName="estado" class="form-input w-full">
+                <option [value]="1">Activo</option>
+                <option [value]="0">Inactivo</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Observación</label>
+              <textarea formControlName="observacion_ins" rows="2" class="form-input w-full"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">Documentos Anexados</h4>
+          <p class="text-xs text-default-400 mt-0.5">Quita un documento erróneo o sube uno nuevo para reemplazarlo.</p>
+        </div>
+        <div class="p-6 space-y-3">
+          @if (nombresDocumentos().length === 0) {
+            <p class="text-sm text-default-400">No hay documentos anexados en esta inscripción.</p>
+          } @else {
+            @for (clave of nombresDocumentos(); track clave) {
+              <div class="flex items-center justify-between gap-3 bg-default-50 border border-default-200 rounded-lg px-3 py-2">
+                <a [href]="documentos()[clave]" target="_blank" class="flex items-center gap-2 text-sm text-default-700 hover:text-primary truncate">
+                  <div class="size-4 text-primary shrink-0"><ng-icon name="lucidePaperclip"></ng-icon></div>
+                  <span class="truncate">{{ clave }}</span>
+                </a>
+                <button type="button" (click)="quitarDocumento(clave)"
+                  class="shrink-0 text-danger hover:bg-danger/10 rounded p-1.5" title="Quitar documento">
+                  <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                </button>
+              </div>
+            }
+          }
+          <div class="pt-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Agregar / reemplazar documento</label>
+            <input type="file" accept=".pdf,image/*" (change)="onDocumentoSeleccionado($event)"
+              class="form-input w-full" [disabled]="subiendoDoc()">
+            @if (subiendoDoc()) {
+              <p class="mt-1 text-xs text-default-400 flex items-center gap-1.5">
+                <span class="size-3 animate-spin inline-block"><ng-icon name="lucideLoader"></ng-icon></span> Subiendo...
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+          @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Guardar Cambios }
+        </button>
+        <a routerLink="/cenefco/inscripciones" class="btn bg-default-200 text-default-700">Cancelar</a>
+      </div>
+    </form>
+  }
+</main>

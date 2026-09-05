@@ -1,0 +1,96 @@
+<div>
+    <div id="theme-customization" class="hs-overlay hs-overlay-open:translate-x-0 hidden bg-card dark:bg-default-100 hs-overlay-open:flex flex-col translate-x-full rtl:-translate-x-full fixed inset-y-0 end-0 bottom-0 transition-all duration-300 transform max-w-sm w-full z-80 overflow-hidden">
+        <div class="min-h-16 flex items-center text-default-600 border-b border-dashed border-default-900/10 px-6 gap-3">
+            <h5 class="text-base grow">Theme Settings</h5>
+
+            <button (click)="toggleFullscreen()" class="btn size-9 rounded-full btn-sm hover:bg-default-150 group" id="fullscreenBtn" data-toggle="fullscreen" aria-label="Full Screen">
+                <div class="size-5 group-[.fullscreen-active]:hidden"><ng-icon name="lucideFullscreen"></ng-icon></div>
+                <div class="size-5 hidden group-[.fullscreen-active]:inline-block"> <ng-icon name="lucideMinimize"></ng-icon></div>
+            </button>
+
+            <button type="button" data-hs-overlay="#theme-customization" class="btn size-9 rounded-full btn-sm hover:bg-default-150">
+                <div class="size-4 text-xl"><ng-icon name="tablerX"></ng-icon></div>
+            </button>
+        </div>
+
+        <ngx-simplebar class="h-full flex-grow overflow-y-auto">
+            <div class="divide-y divide-dashed divide-default-200">
+                <div class="p-6">
+                    <h5 class="font-semibold text-sm mb-3">Sidenav View</h5>
+                    <div class="grid grid-cols-3 gap-3">
+                        @for (item of sidenavOptions; track $index) {
+                        <div class="card-radio">
+                            <input class="hidden" type="radio" name="data-sidenav-size" [id]="item.id" [value]="item.value" (change)="setSidenav(item.value)" [checked]="isSidenavActive(item.value)" />
+
+                            <label class="form-label" [for]="item.id">
+                                <span class="flex bg-default-100 h-16 overflow-hidden border border-default-200 rounded-md">
+
+                                    <div [innerHTML]="item.imageui"></div>
+
+                                    <span class="flex flex-col flex-auto border-default-200">
+                                        <span class="h-3 bg-default-100">
+                                            <span [innerHTML]="item.imageui2"></span>
+                                        </span>
+                                        <span class="flex flex-auto border-t border-default-200 bg-default-50"></span>
+                                    </span>
+
+                                </span>
+                                @if(isSidenavActive(item.value)){
+                                 <div class="size-5 absolute bottom-2 end-2 text-success text-xl"><ng-icon name="tablerCircleCheckFill"></ng-icon></div>
+                                }
+                            </label>
+                            <div class="mt-1 text-md font-medium text-center text-default-600">{{item.label}}</div>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h5 class="font-semibold text-sm mb-3">Theme Mode</h5>
+                    <div class="flex gap-2">
+                        @for (option of themeOptions; track option.id) {
+                        <div>
+                            <input class="hidden" type="radio" name="data-theme" [id]="option.id" [value]="option.value" (change)="setTheme(option.value)" [checked]="isThemeActive(option.value)" />
+                            <label class="form-label btn bg-default-150" [for]="option.id">{{ option.label }}</label>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h5 class="font-semibold text-sm mb-3">Direction</h5>
+
+                    <div class="flex gap-2">
+                        @for (option of directionOptions; track option.id) {
+                        <div>
+                            <input class="hidden" type="radio" name="dir" [id]="option.id" [value]="option.value" (change)="setDirection(option.value)" [checked]="isDirectionActive(option.value)" />
+                            <label class="form-label btn bg-default-150" [for]="option.id">{{ option.label }}</label>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h5 class="font-semibold text-sm mb-3">Sidenav Color</h5>
+                    <div class="flex gap-2">
+                        @for (option of menuColorOptions; track option.id) {
+                        <div>
+                            <input class="hidden" type="radio" name="data-sidenav-color" [id]="option.id" [value]="option.value" (change)="setMenuColor(option.value)" [checked]="isMenuColorActive(option.value)" />
+                            <label class="form-label btn bg-default-150" [for]="option.id">{{ option.label }}</label>
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </ngx-simplebar>
+
+        <div class="p-4 flex border-t border-dashed border-default-900/10">
+            <div class="flex w-full gap-4">
+
+                <button type="button" class="btn bg-default-150 grow" (click)="reset()">Reset</button>
+
+                <a href="https://1.envato.market/tailwick-tailwind" target="_blank" class="btn bg-primary text-white grow">Buy Now</a>
+            </div>
+        </div>
+    </div>
+</div>

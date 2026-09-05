@@ -1,0 +1,54 @@
+<main>
+  <app-page-title title="Nueva Carta" subtitle="Cartas" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos de la Carta</h4></div>
+      <div class="p-6">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Señor(a)</label>
+            <input type="text" formControlName="nombresenor" class="form-input w-full" placeholder="Nombre del destinatario">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Título</label>
+            <input type="text" formControlName="nombretitulo" class="form-input w-full" placeholder="Ej: Lic., Dr., Ing.">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID de Usuario</label>
+            <input type="number" formControlName="id_us" class="form-input w-full" placeholder="ID del estudiante/usuario">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">ID de Plan</label>
+            <input type="number" formControlName="id_plan" class="form-input w-full" placeholder="ID del plan académico">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 1</label>
+            <textarea formControlName="textocarta1" rows="4" class="form-input w-full" placeholder="Primer bloque de texto de la carta..."></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 2</label>
+            <textarea formControlName="textocarta2" rows="4" class="form-input w-full"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Texto Sección 3</label>
+            <textarea formControlName="textocarta3" rows="3" class="form-input w-full"></textarea>
+          </div>
+          <div class="md:col-span-2 flex items-center gap-3">
+            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+              @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... }
+              @else { Guardar Carta }
+            </button>
+            <a routerLink="/cenefco/cartas" class="btn bg-default-200 text-default-700">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

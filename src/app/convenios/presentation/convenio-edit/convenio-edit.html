@@ -1,0 +1,202 @@
+﻿<main>
+  <app-page-title title="Editar Convenio" subtitle="Convenios" />
+  <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card">
+      <div class="card-header"><h4 class="card-title">Datos del Convenio</h4></div>
+      <div class="p-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Nombre del Convenio <span class="text-danger">*</span></label>
+              <input type="text" formControlName="nombre" class="form-input w-full">
+              @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) { <p class="text-danger text-xs mt-1">El nombre es requerido</p> }
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Institución</label>
+              <input type="text" formControlName="institucion" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Tipo de Convenio</label>
+              <select formControlName="tipo" class="form-input w-full">
+                <option value="">— Sin especificar —</option>
+                <option value="Marco">Marco</option>
+                <option value="Específico">Específico</option>
+                <option value="Interinstitucional">Interinstitucional</option>
+                <option value="Académico">Académico</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Responsable</label>
+              <input type="text" formControlName="responsable" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Email de Contacto</label>
+              <input type="email" formControlName="contacto_email" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Teléfono de Contacto</label>
+              <input type="text" formControlName="contacto_telefono" class="form-input w-full">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Inicio</label>
+              <input type="date" formControlName="fecha_inicio" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Fin <span class="text-default-400 text-xs">(vacío = indefinido)</span></label>
+              <input type="date" formControlName="fecha_fin" class="form-input w-full">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-2">
+                Logo / Imagen
+                <span class="font-normal text-default-400 text-xs ms-1">(opcional, máx. 5 MB — JPG, PNG, WEBP)</span>
+              </label>
+              @if (logoPreview()) {
+                
+                <div class="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <img [src]="logoPreview()" alt="Vista previa" class="h-16 w-16 object-contain rounded border border-default-200 bg-white flex-shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-default-700 truncate">{{ logoFile()?.name }}</p>
+                    <p class="text-xs text-default-400">Nueva imagen — reemplazará la actual</p>
+                  </div>
+                  <button type="button" (click)="quitarLogo()" class="size-6 text-default-400 hover:text-danger flex-shrink-0">
+                    <ng-icon name="lucideX"></ng-icon>
+                  </button>
+                </div>
+              } @else if (logoActual() && !quitarLogoFlag()) {
+                
+                <div class="flex items-center gap-3 p-3 bg-success/5 border border-success/20 rounded-lg">
+                  <img [src]="'/storage/' + logoActual()" alt="Logo actual"
+                       class="h-16 w-16 object-contain rounded border border-default-200 bg-white flex-shrink-0"
+                       (error)="$any($event.target).style.display='none'" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-default-700 truncate">{{ logoActual() }}</p>
+                    <label class="text-xs text-primary cursor-pointer hover:underline mt-0.5 block">
+                      Reemplazar imagen
+                      <input type="file" accept="image/*" class="hidden" (change)="onLogoChange($event)" />
+                    </label>
+                  </div>
+                  <button type="button" (click)="quitarLogo()" class="size-6 text-default-400 hover:text-danger flex-shrink-0" title="Quitar imagen">
+                    <ng-icon name="lucideTrash2"></ng-icon>
+                  </button>
+                </div>
+              } @else {
+                
+                <label class="flex items-center gap-3 p-4 border-2 border-dashed border-default-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="size-5 text-default-400"><ng-icon name="lucideImage"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-medium text-default-600">Subir imagen</p>
+                    <p class="text-xs text-default-400">Haz clic para seleccionar</p>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden" (change)="onLogoChange($event)" />
+                </label>
+              }
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-2">
+                Documento del Convenio
+                <span class="font-normal text-default-400 text-xs ms-1">(opcional — PDF, Word, imagen, máx. 20 MB)</span>
+              </label>
+              @if (documentoFile()) {
+                
+                <div class="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div class="size-4 text-danger flex-shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                  <span class="text-sm text-default-700 truncate flex-1">{{ documentoFile()!.name }}</span>
+                  <button type="button" (click)="quitarDocumento()" class="size-5 text-default-400 hover:text-danger flex-shrink-0">
+                    <ng-icon name="lucideX"></ng-icon>
+                  </button>
+                </div>
+              } @else if (docActual() && !quitarDocFlag()) {
+                
+                <div class="flex items-center gap-2 p-3 bg-success/5 border border-success/20 rounded-lg">
+                  <div class="size-4 text-danger flex-shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+                  <a [href]="'/storage/' + docActual()" target="_blank"
+                     class="text-sm text-primary hover:underline truncate flex-1">
+                    Ver documento actual
+                  </a>
+                  <label class="text-xs text-default-500 cursor-pointer hover:text-primary flex-shrink-0">
+                    Reemplazar
+                    <input type="file" accept=".pdf,.doc,.docx,image/*" class="hidden" (change)="onDocumentoChange($event)" />
+                  </label>
+                  <button type="button" (click)="quitarDocumento()"
+                          class="size-5 text-default-400 hover:text-danger flex-shrink-0 ms-1" title="Quitar documento">
+                    <ng-icon name="lucideTrash2"></ng-icon>
+                  </button>
+                </div>
+              } @else {
+                
+                <label class="flex items-center gap-3 p-4 border-2 border-dashed border-default-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                  <div class="size-5 text-default-400"><ng-icon name="lucideUpload"></ng-icon></div>
+                  <div>
+                    <p class="text-sm font-medium text-default-600">Subir documento</p>
+                    <p class="text-xs text-default-400">PDF, Word (.doc/.docx), JPG, PNG</p>
+                  </div>
+                  <input type="file" accept=".pdf,.doc,.docx,image/*" class="hidden" (change)="onDocumentoChange($event)" />
+                </label>
+              }
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-default-700 mb-1">Descripción</label>
+              <textarea formControlName="descripcion" rows="4" class="form-input w-full"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+              <select formControlName="estado" class="form-input w-full">
+                <option value="activo">Activo</option>
+                <option value="vencido">Vencido</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Orden</label>
+              <input type="number" formControlName="orden" class="form-input w-full" min="0">
+            </div>
+
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+                @if (submitting()) { <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando... } @else { Actualizar Convenio }
+              </button>
+              <a routerLink="/cenefco/convenios" class="btn bg-default-200 text-default-700">Cancelar</a>
+            </div>
+          </form>
+
+          @if (convenio()?.planes?.length) {
+            <div class="mt-8 border-t border-default-200 pt-6">
+              <h5 class="text-sm font-semibold text-default-700 mb-3">Cursos asociados a este convenio</h5>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-default-200">
+                  <thead class="bg-default-100"><tr class="text-xs text-default-600">
+                    <th class="px-3 py-2 text-start">ID</th>
+                    <th class="px-3 py-2 text-start">Título del Plan</th>
+                    <th class="px-3 py-2 text-start">Año</th>
+                    <th class="px-3 py-2 text-start">Costo</th>
+                  </tr></thead>
+                  <tbody class="divide-y divide-default-200">
+                    @for (p of convenio()?.planes; track p.id_plan) {
+                      <tr class="text-sm">
+                        <td class="px-3 py-2 text-default-400">{{ p.id_plan }}</td>
+                        <td class="px-3 py-2 font-medium">{{ p.titulo }}</td>
+                        <td class="px-3 py-2 text-default-500">{{ p.anio || '—' }}</td>
+                        <td class="px-3 py-2 text-default-500">{{ p.costo || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</main>

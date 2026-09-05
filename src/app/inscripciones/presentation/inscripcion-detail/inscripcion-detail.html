@@ -1,0 +1,1707 @@
+<main>
+  <app-page-title title="Detalle de Inscripción" subtitle="Inscripciones" />
+
+  @if (loading()) {
+  <div class="flex items-center justify-center py-24 text-default-400 gap-3">
+    <div class="size-6 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+    Cargando detalle...
+  </div>
+  } @else if (forbidden()) {
+  <div class="flex items-center justify-center py-24 text-warning gap-3">
+    <div class="size-6"><ng-icon name="lucideLock"></ng-icon></div>
+    No cuenta con los permisos para ver este módulo. Contáctese con el administrador.
+  </div>
+  } @else if (error()) {
+  <div class="flex items-center justify-center py-24 text-danger gap-3">
+    <div class="size-6"><ng-icon name="lucideCircleX"></ng-icon></div>
+    No se pudo cargar la inscripción.
+  </div>
+  } @else if (detalle(); as d) {
+
+  <div class="screen-only">
+
+    <div class="flex items-center justify-between mb-5">
+      @if (d.inscripcion.programa_slug) {
+      <a [routerLink]="['/cenefco/cursos']" class="btn btn-sm bg-primary text-white flex items-center gap-1.5">
+        <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver a cursos
+      </a>
+      } @else {
+      <a routerLink="/cenefco/inscripciones" class="btn btn-sm bg-primary text-white flex items-center gap-1.5">
+        <div class="size-4"><ng-icon name="lucideArrowLeft"></ng-icon></div>
+        Volver al listado
+      </a>
+      }
+      <div class="flex items-center gap-2">
+        <a [routerLink]="['/cenefco/inscripcion-edit', d.inscripcion.id_ins]"
+          class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+          Editar Inscripción
+        </a>
+        <button type="button" (click)="abrirPago()" class="btn btn-sm bg-success text-white flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
+          Registrar Pago
+        </button>
+        @if (canAprobar()) {
+        <button type="button" (click)="toggleEnvioCertificado()"
+          class="btn btn-sm bg-blue-600 text-white flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucideTruck"></ng-icon></div>
+          Registrar Envíos
+        </button>
+        }
+        @if (!reglamento() && !reglamentoLoading()) {
+        <button type="button" (click)="cargarReglamento()"
+          class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucideFileEdit"></ng-icon></div>
+          Editar Reglamento
+        </button>
+        }
+        @if (reglamento() && !showEditor()) {
+        <button type="button" (click)="abrirEditor()"
+          class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+          Editar Reglamento
+        </button>
+        }
+        @if (reglamentoLoading()) {
+        <div class="flex items-center gap-1.5 text-sm text-default-400">
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          Cargando...
+        </div>
+        }
+        <button type="button" (click)="descargarPdf()" [disabled]="descargandoPdf()"
+          class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
+          @if (descargandoPdf()) {
+          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+          Generando...
+          } @else {
+          <div class="size-4"><ng-icon name="lucideFileDown"></ng-icon></div>
+          Generar PDF
+          }
+        </button>
+        <button type="button" (click)="imprimir()"
+          class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
+          <div class="size-4"><ng-icon name="lucidePrinter"></ng-icon></div>
+          Imprimir PDF
+        </button>
+      </div>
+    </div>
+
+    @if (showEnviarCorreo()) {
+    <div class="card mb-5 border border-primary/30">
+      <div class="card-header border-b border-primary/20">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-primary"><ng-icon name="lucideMail"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-primary">Enviar Comprobante por Correo</h6>
+        </div>
+        <button type="button" (click)="cerrarEnviarCorreo()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs text-default-500">
+          Se enviará el comprobante de pago + código de conducta en PDF al correo indicado.
+        </p>
+        <div>
+          <label class="block text-xs font-semibold text-default-700 mb-1.5">Correo electrónico</label>
+          <input type="email" class="form-input w-full text-sm" placeholder="estudiante@correo.com"
+            [ngModel]="correoDestino()" (ngModelChange)="correoDestino.set($event)" />
+          @if (!d.inscripcion.est_email && !d.inscripcion.estudiante_email) {
+          <p class="text-xs text-warning mt-1.5">
+            El estudiante no tiene un correo registrado — ingrese uno manualmente.
+          </p>
+          }
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" (click)="cerrarEnviarCorreo()"
+            class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="enviarPorCorreo()" [disabled]="enviandoCorreo()"
+            class="btn btn-sm bg-primary text-white flex items-center gap-1.5 disabled:opacity-60">
+            @if (enviandoCorreo()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Enviar
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showPago()) {
+    <div class="card mb-5 border border-success/30 bg-success/5">
+      <div class="card-header border-b border-success/20">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-success"><ng-icon name="lucideBanknote"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-success">{{ pagoEditandoId() ? 'Editar Pago' : 'Registrar Pago' }}</h6>
+        </div>
+        <button type="button" (click)="cerrarPago()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-4">
+        <label
+          class="flex items-center gap-3 cursor-pointer w-full rounded-lg border-2 px-4 py-3 mb-4 transition-colors"
+          [class.border-amber-400]="pagoSinComprobante()" [class.bg-amber-50]="pagoSinComprobante()"
+          [class.border-default-200]="!pagoSinComprobante()" [class.bg-default-50]="!pagoSinComprobante()">
+          <input type="checkbox" class="form-checkbox size-5 shrink-0" [checked]="pagoSinComprobante()"
+            (change)="toggleSinComprobante()" />
+          <div class="flex items-center gap-2">
+            <div class="size-5 text-amber-600 shrink-0"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
+            <span class="text-sm font-semibold" [class.text-amber-800]="pagoSinComprobante()"
+              [class.text-default-700]="!pagoSinComprobante()">
+              No tiene N° Boleta / Referencia
+            </span>
+          </div>
+        </label>
+        @if (pagoSinComprobante()) {
+        <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4 -mt-2">
+          Se registrará el pago sin N° de boleta ni archivo adjunto. Debe indicar el Banco / Canal para dejar
+          constancia.
+        </p>
+        }
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Monto (Bs.) <span
+                class="text-danger">*</span></label>
+            <input type="number" min="0.01" step="0.01" [attr.max]="montoMaximoPago()" [ngModel]="pagoMonto()"
+              (ngModelChange)="pagoMonto.set($event)" class="form-input w-full" placeholder="0.00" />
+            @if (montoMaximoPago() != null) {
+            <p class="text-xs text-default-400 mt-1">Saldo disponible: Bs. {{ montoMaximoPago() | number:'1.2-2' }}</p>
+            }
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Método de Pago <span
+                class="text-danger">*</span></label>
+            <select [ngModel]="pagoMetodo()" (ngModelChange)="pagoMetodo.set($event)" class="form-input w-full"
+              [disabled]="!!pagoEditandoId()">
+              @for (m of metodosPago; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Fecha</label>
+            <input type="date" [ngModel]="pagoFecha()" (ngModelChange)="pagoFecha.set($event)"
+              class="form-input w-full" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">N° Boleta / Referencia
+              @if (!pagoSinComprobante()) {
+              <span class="text-danger">*</span>
+              }
+            </label>
+            <input type="text" [ngModel]="pagoBoleta()" (ngModelChange)="pagoBoleta.set($event)"
+              [disabled]="pagoSinComprobante()" class="form-input w-full disabled:opacity-50 disabled:bg-default-100"
+              placeholder="Ej: BOL-001-2026" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Banco / Canal
+              @if (pagoSinComprobante()) {
+              <span class="text-danger">*</span>
+              }
+            </label>
+            <select [ngModel]="pagoTipoBanco()" (ngModelChange)="pagoTipoBanco.set($event)" class="form-input w-full">
+              <option [ngValue]="null">— No especificado —</option>
+              @for (tb of tiposBanco(); track tb.id) {
+              <option [ngValue]="tb.id">{{ tb.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-default-600 mb-1">Observación</label>
+            <input type="text" [ngModel]="pagoObs()" (ngModelChange)="pagoObs.set($event)" class="form-input w-full"
+              placeholder="Opcional" />
+          </div>
+          <div class="lg:col-span-3">
+            <label class="block text-xs font-medium text-default-600 mb-1">Comprobante de pago (PDF o imagen)
+              @if (!pagoEditandoId() && !pagoSinComprobante()) {
+              <span class="text-danger">*</span>
+              } @else if (pagoEditandoId() && !pagoSinComprobante()) {
+              <span class="text-default-400 font-normal">(opcional — solo si necesitas reemplazarlo)</span>
+              }
+            </label>
+            <input type="file" accept=".pdf,image/*" (change)="onPagoArchivoSeleccionado($event)"
+              [disabled]="pagoSinComprobante()" class="form-input w-full disabled:opacity-50 disabled:bg-default-100" />
+          </div>
+        </div>
+        @if (pagoIdFechapago()) {
+        <p class="text-xs text-default-500 mt-3 bg-default-50 border border-default-200 rounded px-3 py-2">
+          Cuota vinculada: #{{ pagoIdFechapago() }}
+        </p>
+        }
+
+        <div class="mt-4 border-t border-default-200 pt-3">
+          <label class="flex items-center gap-2 cursor-pointer w-fit">
+            <input type="checkbox" class="form-checkbox" [checked]="pagoAplicaDescuento()"
+              (change)="toggleDescuentoPago()" />
+            <span class="text-xs font-medium text-default-700">¿Este pago incluye un descuento?</span>
+          </label>
+
+          @if (pagoAplicaDescuento()) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 bg-amber-50/50 border border-amber-200 rounded-lg p-3">
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Monto del descuento (Bs.) <span
+                  class="text-danger">*</span></label>
+              <input type="number" min="0.01" step="0.01" [ngModel]="pagoMontoDescuento()"
+                (ngModelChange)="pagoMontoDescuento.set($event)" class="form-input w-full" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Motivo <span
+                  class="text-danger">*</span></label>
+              <input type="text" list="motivos-descuento-sugeridos" [ngModel]="pagoMotivoDescuento()"
+                (ngModelChange)="pagoMotivoDescuento.set($event)" class="form-input w-full"
+                placeholder="Ej: Cliente antiguo" />
+              <datalist id="motivos-descuento-sugeridos">
+                @for (m of motivosDescuentoSugeridos; track m) {
+                <option [value]="m"></option>
+                }
+              </datalist>
+            </div>
+          </div>
+          }
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" (click)="cerrarPago()" class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarPago()" [disabled]="guardandoPago()"
+            class="btn btn-sm bg-success text-white hover:bg-success/90 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardandoPago()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            {{ pagoEditandoId() ? 'Guardar Cambios' : 'Guardar Pago' }}
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showEnvioCertificado()) {
+    <div class="card mb-5 border border-blue-200 bg-blue-50/40">
+      <div class="card-header border-b border-blue-200">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-blue-600"><ng-icon name="lucideTruck"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-blue-800">Registrar Envío de Certificado (Courier/Encomienda)</h6>
+        </div>
+        <button type="button" (click)="toggleEnvioCertificado()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Ciudad de destino <span
+                class="text-danger">*</span></label>
+            <input type="text" [ngModel]="envioCiudad()" (ngModelChange)="envioCiudad.set($event)"
+              class="form-input w-full" placeholder="Ej: Santa Cruz" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Fecha de envío <span
+                class="text-danger">*</span></label>
+            <input type="date" [ngModel]="envioFecha()" (ngModelChange)="envioFecha.set($event)"
+              class="form-input w-full" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Costo (Bs., opcional)</label>
+            <input type="number" min="0" step="0.01" [ngModel]="envioCosto()"
+              (ngModelChange)="envioCosto.set(($event !== null && $event !== '') ? +$event : null)" class="form-input w-full" placeholder="0.00" />
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-default-600 mb-1">Aclaraciones (opcional)</label>
+            <input type="text" [ngModel]="envioAclaraciones()" (ngModelChange)="envioAclaraciones.set($event)"
+              class="form-input w-full" placeholder="Observaciones sobre el envío..." />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Imagen de la guía <span
+                class="text-danger">*</span></label>
+            <input type="file" accept="image/*,.pdf" (change)="onEnvioArchivoSeleccionado($event)"
+              class="form-input w-full" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" (click)="toggleEnvioCertificado()"
+            class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarEnvioCertificado()" [disabled]="guardandoEnvio()"
+            class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardandoEnvio()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Guardar Envío
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showEditor()) {
+    <div class="card mb-5 border border-violet-200">
+      <div class="card-header border-b border-violet-200">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-violet-600"><ng-icon name="lucideFileEdit"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-violet-900">Editar Reglamento — {{ d.inscripcion.materia_nombre }}</h6>
+          <span class="text-xs text-default-400 ms-1">(Use Shift+Enter para separar ítems por línea)</span>
+        </div>
+        <button type="button" (click)="cerrarEditor()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+
+        <div>
+          <label class="block text-xs font-semibold text-default-700 mb-1.5">
+            Texto de Bienvenida
+            <span class="font-normal text-default-400 ms-1">(usa &#123;nombre&#125; y &#123;programa&#125; como
+              variables)</span>
+          </label>
+          <textarea rows="3" class="form-input w-full resize-none text-sm"
+            placeholder="Estimado/a {nombre}, es un honor darle la bienvenida al programa {programa}..."
+            [ngModel]="getDraft('bienvenida')" (ngModelChange)="setDraft('bienvenida', $event)"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @for (s of secciones; track s.campo) {
+          <div>
+            <label class="block text-xs font-semibold text-default-700 mb-1.5">
+              {{ s.icono }} {{ s.titulo }}
+            </label>
+            <textarea rows="5" class="form-input w-full text-xs" placeholder="Un ítem por línea..."
+              [ngModel]="getDraft(s.campo)" (ngModelChange)="setDraft(s.campo, $event)"></textarea>
+          </div>
+          }
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" (click)="cerrarEditor()" class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardar()" [disabled]="guardando()"
+            class="btn btn-sm bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardando()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Guardar Reglamento
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showAnticipo()) {
+    <div class="card mb-5 border border-amber-200 bg-amber-50/40">
+      <div class="card-header border-b border-amber-200">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-amber-600"><ng-icon name="lucideWallet"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-amber-800">Registrar Anticipo / Reserva</h6>
+        </div>
+        <button type="button" (click)="toggleAnticipo()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Monto (Bs.) <span
+                class="text-danger">*</span></label>
+            <input type="number" min="0.01" step="0.01" [ngModel]="anticipoMonto()"
+              (ngModelChange)="anticipoMonto.set($event)" class="form-input w-full" placeholder="0.00" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">N° Boleta Bancaria</label>
+            <input type="text" [ngModel]="anticipoBoleta()" (ngModelChange)="anticipoBoleta.set($event)"
+              class="form-input w-full" placeholder="Opcional" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Fecha Depósito</label>
+            <input type="date" [ngModel]="anticipoFecha()" (ngModelChange)="anticipoFecha.set($event)"
+              class="form-input w-full" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Observación</label>
+            <input type="text" [ngModel]="anticipoObs()" (ngModelChange)="anticipoObs.set($event)"
+              class="form-input w-full" placeholder="Opcional" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" (click)="toggleAnticipo()"
+            class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarAnticipo()" [disabled]="guardandoAnticipo()"
+            class="btn btn-sm bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardandoAnticipo()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Guardar Anticipo
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showDevolucion()) {
+    <div class="card mb-5 border border-rose-200 bg-rose-50/40">
+      <div class="card-header border-b border-rose-200">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-rose-600"><ng-icon name="lucideUndo2"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-rose-800">Registrar Solicitud de Devolución</h6>
+        </div>
+        <button type="button" (click)="toggleDevolucion()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Monto a Devolver (Bs.) <span
+                class="text-danger">*</span></label>
+            <input type="number" min="0.01" step="0.01" [ngModel]="devolucionMonto()"
+              (ngModelChange)="devolucionMonto.set($event)" class="form-input w-full" placeholder="0.00" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Documento de Respaldo</label>
+            @if (devolucionDocUrl()) {
+            <div class="flex items-center gap-2 p-2 border border-default-200 rounded-lg bg-white">
+              <div class="size-4 text-primary shrink-0"><ng-icon name="lucideFileText"></ng-icon></div>
+              <span class="text-xs text-default-700 truncate flex-1">{{ nombreArchivoDevolucion() }}</span>
+              <button type="button" (click)="quitarDocDevolucion()" class="text-danger hover:text-red-700">
+                <div class="size-3.5"><ng-icon name="lucideX"></ng-icon></div>
+              </button>
+            </div>
+            } @else {
+            <label
+              class="flex items-center gap-2 p-2 border border-dashed border-default-300 rounded-lg cursor-pointer hover:bg-default-50">
+              <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="subirDocDevolucion($event)" />
+              @if (subiendoDoc()) {
+              <div class="size-4 animate-spin text-primary"><ng-icon name="lucideLoader"></ng-icon></div>
+              <span class="text-xs text-default-500">Subiendo...</span>
+              } @else {
+              <div class="size-4 text-default-400"><ng-icon name="lucideUpload"></ng-icon></div>
+              <span class="text-xs text-default-500">Adjuntar solicitud (PDF/imagen)</span>
+              }
+            </label>
+            }
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1">Motivo de la Devolución <span
+              class="text-danger">*</span></label>
+          <textarea rows="3" [ngModel]="devolucionMotivo()" (ngModelChange)="devolucionMotivo.set($event)"
+            class="form-input w-full resize-none"
+            placeholder="Describa el motivo por el cual se solicita la devolución..."></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="toggleDevolucion()"
+            class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarDevolucion()" [disabled]="guardandoDevolucion() || subiendoDoc()"
+            class="btn btn-sm bg-rose-500 text-white hover:bg-rose-600 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardandoDevolucion()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Guardar Devolución
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showCompromiso()) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="toggleCompromiso()">
+      <div class="card w-full max-w-lg max-h-[90vh] flex flex-col border border-teal-200" (click)="$event.stopPropagation()">
+        <div class="card-header border-b border-teal-200">
+          <div class="flex items-center gap-2">
+            <div class="size-4 text-teal-600"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+            <h6 class="text-sm font-semibold text-teal-800">Registrar Compromiso de Cobro</h6>
+          </div>
+          <button type="button" (click)="toggleCompromiso()" class="text-default-400 hover:text-default-700">
+            <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+          </button>
+        </div>
+        <div class="card-body overflow-y-auto p-4 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Fecha comprometida <span
+                  class="text-danger">*</span></label>
+              <input type="date" [attr.min]="hoyIsoAttr" [ngModel]="compromisoFecha()"
+                (ngModelChange)="compromisoFecha.set($event)" class="form-input w-full" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Hora</label>
+              <input type="time" [ngModel]="compromisoHora()"
+                (ngModelChange)="compromisoHora.set($event)" class="form-input w-full" placeholder="Opcional" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Monto comprometido (Bs.)</label>
+              <input type="number" min="0.01" step="0.01" [ngModel]="compromisoMonto()"
+                (ngModelChange)="compromisoMonto.set($event)" class="form-input w-full" placeholder="Opcional" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Observación</label>
+            <textarea rows="2" [ngModel]="compromisoObs()" (ngModelChange)="compromisoObs.set($event)"
+              class="form-input w-full resize-none" placeholder="Ej: dijo que cobra su sueldo el 30..."></textarea>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" (click)="toggleCompromiso()"
+              class="btn btn-sm border border-default-300 text-default-600">
+              Cancelar
+            </button>
+            <button type="button" (click)="guardarCompromiso()" [disabled]="guardandoCompromiso()"
+              class="btn btn-sm bg-teal-600 text-white hover:bg-teal-700 flex items-center gap-1.5 disabled:opacity-60">
+              @if (guardandoCompromiso()) {
+              <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              }
+              Guardar Compromiso
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (showReprogramarCompromiso()) {
+    <div class="card mb-5 border border-teal-200 bg-teal-50/40">
+      <div class="card-header border-b border-teal-200">
+        <div class="flex items-center gap-2">
+          <div class="size-4 text-teal-600"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+          <h6 class="text-sm font-semibold text-teal-800">Reprogramar Compromiso de Cobro</h6>
+        </div>
+        <button type="button" (click)="cerrarReprogramarCompromiso()" class="text-default-400 hover:text-default-700">
+          <div class="size-4"><ng-icon name="lucideX"></ng-icon></div>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Nueva fecha <span
+                class="text-danger">*</span></label>
+            <input type="date" [attr.min]="hoyIsoAttr" [ngModel]="reprogramarFecha()"
+              (ngModelChange)="reprogramarFecha.set($event)" class="form-input w-full" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Hora</label>
+            <input type="time" [ngModel]="reprogramarHora()"
+              (ngModelChange)="reprogramarHora.set($event)" class="form-input w-full" placeholder="Opcional" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-600 mb-1">Motivo <span
+                class="text-danger">*</span></label>
+            <select [ngModel]="reprogramarMotivo()" (ngModelChange)="reprogramarMotivo.set($event)"
+              class="form-input w-full">
+              @for (m of motivosReprogramacion; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-default-600 mb-1">Observación</label>
+          <textarea rows="2" [ngModel]="reprogramarObs()" (ngModelChange)="reprogramarObs.set($event)"
+            class="form-input w-full resize-none" placeholder="Opcional"></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="cerrarReprogramarCompromiso()"
+            class="btn btn-sm border border-default-300 text-default-600">
+            Cancelar
+          </button>
+          <button type="button" (click)="guardarReprogramarCompromiso()" [disabled]="guardandoReprogramar()"
+            class="btn btn-sm bg-teal-600 text-white hover:bg-teal-700 flex items-center gap-1.5 disabled:opacity-60">
+            @if (guardandoReprogramar()) {
+            <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            }
+            Guardar Nueva Fecha
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <div class="space-y-5">
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideUserRound"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Datos del Estudiante</h6>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <div
+                class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0">
+                {{ d.inscripcion.estudiante_nombre ? d.inscripcion.estudiante_nombre[0].toUpperCase() : '?' }}
+              </div>
+              <div>
+                <p class="font-semibold text-default-800">{{ d.inscripcion.estudiante_nombre || '—' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideFileText"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Documentos del Estudiante</h6>
+            </div>
+          </div>
+          <div class="p-4">
+            @if (d.documentos_estudiante.length === 0) {
+            <p class="text-sm text-default-400 text-center py-2">
+              Este estudiante no tiene documentos adjuntos registrados en ningún formulario.
+            </p>
+            } @else {
+            <div class="flex flex-col gap-4">
+              @for (grupo of d.documentos_estudiante; track grupo.origen + '-' + grupo.origen_id) {
+              <div class="border border-default-200 rounded-lg p-3">
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+                      [class]="grupo.origen === 'diplomado' ? 'bg-purple-100 text-purple-700' : 'bg-sky-100 text-sky-700'">
+                      {{ grupo.origen === 'diplomado' ? 'Diplomado' : 'Curso' }}
+                    </span>
+                    <span class="text-sm font-medium text-default-700 truncate">{{ grupo.programa || '—' }}</span>
+                  </div>
+                  @if (grupo.origen === 'diplomado') {
+                  <a [routerLink]="['/cenefco/inscripcion-diplomado-detail', grupo.origen_id]"
+                    class="text-xs text-primary hover:underline shrink-0" title="Ver y/o reemplazar estos documentos">
+                    Gestionar
+                  </a>
+                  }
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  @for (archivo of grupo.archivos | keyvalue; track archivo.key) {
+                  <a [href]="archivo.value" target="_blank"
+                    class="flex items-center gap-1.5 text-xs bg-default-100 hover:bg-default-200 text-default-700 px-2.5 py-1.5 rounded-lg transition-colors">
+                    <div class="size-3.5 text-primary shrink-0"><ng-icon name="lucidePaperclip"></ng-icon></div>
+                    {{ archivo.key }}
+                  </a>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+
+        @if (d.inscripcion.campos_extra_resueltos && d.inscripcion.campos_extra_resueltos.length > 0) {
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideListChecks"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Datos del Formulario</h6>
+            </div>
+          </div>
+          <div class="p-4 space-y-2 text-sm">
+            @for (campo of d.inscripcion.campos_extra_resueltos; track campo.nombre_campo) {
+            <div class="flex justify-between gap-3">
+              <span class="text-default-400">{{ campo.etiqueta }}:</span>
+              <span class="text-default-700 font-medium text-end">{{ campo.valor }}</span>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideCreditCard"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Resumen Financiero</h6>
+            </div>
+          </div>
+          <div class="p-4 space-y-4">
+            @if (d.resumen.total_plan > 0) {
+            <div>
+              <div class="flex justify-between text-xs text-default-500 mb-1.5">
+                <span>Progreso de pago</span>
+                <span class="font-semibold">{{ porcentajePagado() }}%</span>
+              </div>
+              <div class="w-full bg-default-100 rounded-full h-2.5 overflow-hidden">
+                <div class="h-2.5 rounded-full transition-all" [class]="barraClass()"
+                  [style.width]="porcentajePagado() + '%'"></div>
+              </div>
+            </div>
+            }
+            @if (d.resumen.plan_no_asignado) {
+            @if (d.inscripcion.curso_costo_monto) {
+            <div>
+              <div class="flex justify-between text-xs text-default-500 mb-1.5">
+                <span>Progreso de pago (sobre costo del curso)</span>
+                <span class="font-semibold">{{ porcentajePagadoCosto() }}%</span>
+              </div>
+              <div class="w-full bg-default-100 rounded-full h-2.5 overflow-hidden">
+                <div class="h-2.5 rounded-full transition-all" [class]="barraClassCosto()"
+                  [style.width]="porcentajePagadoCosto() + '%'"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-success/5 border border-success/20 rounded-lg p-3 text-center">
+                <p class="text-base font-bold text-success">Bs. {{ d.resumen.total_pagado | number:'1.2-2' }}</p>
+                <p class="text-xs text-default-500 mt-0.5">Total pagado</p>
+              </div>
+              <div class="bg-danger/5 border border-danger/20 rounded-lg p-3 text-center">
+                <p class="text-base font-bold text-danger">Bs. {{ pendienteCosto() | number:'1.2-2' }}</p>
+                <p class="text-xs text-default-500 mt-0.5">Pendiente</p>
+              </div>
+            </div>
+            <p class="text-xs text-default-400 text-center">Costo del curso: Bs. {{ d.inscripcion.curso_costo_monto |
+              number:'1.2-2' }} — Inscripción directa desde el portal.</p>
+            } @else {
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+              <p class="text-sm font-semibold text-amber-700">Sin plan de pagos asignado</p>
+              <p class="text-xs text-default-500 mt-0.5">Inscripción directa desde el portal</p>
+            </div>
+            }
+            } @else {
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-success/5 border border-success/20 rounded-lg p-3 text-center">
+                <p class="text-base font-bold text-success">Bs. {{ d.resumen.total_pagado | number:'1.2-2' }}</p>
+                <p class="text-xs text-default-500 mt-0.5">Total pagado</p>
+              </div>
+              <div class="bg-danger/5 border border-danger/20 rounded-lg p-3 text-center">
+                <p class="text-base font-bold text-danger">Bs. {{ d.resumen.pendiente | number:'1.2-2' }}</p>
+                <p class="text-xs text-default-500 mt-0.5">Pendiente</p>
+              </div>
+            </div>
+            }
+            @if (d.resumen.total_anticipos > 0) {
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-amber-600"><ng-icon name="lucideWallet"></ng-icon></div>
+                <span class="text-xs text-amber-700 font-medium">Anticipo / Reserva</span>
+              </div>
+              <span class="text-sm font-bold text-amber-700">Bs. {{ d.resumen.total_anticipos | number:'1.2-2' }}</span>
+            </div>
+            }
+            @if (totalDescuentos() > 0) {
+            <div class="bg-violet-50 border border-violet-200 rounded-lg p-3 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="size-4 text-violet-600"><ng-icon name="lucideTag"></ng-icon></div>
+                <span class="text-xs text-violet-700 font-medium">Descuento aplicado</span>
+              </div>
+              <span class="text-sm font-bold text-violet-700">Bs. {{ totalDescuentos() | number:'1.2-2' }}</span>
+            </div>
+            }
+            <div class="text-center py-1">
+              <span class="text-sm font-semibold" [class]="estadoPagoClass()">{{ estadoPagoLabel() }}</span>
+              @if (d.resumen.total_plan > 0) {
+              <p class="text-xs text-default-400 mt-0.5">Plan total: Bs. {{ d.resumen.total_plan | number:'1.2-2' }}</p>
+              }
+            </div>
+            @if (d.plan) {
+            <div class="border-t border-default-100 pt-3 text-sm space-y-1.5">
+              <div class="flex justify-between">
+                <span class="text-default-400">Plan:</span>
+                <span class="text-default-700 font-medium text-end text-xs">{{ d.plan.titulo }}</span>
+              </div>
+              @if (d.plan.convenio) {
+              <div class="flex justify-between">
+                <span class="text-default-400">Convenio:</span>
+                <span class="text-default-700 text-xs">{{ d.plan.convenio }}</span>
+              </div>
+              }
+              <div class="flex justify-between">
+                <span class="text-default-400">N° Cuotas:</span>
+                <span class="text-default-700">{{ d.plan.nro_cuotas }}</span>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <div class="card border border-teal-200">
+          <div class="card-header border-b border-teal-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-teal-600"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-teal-800">Compromiso de Cobro</h6>
+            </div>
+            @if (d.compromiso_cobro) {
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+              [class]="estadoCompromisoClase(d.compromiso_cobro.estado)">
+              {{ estadoCompromisoLabel(d.compromiso_cobro.estado) }}
+            </span>
+            }
+          </div>
+          <div class="p-4">
+            @if (!d.compromiso_cobro) {
+            <div class="flex flex-col items-center justify-center py-6 text-default-400">
+              <div class="size-8 mb-2 opacity-40"><ng-icon name="lucideCalendarClock"></ng-icon></div>
+              <p class="text-sm text-center">Sin compromiso de pago registrado.</p>
+              @if (puedeCrearCompromiso) {
+              <button type="button" (click)="toggleCompromiso()"
+                class="mt-3 btn btn-sm bg-teal-600 text-white flex items-center gap-1.5">
+                <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+                Registrar compromiso
+              </button>
+              }
+            </div>
+            } @else {
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span class="text-default-400">Fecha comprometida:</span>
+                <span class="font-semibold text-default-800">
+                  {{ d.compromiso_cobro.fecha_compromiso | slice:0:10 }}
+                  @if (d.compromiso_cobro.hora_compromiso) {
+                  · {{ d.compromiso_cobro.hora_compromiso }}
+                  }
+                </span>
+              </div>
+              @if (d.compromiso_cobro.monto_comprometido) {
+              <div class="flex justify-between text-sm">
+                <span class="text-default-400">Monto:</span>
+                <span class="font-semibold text-default-800">Bs. {{ d.compromiso_cobro.monto_comprometido |
+                  number:'1.2-2' }}</span>
+              </div>
+              }
+              @if (d.compromiso_cobro.observacion) {
+              <p class="text-xs text-default-600 bg-default-50 border border-default-200 rounded px-3 py-2">
+                {{ d.compromiso_cobro.observacion }}
+              </p>
+              }
+              @if (d.compromiso_cobro.veces_reprogramado > 0) {
+              <button type="button" (click)="toggleHistorialCompromiso(d.compromiso_cobro.id)"
+                class="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800">
+                <div class="size-3 transition-transform" [class.rotate-90]="showHistorialCompromiso()">
+                  <ng-icon name="lucideChevronRight"></ng-icon>
+                </div>
+                Reprogramado {{ d.compromiso_cobro.veces_reprogramado }} vez(es) · ver historial
+              </button>
+              @if (showHistorialCompromiso()) {
+              <div class="pl-4 border-l-2 border-amber-200 space-y-2">
+                @if (cargandoHistorialCompromiso()) {
+                <p class="text-xs text-default-400">Cargando historial…</p>
+                } @else {
+                @for (log of historialCompromiso(); track log.id) {
+                <div class="text-xs">
+                  @if (log.tipo_evento === 'reprogramado') {
+                  <p class="text-default-700">
+                    <span class="font-semibold">{{ log.fecha_anterior | slice:0:10 }}</span>
+                    →
+                    <span class="font-semibold">{{ log.fecha_nueva | slice:0:10 }}</span>
+                    @if (log.motivo) {
+                    · {{ motivoReprogramacionLabel(log.motivo) }}
+                    }
+                  </p>
+                  } @else {
+                  <p class="text-default-700 capitalize">{{ log.tipo_evento }}</p>
+                  }
+                  @if (log.observacion) {
+                  <p class="text-default-500 italic">{{ log.observacion }}</p>
+                  }
+                  <p class="text-default-400">
+                    {{ log.registrado_por_nombre || 'Usuario #' + log.registrado_por }}
+                    @if (log.created_at) {
+                    · {{ log.created_at | slice:0:10 }} {{ log.created_at | slice:11:16 }}
+                    }
+                  </p>
+                </div>
+                } @empty {
+                <p class="text-xs text-default-400">Sin eventos registrados.</p>
+                }
+                }
+              </div>
+              }
+              }
+              @if (puedeEditarCompromiso && (d.compromiso_cobro.estado === 'pendiente' || d.compromiso_cobro.estado === 'incumplido')) {
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <button type="button" (click)="marcarCumplidoCompromiso(d.compromiso_cobro.id)"
+                  class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20">
+                  Marcar cumplido
+                </button>
+                <button type="button" (click)="abrirPago()"
+                  class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20">
+                  Registrar pago
+                </button>
+                <button type="button" (click)="toggleReprogramarCompromiso(d.compromiso_cobro.id)"
+                  class="text-xs px-2 py-1 rounded border border-default-300 text-default-600 hover:bg-default-100">
+                  Reprogramar
+                </button>
+              </div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+
+        @if (d.devoluciones.length > 0) {
+        <div class="card border border-rose-200">
+          <div class="card-header border-b border-rose-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-rose-600"><ng-icon name="lucideUndo2"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-rose-800">Devoluciones</h6>
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+              {{ d.devoluciones.length }}
+            </span>
+          </div>
+          <div class="divide-y divide-rose-100">
+            @for (dev of d.devoluciones; track dev.id) {
+            <div class="p-4 space-y-2">
+
+              <div class="flex items-start justify-between gap-2">
+                <p class="text-sm font-bold text-rose-700">Bs. {{ dev.monto | number:'1.2-2' }}</p>
+                <span class="text-xs px-2 py-0.5 rounded-full font-medium" [class]="dev.estado === 'aprobada'  ? 'bg-success/10 text-success' :
+                               dev.estado === 'rechazada' ? 'bg-danger/10 text-danger' :
+                               dev.estado === 'cancelada' ? 'bg-default-100 text-default-500' :
+                               'bg-amber-100 text-amber-700'">
+                  {{ dev.estado | titlecase }}
+                </span>
+              </div>
+
+              <p class="text-xs text-default-600 leading-relaxed">{{ dev.motivo }}</p>
+
+              @if (dev.nota_respuesta) {
+              <div class="bg-default-50 border border-default-200 rounded px-3 py-2">
+                <p class="text-xs text-default-500 font-medium mb-0.5">Nota de respuesta:</p>
+                <p class="text-xs text-default-600 italic">{{ dev.nota_respuesta }}</p>
+              </div>
+              }
+
+              @if (dev.documento_url) {
+              <a [href]="dev.documento_url" target="_blank"
+                class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+                <div class="size-3.5"><ng-icon name="lucideFileText"></ng-icon></div>
+                Ver documento adjunto
+              </a>
+              }
+
+              <div class="flex items-center justify-between pt-1">
+                <p class="text-xs text-default-400">{{ dev.created_at | slice:0:10 }}</p>
+
+                @if (dev.estado === 'pendiente') {
+                <div class="flex items-center gap-1.5">
+
+                  <button type="button" (click)="cancelarDevolucion(dev.id)"
+                    class="text-xs px-2 py-1 rounded border border-default-300 text-default-600 hover:bg-default-100">
+                    Cancelar
+                  </button>
+
+                  @if (canAprobar()) {
+                  <button type="button" (click)="rechazarDevolucion(dev.id)"
+                    class="text-xs px-2 py-1 rounded border border-danger/40 text-danger hover:bg-danger/10">
+                    Rechazar
+                  </button>
+                  <button type="button" (click)="aprobarDevolucion(dev.id)"
+                    class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20">
+                    Aprobar
+                  </button>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+      </div>
+
+      <div class="lg:col-span-2 space-y-5">
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucidePresentation"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Detalles del Curso</h6>
+            </div>
+            <span class="text-xs font-mono text-default-400">Ins. #{{ d.inscripcion.id_ins }}</span>
+          </div>
+          <div class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+            <div class="sm:col-span-2">
+              <p class="text-xs text-default-400 mb-0.5">Materia / Programa</p>
+              <p class="text-sm font-semibold text-default-800">{{ d.inscripcion.materia_nombre || '—' }}</p>
+              @if (d.inscripcion.materia_sigla) {
+              <p class="text-xs text-default-400 font-mono">{{ d.inscripcion.materia_sigla }}</p>
+              }
+            </div>
+            <div>
+              <p class="text-xs text-default-400 mb-0.5">Fecha Inscripción</p>
+              <p class="text-sm text-default-700">{{ d.inscripcion.fecha_ins ? (d.inscripcion.fecha_ins | slice:0:10) :
+                '—' }}</p>
+            </div>
+            @if (d.inscripcion.observacion_ins) {
+            <div class="sm:col-span-3">
+              <p class="text-xs text-default-400 mb-0.5">Observación</p>
+              <p class="text-sm text-default-600 italic">{{ d.inscripcion.observacion_ins }}</p>
+            </div>
+            }
+          </div>
+
+          @if (d.docentes && d.docentes.length > 0) {
+          <div class="border-t border-default-100 px-4 py-3">
+            <p class="text-xs text-default-400 mb-2">Docente(s) del Programa</p>
+            <div class="flex flex-wrap gap-3">
+              @for (doc of d.docentes; track doc.id) {
+              <div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-default-50 border border-default-100">
+                @if (doc.foto_url) {
+                <img [src]="doc.foto_url" [alt]="doc.nombre_completo"
+                  class="size-8 rounded-full object-cover shrink-0" />
+                } @else {
+                <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span class="text-xs font-bold text-primary">{{ inicialesDocente(doc.nombre_completo) }}</span>
+                </div>
+                }
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-default-800 leading-tight">{{ doc.nombre_completo }}</p>
+                  @if (doc.titulo_academico || doc.especialidad) {
+                  <p class="text-xs text-default-400 truncate">
+                    {{ doc.titulo_academico }}{{ doc.titulo_academico && doc.especialidad ? ' · ' : '' }}{{
+                    doc.especialidad }}
+                  </p>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+
+        @if (d.todas_cuotas.length > 0) {
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideCalendarDays"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Plan de Cuotas</h6>
+            </div>
+            @if (d.plan) {
+            <span class="text-xs text-default-500">{{ d.plan.titulo }}</span>
+            }
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-100">
+              <thead class="bg-default-50">
+                <tr class="text-xs text-default-500 uppercase">
+                  <th class="px-4 py-2.5 text-start">Cuota</th>
+                  <th class="px-4 py-2.5 text-start">Concepto</th>
+                  <th class="px-4 py-2.5 text-end">Monto</th>
+                  <th class="px-4 py-2.5 text-start">Vigencia</th>
+                  <th class="px-4 py-2.5 text-center">Tipo</th>
+                  <th class="px-4 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-100">
+                @for (cuota of d.todas_cuotas; track cuota.id_fechapago) {
+                <tr class="text-sm hover:bg-default-50">
+                  <td class="px-4 py-2.5 font-medium text-default-700">{{ cuota.nro_pago || '#' }}</td>
+                  <td class="px-4 py-2.5 text-default-600">{{ cuota.tipo_tramite || '—' }}</td>
+                  <td class="px-4 py-2.5 text-end font-semibold">Bs. {{ cuota.monto_a_pagar | number:'1.2-2' }}</td>
+                  <td class="px-4 py-2.5 text-default-500 text-xs">
+                    @if (cuota.fecha_inicio && cuota.fecha_fin) {
+                    {{ cuota.fecha_inicio | slice:0:10 }} — {{ cuota.fecha_fin | slice:0:10 }}
+                    } @else { — }
+                  </td>
+                  <td class="px-4 py-2.5 text-center">
+                    @if (cuota.obligatorio) {
+                    <span class="text-xs font-medium text-danger">Obligatoria</span>
+                    } @else {
+                    <span class="text-xs text-default-400">Opcional</span>
+                    }
+                  </td>
+                  <td class="px-4 py-2.5 text-center">
+                    <button type="button" (click)="abrirPago(cuota)"
+                      class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20 whitespace-nowrap">
+                      Pagar
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideBanknote"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Pagos Realizados</h6>
+              @if (refrescandoPagos()) {
+              <div class="size-3.5 animate-spin text-default-400" title="Actualizando..."><ng-icon name="lucideLoader"></ng-icon></div>
+              }
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+              [class]="d.pagos.length > 0 ? 'bg-success/10 text-success' : 'bg-default-100 text-default-500'">
+              {{ d.pagos.length }} pago(s)
+            </span>
+          </div>
+
+          @if (d.pagos.length === 0) {
+          <div class="flex flex-col items-center justify-center py-10 text-default-400">
+            <div class="size-10 mb-2 opacity-40"><ng-icon name="lucideReceiptX"></ng-icon></div>
+            <p class="text-sm">No se han registrado pagos aún.</p>
+            <button type="button" (click)="abrirPago()"
+              class="mt-3 btn btn-sm bg-primary text-white flex items-center gap-1.5">
+              <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+              Registrar primer pago
+            </button>
+          </div>
+          } @else {
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-100">
+              <thead class="bg-default-50">
+                <tr class="text-xs text-default-500 uppercase">
+                  <th class="px-4 py-2.5 text-start">Cuota / Concepto</th>
+                  <th class="px-4 py-2.5 text-end">Monto Pagado</th>
+                  <th class="px-4 py-2.5 text-start">Método</th>
+                  <th class="px-4 py-2.5 text-start">Boleta</th>
+                  <th class="px-4 py-2.5 text-start">Fecha Depósito</th>
+                  <th class="px-4 py-2.5 text-start">Registrado por</th>
+                  <th class="px-4 py-2.5 text-center">Comprobante</th>
+                  <th class="px-4 py-2.5 text-center">Estado</th>
+                  <th class="px-4 py-2.5 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-100">
+                @for (pago of d.pagos; track pago.id_pago) {
+                <tr class="text-sm hover:bg-default-50" [class.bg-amber-50]="pago.pago_extra === 1">
+                  <td class="px-4 py-3">
+                    @if (pago.pago_extra === 1) {
+                    <span
+                      class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium mb-1">
+                      <div class="size-3"><ng-icon name="lucideWallet"></ng-icon></div>
+                      Anticipo / Reserva
+                    </span>
+                    }
+                    <p class="font-medium text-default-800">
+                      {{ pago.pago_extra === 1 ? 'Anticipo' : (pago.cuota_nro ? 'Cuota ' + pago.cuota_nro : 'Pago') }}
+                    </p>
+                    @if (pago.tipo_tramite) { <p class="text-xs text-default-400">{{ pago.tipo_tramite }}</p> }
+                    @if (pago.cuota_monto != null) { <p class="text-xs text-default-400">Cuota: Bs. {{ pago.cuota_monto
+                      | number:'1.2-2' }}</p> }
+                  </td>
+                  <td class="px-4 py-3 text-end">
+                    <span class="font-bold text-base"
+                      [class]="pago.pago_extra === 1 ? 'text-amber-600' : 'text-success'">
+                      Bs. {{ pago.monto_pagado | number:'1.2-2' }}
+                    </span>
+                    @if (pago.monto_descuento) {
+                    <p class="text-[11px] text-amber-600 mt-0.5 whitespace-nowrap flex items-center justify-end gap-1">
+                      <span class="size-3 shrink-0"><ng-icon name="lucideTag"></ng-icon></span>
+                      -Bs. {{ pago.monto_descuento | number:'1.2-2' }} · {{ pago.motivo_descuento }}
+                    </p>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-default-600 text-xs">
+                    @if (pago.metodo_pago) {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" [class]="pago.metodo_pago === 'efectivo' ? 'bg-green-100 text-green-700' :
+                                     pago.metodo_pago === 'deposito_bancario' ? 'bg-blue-100 text-blue-700' :
+                                     pago.metodo_pago === 'pago_online' ? 'bg-violet-100 text-violet-700' :
+                                     'bg-orange-100 text-orange-700'">
+                      {{ pago.metodo_pago | titlecase }}
+                    </span>
+                    } @else { — }
+                  </td>
+                  <td class="px-4 py-3 text-default-600 font-mono text-xs">
+                    {{ pago.nro_boleta_bancaria || '—' }}
+                    @if (pago.tipo_banco_nombre) { <p class="text-default-400 font-sans">{{ pago.tipo_banco_nombre }}
+                    </p> }
+                  </td>
+                  <td class="px-4 py-3 text-default-500">{{ pago.fecha_deposito ? (pago.fecha_deposito | slice:0:10) :
+                    '—' }}</td>
+                  <td class="px-4 py-3 text-default-600 text-xs">
+                    @if (pago.cajero_nombre) {
+                    <span class="inline-flex items-center gap-1">
+                      <div class="size-3 text-default-400"><ng-icon name="lucideUser"></ng-icon></div>
+                      {{ pago.cajero_nombre }}
+                    </span>
+                    } @else {
+                    <span class="text-default-400">—</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if (pago.comprobante_archivo) {
+                    <a [href]="'/storage/' + pago.comprobante_archivo" target="_blank"
+                      class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 whitespace-nowrap">
+                      <div class="size-3"><ng-icon name="lucideFileText"></ng-icon></div>
+                      Ver
+                    </a>
+                    } @else {
+                    <span class="text-xs text-default-400">—</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if (pago.estado_verificacion === 'verificado') {
+                    <span
+                      class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-success/10 text-success font-medium">
+                      <div class="size-1.5 rounded-full bg-success"></div> Verificado
+                    </span>
+                    } @else if (pago.estado_verificacion === 'observado') {
+                    <span
+                      class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-danger/10 text-danger font-medium"
+                      [title]="pago.nota_verificacion ?? ''">
+                      <div class="size-1.5 rounded-full bg-danger"></div> Observado
+                    </span>
+                    @if (pago.nota_verificacion) {
+                    <p class="text-[11px] text-danger/80 mt-1 max-w-[180px]">{{ pago.nota_verificacion }}</p>
+                    }
+                    } @else {
+                    <span
+                      class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                      <div class="size-1.5 rounded-full bg-amber-500"></div> Pendiente
+                    </span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                      @if (canAprobar() && pago.estado_verificacion === 'pendiente') {
+                      <button type="button" (click)="verificarPago(pago)"
+                        class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20 whitespace-nowrap">
+                        Verificar
+                      </button>
+                      <button type="button" (click)="observarPago(pago)"
+                        class="text-xs px-2 py-1 rounded bg-danger/10 border border-danger/30 text-danger hover:bg-danger/20 whitespace-nowrap">
+                        Observar
+                      </button>
+                      }
+                      @if (puedeEditarPago(pago)) {
+                      <button type="button" (click)="abrirEditarPago(pago)"
+                        class="text-xs px-2 py-1 rounded bg-default-100 border border-default-200 text-default-600 hover:bg-default-200 whitespace-nowrap">
+                        Editar
+                      </button>
+                      }
+                      @if (!canAprobar() && pago.estado_verificacion !== 'pendiente' && pago.estado_verificacion !==
+                      'observado' && !puedeEditarPago(pago)) {
+                      <span class="text-xs text-default-400">—</span>
+                      }
+                    </div>
+                  </td>
+                </tr>
+                }
+              </tbody>
+              <tfoot class="bg-success/5 border-t-2 border-success/20">
+                <tr>
+                  <td colspan="2" class="px-4 py-3 text-sm font-semibold text-default-700">Total pagado</td>
+                  <td class="px-4 py-3 text-end text-lg font-bold text-success">Bs. {{ d.resumen.total_pagado |
+                    number:'1.2-2' }}</td>
+                  <td colspan="6"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          }
+        </div>
+
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-blue-600"><ng-icon name="lucideTruck"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Envíos de Certificado (Courier/Encomienda)</h6>
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+              [class]="enviosCertificado().length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-default-100 text-default-500'">
+              {{ enviosCertificado().length }} envío(s)
+            </span>
+          </div>
+
+          @if (enviosCertificado().length === 0) {
+          <div class="flex flex-col items-center justify-center py-10 text-default-400">
+            <div class="size-10 mb-2 opacity-40"><ng-icon name="lucideTruck"></ng-icon></div>
+            <p class="text-sm">No se han registrado envíos de certificado aún.</p>
+            @if (canAprobar()) {
+            <button type="button" (click)="toggleEnvioCertificado()"
+              class="mt-3 btn btn-sm bg-blue-600 text-white flex items-center gap-1.5">
+              <div class="size-3.5"><ng-icon name="lucidePlus"></ng-icon></div>
+              Registrar envío
+            </button>
+            }
+          </div>
+          } @else {
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-100">
+              <thead class="bg-default-50">
+                <tr class="text-xs text-default-500 uppercase">
+                  <th class="px-4 py-2.5 text-start">Ciudad destino</th>
+                  <th class="px-4 py-2.5 text-start">Fecha de envío</th>
+                  <th class="px-4 py-2.5 text-end">Costo</th>
+                  <th class="px-4 py-2.5 text-start">Aclaraciones</th>
+                  <th class="px-4 py-2.5 text-center">Guía</th>
+                  @if (canAprobar()) {
+                  <th class="px-4 py-2.5 text-center">Acciones</th>
+                  }
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-100">
+                @for (envio of enviosCertificado(); track envio.id) {
+                <tr class="text-sm hover:bg-default-50">
+                  <td class="px-4 py-3 font-medium text-default-800">{{ envio.ciudad_destino }}</td>
+                  <td class="px-4 py-3 text-default-500">{{ envio.fecha_envio | slice:0:10 }}</td>
+                  <td class="px-4 py-3 text-end">{{ envio.costo != null ? ('Bs. ' + (envio.costo | number:'1.2-2')) :
+                    '—' }}</td>
+                  <td class="px-4 py-3 text-default-500">{{ envio.aclaraciones || '—' }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <a [href]="'/storage/' + envio.imagen_guia" target="_blank"
+                      class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 whitespace-nowrap">
+                      <div class="size-3"><ng-icon name="lucideFileText"></ng-icon></div>
+                      Ver
+                    </a>
+                  </td>
+                  @if (canAprobar()) {
+                  <td class="px-4 py-3 text-center">
+                    <button type="button" [disabled]="eliminandoEnvioId() === envio.id"
+                      class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white disabled:opacity-50"
+                      title="Eliminar" (click)="eliminarEnvioCertificado(envio.id)">
+                      <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
+                    </button>
+                  </td>
+                  }
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="print-only" id="comprobante"
+    style="font-family: Arial, sans-serif; font-size: 10.5px; color: #333; padding: 0; margin: 0;">
+
+    <img src="/assets/images/logo-sm.png" alt="" class="print-watermark" />
+
+    <div style="height: 8px; width: 100%; background: #0D3B4F;"></div>
+
+    <div style="padding: 0 4px;">
+
+    <table style="width: 100%; border-bottom: 1px solid #dde3e7; padding: 22px 0 16px; margin-bottom: 20px;">
+      <tr>
+        <td style="vertical-align: middle; width: 100px;">
+          <img src="/assets/images/cenefco.png" alt="CENEFCO" style="height: 42px; object-fit: contain;" />
+        </td>
+        <td style="vertical-align: middle; padding-left: 12px;">
+          <div style="font-size: 14px; font-weight: bold; color: #0D3B4F; letter-spacing: 0.3px;">CENEFCO</div>
+          <div style="font-size: 8px; color: #8a8a8a; line-height: 1.5;">Centro Nacional de Educación y Formación
+            Continua &nbsp;·&nbsp; cenefco.com</div>
+        </td>
+        <td style="text-align: right; vertical-align: middle;">
+          <div style="font-size: 8px; color: #9a9a9a; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">
+            Comprobante de Inscripción</div>
+          <div style="font-size: 19px; font-weight: bold; color: #0D3B4F;">N.º {{ d.inscripcion.id_ins }}</div>
+          <div style="font-size: 8px; color: #9a9a9a; margin-top: 3px;">Emitido el {{ fechaHoy }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 22px;">
+      <tr>
+        <td [style.background]="colorEstadoImpresion()" style="width: 4px;">&nbsp;</td>
+        <td style="padding: 10px 0 10px 14px; vertical-align: middle;">
+          <div [style.color]="colorEstadoImpresion()"
+            style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8px;">
+            {{ badgeLabelImpresion() | uppercase }}
+          </div>
+          <div style="font-size: 9px; color: #777; margin-top: 2px;">
+            @if (estadoPagoImpresion() === 'pagado') { Cuenta cancelada en su totalidad }
+            @else if (estadoPagoImpresion() === 'parcial') { Saldo pendiente por Bs. {{ (d.resumen.pendiente ?? 0) | number:'1.2-2' }} }
+            @else { Aún no se registran pagos }
+          </div>
+        </td>
+        <td style="text-align: right; vertical-align: middle; padding-right: 4px;">
+          <div style="font-size: 7.5px; color: #999; text-transform: uppercase; letter-spacing: 1px;">Total pagado</div>
+          <div style="font-size: 16px; font-weight: bold; color: #222;">Bs. {{ d.resumen.total_pagado | number:'1.2-2' }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin-bottom: 22px;">
+      <div style="font-size: 8px; color: #999; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 5px;">
+        Programa</div>
+      <div style="font-size: 13.5px; font-weight: bold; color: #1a1a1a; line-height: 1.3;">
+        {{ d.inscripcion.materia_nombre || '—' }}</div>
+      <div style="font-size: 9px; color: #777; margin-top: 5px;">
+        Período <strong style="color:#444;">{{ d.inscripcion.periodo || '—' }}</strong>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        Gestión <strong style="color:#444;">{{ d.inscripcion.gestion || '—' }}</strong>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        Fecha de inscripción <strong style="color:#444;">{{ d.inscripcion.fecha_ins || '—' }}</strong>
+      </div>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+      <tr>
+
+        <td style="width: 54%; vertical-align: top; padding-right: 20px;">
+          <div style="font-size: 8px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 9px;">
+            Recibimos de
+          </div>
+          <div style="font-size: 12.5px; font-weight: bold; color: #1a1a1a; margin-bottom: 7px;">{{
+            d.inscripcion.estudiante_nombre || '—' }}</div>
+          <table style="border-collapse: collapse; font-size: 9.5px; width: 100%;">
+            <tr>
+              <td style="color: #999; padding: 3px 0; width: 70px;">C.I.</td>
+              <td style="color: #333;">{{ d.inscripcion.est_ci || '—' }}</td>
+            </tr>
+            @if (d.inscripcion.est_celular) {
+            <tr>
+              <td style="color: #999; padding: 3px 0;">Celular</td>
+              <td style="color: #333;">{{ d.inscripcion.est_celular }}</td>
+            </tr>
+            }
+            @if (d.inscripcion.est_email) {
+            <tr>
+              <td style="color: #999; padding: 3px 0;">Email</td>
+              <td style="color: #333;">{{ d.inscripcion.est_email }}</td>
+            </tr>
+            }
+          </table>
+        </td>
+
+        <td style="width: 46%; vertical-align: top; padding-left: 20px; border-left: 1px solid #eaeaea;">
+          <div style="font-size: 8px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 9px;">
+            Referencia
+          </div>
+          <table style="border-collapse: collapse; font-size: 9.5px; width: 100%;">
+            <tr>
+              <td style="color: #999; padding: 3px 0; width: 78px;">Inscripción</td>
+              <td style="color: #333;">N.º {{ d.inscripcion.id_ins }}</td>
+            </tr>
+            <tr>
+              <td style="color: #999; padding: 3px 0;">Período</td>
+              <td style="color: #333;">{{ d.inscripcion.periodo || '—' }}</td>
+            </tr>
+            <tr>
+              <td style="color: #999; padding: 3px 0;">Gestión</td>
+              <td style="color: #333;">{{ d.inscripcion.gestion || '—' }}</td>
+            </tr>
+            <tr>
+              <td style="color: #999; padding: 3px 0;">Fecha</td>
+              <td style="color: #333;">{{ d.inscripcion.fecha_ins || '—' }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <div
+      style="font-size: 8px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 1.2px; padding-bottom: 6px; border-bottom: 1.5px solid #0D3B4F; margin-bottom: 10px;">
+      Detalle de cuotas
+    </div>
+
+    @if (d.pagos.length === 0) {
+    <div
+      style="text-align: center; padding: 18px; color: #bbb; font-style: italic; font-size: 9.5px; background: #fafafa; margin-bottom: 16px;">
+      Sin pagos registrados.
+    </div>
+    } @else {
+    <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 0;">
+      <thead>
+        <tr style="background: #f4f6f7; border-bottom: 1px solid #dde3e7;">
+          <th
+            style="padding: 7px 8px; text-align: left; font-weight: bold; color: #666; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px;">
+            Cuota</th>
+          <th
+            style="padding: 7px 8px; text-align: right; font-weight: bold; color: #666; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px;">
+            Monto</th>
+          <th
+            style="padding: 7px 8px; text-align: left; font-weight: bold; color: #666; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px;">
+            N.º Boleta</th>
+          <th
+            style="padding: 7px 8px; text-align: left; font-weight: bold; color: #666; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px;">
+            Fecha Depósito</th>
+          <th
+            style="padding: 7px 8px; text-align: right; font-weight: bold; color: #666; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px;">
+            Pagado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of d.pagos; track p.id_pago) {
+        <tr style="border-bottom: 1px solid #f0f0f0;">
+          <td style="padding: 6.5px 8px; color: #0D3B4F; font-weight: bold;">
+            {{ p.cuota_nro ?? '—' }}.ª cuota
+          </td>
+          <td style="padding: 6.5px 8px; text-align: right; color: #777;">
+            @if (p.cuota_monto) { Bs. {{ (+p.cuota_monto) | number:'1.2-2' }} } @else { — }
+          </td>
+          <td style="padding: 6.5px 8px; font-size: 9px; color: #777;">{{ p.nro_boleta_bancaria || '—' }}</td>
+          <td style="padding: 6.5px 8px; color: #444;">{{ p.fecha_deposito || '—' }}</td>
+          <td style="padding: 6.5px 8px; text-align: right; font-weight: bold;"
+            [style.color]="p.monto_pagado ? '#0F6E5C' : '#bbb'">
+            @if (p.monto_pagado) { Bs. {{ (+p.monto_pagado) | number:'1.2-2' }} } @else { — }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    }
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 18px;">
+      <tr>
+        <td style="width: 55%;">&nbsp;</td>
+        <td style="width: 45%; vertical-align: top;">
+          <div style="border: 1px solid #e3e7ea; border-radius: 3px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+              <tr>
+                <td style="padding: 8px 14px; color: #888;">Total del plan</td>
+                <td style="padding: 8px 14px; text-align: right; color: #444;">Bs. {{ d.resumen.total_plan | number:'1.2-2' }}</td>
+              </tr>
+              <tr style="border-top: 1px solid #eaeaea;">
+                <td style="padding: 8px 14px; color: #888;">Total pagado</td>
+                <td style="padding: 8px 14px; text-align: right; color: #0F6E5C; font-weight: bold;">
+                  Bs. {{ d.resumen.total_pagado | number:'1.2-2' }}</td>
+              </tr>
+              <tr style="border-top: 1px solid #eaeaea; background: #f7f9fa;">
+                <td style="padding: 9px 14px; color: #333; font-weight: bold; font-size: 10.5px;">Saldo pendiente</td>
+                <td style="padding: 9px 14px; text-align: right; font-weight: bold; font-size: 13px;"
+                  [style.color]="(d.resumen.pendiente ?? 0) === 0 ? '#0F6E5C' : '#A83232'">
+                  Bs. {{ (d.resumen.pendiente ?? 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 40px;">
+      <tr>
+        <td>
+          <div style="width: 240px; border-top: 1px solid #999; padding-top: 6px; font-size: 9px; color: #444;">
+            <div style="font-weight: bold;">Secretaría Académica</div>
+            <div style="font-size: 8px; color: #999; margin-top: 2px;">CENEFCO · Sello y firma oficial</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    </div>
+
+    <div
+      style="margin-top: 16px; padding-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #bbb; padding-left: 4px; padding-right: 4px;">
+      <span>REC-{{ d.inscripcion.id_ins }}-{{ fechaHoy }}</span>
+      <span>CENEFCO · Conserve este comprobante</span>
+    </div>
+
+    <div style="page-break-before: always; padding-top: 4px;">
+      <div style="padding: 0 4px;">
+
+      <table style="width:100%; border-bottom: 1px solid #dde3e7; margin-bottom: 22px; padding: 22px 0 14px;">
+        <tr>
+          <td style="width: 90px; vertical-align: middle;">
+            <img src="/assets/images/cenefco.png" alt="CENEFCO" style="height: 40px; object-fit: contain;" />
+          </td>
+          <td style="vertical-align: middle; padding-left: 12px;">
+            <div style="font-size: 12px; font-weight: bold; color: #0D3B4F;">CENEFCO</div>
+            <div style="font-size: 8px; color: #8a8a8a;">Centro Nacional de Educación y Formación Continua</div>
+          </td>
+          <td style="text-align: right; vertical-align: middle;">
+            <div style="font-size: 11px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 0.5px;">
+              Bienvenida al programa</div>
+            <div style="font-size: 8px; color: #999; margin-top: 3px;">Reglamento e información importante</div>
+          </td>
+        </tr>
+      </table>
+
+      <div style="font-size: 10px; color: #0D3B4F; font-weight: bold; margin-bottom: 8px;">
+        Estimado/a {{ d.inscripcion.estudiante_nombre || 'Estudiante' }}:
+      </div>
+      <div style="font-size: 9.5px; color: #444; line-height: 1.6; text-align: justify; margin-bottom: 8px;">
+        {{ bienvenidaTexto(d.inscripcion.estudiante_nombre || '', d.inscripcion.materia_nombre || 'programa de
+        formación continua') }}
+      </div>
+      <div style="font-size: 9.5px; color: #444; line-height: 1.6; text-align: justify;">
+        Su inscripción ha sido registrada con el N.º <strong>{{ d.inscripcion.id_ins }}</strong>
+        para el período <strong>{{ d.inscripcion.periodo || '—' }} – Gestión {{ d.inscripcion.gestion || '—'
+          }}</strong>. Le invitamos a leer el presente reglamento, el cual rige la convivencia académica y garantiza
+        el aprovechamiento óptimo de su experiencia formativa.
+      </div>
+
+      <div
+        style="font-size: 8px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 1.2px; padding-bottom: 6px; border-bottom: 1.5px solid #0D3B4F; margin: 20px 0 12px;">
+        Código de conducta
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; vertical-align: top;">
+        <tr>
+
+          <td style="width: 50%; vertical-align: top; padding-right: 18px;">
+            @for (s of secciones.slice(0,3); track s.campo) {
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 9px; font-weight: bold; color: #0D3B4F; margin-bottom: 4px;">
+                {{ s.titulo }}
+              </div>
+              <div style="font-size: 9px; line-height: 1.5; color: #555;">
+                <ul style="margin: 0; padding-left: 13px;">
+                  @for (item of getSeccionItems(s.campo); track $index) {
+                  <li>{{ item }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+            }
+          </td>
+
+          <td style="width: 50%; vertical-align: top; padding-left: 18px; border-left: 1px solid #eee;">
+            @for (s of secciones.slice(3,6); track s.campo) {
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 9px; font-weight: bold; color: #0D3B4F; margin-bottom: 4px;">
+                {{ s.titulo }}
+              </div>
+              <div style="font-size: 9px; line-height: 1.5; color: #555;">
+                <ul style="margin: 0; padding-left: 13px;">
+                  @for (item of getSeccionItems(s.campo); track $index) {
+                  <li>{{ item }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+            }
+          </td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #dde3e7;">
+        <div style="font-size: 8.5px; font-weight: bold; color: #0D3B4F; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+          Declaración de aceptación
+        </div>
+        <div style="font-size: 9px; color: #666; line-height: 1.6; text-align: justify; margin-bottom: 30px;">
+          Al inscribirse en el programa, el/la estudiante declara haber leído, comprendido y aceptado el presente
+          reglamento, comprometiéndose a cumplirlo en su totalidad durante toda la duración del programa.
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="text-align: center; width: 46%; padding-top: 8px; border-top: 1px solid #999;">
+              <div style="font-size: 9px; color: #333;">
+                <strong>{{ d.inscripcion.estudiante_nombre || '________________________________' }}</strong>
+              </div>
+              <div style="font-size: 8px; color: #999; margin-top: 3px;">Firma del estudiante · C.I. {{
+                d.inscripcion.est_ci || '—' }}</div>
+            </td>
+            <td style="width: 8%;"></td>
+            <td style="text-align: center; width: 46%; padding-top: 8px; border-top: 1px solid #999;">
+              <div style="font-size: 9px; color: #333;"><strong>Secretaría Académica</strong></div>
+              <div style="font-size: 8px; color: #999; margin-top: 3px;">CENEFCO · Sello y firma oficial</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      </div>
+      <div
+        style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-between; font-size: 8px; color: #bbb; padding-left: 4px; padding-right: 4px;">
+        <span>Inscripción N.º {{ d.inscripcion.id_ins }} · {{ fechaHoy }}</span>
+        <span>Documento con validez como constancia de inscripción y aceptación del reglamento</span>
+      </div>
+
+    </div>
+
+  </div>
+  }
+</main>
