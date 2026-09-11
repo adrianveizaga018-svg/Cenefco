@@ -29,5 +29,6 @@ final readonly class UpdateProgramaAcademicoCommand
         public ?int $id_tipoprograma,
         public ?string $url_video,
         public ?int $estado,
+        public ?string $estado_web,
     ) {}
 }

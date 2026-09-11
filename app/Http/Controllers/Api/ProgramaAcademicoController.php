@@ -18,6 +18,7 @@ use App\Http\Requests\ProgramasAcademicos\UpdateProgramaAcademicoRequest;
 use App\Shared\Kernel\DTOs\PaginationDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProgramaAcademicoController extends Controller
 {
@@ -84,6 +85,7 @@ class ProgramaAcademicoController extends Controller
             id_tipoprograma:          $request->filled('id_tipoprograma') ? $request->integer('id_tipoprograma') : null,
             url_video:                $request->input('url_video'),
             estado:                   $request->integer('estado', 1),
+            estado_web:               $request->input('estado_web', 'borrador'),
         ));
 
         return response()->json($dto, 201);
@@ -116,6 +118,7 @@ class ProgramaAcademicoController extends Controller
             id_tipoprograma:          $request->filled('id_tipoprograma') ? $request->integer('id_tipoprograma') : null,
             url_video:                $request->input('url_video'),
             estado:                   $request->filled('estado') ? $request->integer('estado') : null,
+            estado_web:               $request->input('estado_web'),
         ));
 
         return response()->json($dto);
@@ -123,8 +126,120 @@ class ProgramaAcademicoController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        // Protección: no eliminar si tiene imparticiones o inscripciones históricas
+        $tieneImparticiones = DB::table('t_imparte')->where('id_mat', $id)->exists();
+        $tieneInscripciones = DB::table('t_inscripcion')
+            ->join('t_imparte', 't_inscripcion.id_imp', '=', 't_imparte.id_imp')
+            ->where('t_imparte.id_mat', $id)
+            ->exists();
+
+        if ($tieneImparticiones || $tieneInscripciones) {
+            return response()->json([
+                'message' => 'No se puede eliminar este programa porque tiene imparticiones o inscripciones registradas. Usa "Desactivado" para ocultarlo.'
+            ], 422);
+        }
+
         $this->deleteHandler->handle(new DeleteProgramaAcademicoCommand($id));
 
         return response()->json(null, 204);
+    }
+
+    // ── Imparticiones (versiones) ─────────────────────────────────────────────
+
+    public function imparticiones(int $id): JsonResponse
+    {
+        $rows = DB::table('t_imparte')
+            ->where('id_mat', $id)
+            ->orderByDesc('id_imp')
+            ->select('id_imp', 'nombre', 'periodo', 'gestion', 'imparte_fecha_inicio', 'imparte_fecha_fin', 'estado')
+            ->get();
+        return response()->json($rows);
+    }
+
+    public function storeImparticion(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'nombre'               => 'required|string|max:200',
+            'periodo'              => 'nullable|string|max:50',
+            'gestion'              => 'nullable|integer',
+            'imparte_fecha_inicio' => 'nullable|date',
+            'imparte_fecha_fin'    => 'nullable|date',
+        ]);
+
+        $idImp = (DB::table('t_imparte')->max('id_imp') ?? 0) + 1;
+
+        DB::table('t_imparte')->insert([
+            'id_imp'               => $idImp,
+            'id_mat'               => $id,
+            'nombre'               => $data['nombre'],
+            'periodo'              => $data['periodo'] ?? null,
+            'gestion'              => $data['gestion'] ?? now()->year,
+            'imparte_fecha_inicio' => $data['imparte_fecha_inicio'] ?? null,
+            'imparte_fecha_fin'    => $data['imparte_fecha_fin'] ?? null,
+            'estado'               => 1,
+        ]);
+
+        return response()->json(['id_imp' => $idImp, 'id_mat' => $id] + $data, 201);
+    }
+
+    public function updateImparticion(Request $request, int $id, int $id_imp): JsonResponse
+    {
+        $data = $request->validate([
+            'nombre'               => 'required|string|max:200',
+            'periodo'              => 'nullable|string|max:50',
+            'gestion'              => 'nullable|integer',
+            'imparte_fecha_inicio' => 'nullable|date',
+            'imparte_fecha_fin'    => 'nullable|date',
+            'estado'               => 'nullable|integer',
+        ]);
+
+        DB::table('t_imparte')
+            ->where('id_imp', $id_imp)
+            ->where('id_mat', $id)
+            ->update($data);
+
+        return response()->json(['id_imp' => $id_imp] + $data);
+    }
+
+    // ── Planes habilitados para un programa ────────────────────────────────────
+
+    public function planes(int $id): JsonResponse
+    {
+        $planes = DB::table('t_plan as p')
+            ->join('programa_planes as pp', 'pp.id_plan', '=', 'p.id_plan')
+            ->where('pp.id_programa', $id)
+            ->select('p.id_plan', 'p.titulo', 'p.costo', 'p.nro_cuotas', 'p.descuento', 'p.estado')
+            ->get();
+
+        $todosLosPlanes = DB::table('t_plan')
+            ->where('estado', 1)
+            ->select('id_plan', 'titulo', 'costo', 'nro_cuotas')
+            ->get();
+
+        return response()->json([
+            'planes_habilitados' => $planes,
+            'todos_los_planes'   => $todosLosPlanes,
+        ]);
+    }
+
+    public function syncPlanes(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['planes' => 'required|array', 'planes.*' => 'integer']);
+
+        // Eliminar planes actuales y reemplazar
+        DB::table('programa_planes')->where('id_programa', $id)->delete();
+
+        $rows = array_map(fn($planId) => [
+            'id_programa'  => $id,
+            'id_plan'      => $planId,
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ], $request->input('planes'));
+
+        if (!empty($rows)) {
+            DB::table('programa_planes')->insert($rows);
+        }
+
+        return response()->json(['planes_count' => count($rows)]);
     }
 }

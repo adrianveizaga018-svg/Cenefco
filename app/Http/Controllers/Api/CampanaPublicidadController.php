@@ -49,7 +49,7 @@ class CampanaPublicidadController extends Controller
             'sortOrder' => $request->get('sortOrder', 'desc'),
         ], 'fecha_inicio');
 
-        $filtros = $request->only(['programa_id', 'plataforma', 'estado', 'fecha_desde', 'fecha_hasta']);
+        $filtros = $request->only(['programa_id', 'plataforma', 'estado', 'fecha_desde', 'fecha_hasta', 'cuenta_id']);
 
         return response()->json($this->getListHandler->handle(new GetCampanasPublicidadQuery($pagination, $filtros)));
     }
@@ -111,6 +111,10 @@ class CampanaPublicidadController extends Controller
             id_campana_externa:      $request->id_campana_externa,
             responsable:             $request->responsable,
             notas:                   $request->notas,
+            fecha_publicacion:       $request->fecha_publicacion,
+            fecha_refuerzo:          $request->fecha_refuerzo,
+            en_testeo:               $request->filled('en_testeo') ? (bool) $request->en_testeo : false,
+            leads_whatsapp:          $request->filled('leads_whatsapp') ? (int) $request->leads_whatsapp : null,
         )));
     }
 
@@ -144,5 +148,109 @@ class CampanaPublicidadController extends Controller
         ));
 
         return response()->json($dto, 201);
+    }
+
+    public function syncMeta(Request $request): JsonResponse
+    {
+        set_time_limit(0); // Prevenir timeout de 30s en sincronizaciones largas
+
+        $options = [];
+        if ($request->get('cuenta')) {
+            $options['--cuenta'] = $request->get('cuenta');
+        }
+        if ($request->get('fecha_desde')) {
+            $options['--desde'] = $request->get('fecha_desde');
+        }
+        if ($request->get('fecha_hasta')) {
+            $options['--hasta'] = $request->get('fecha_hasta');
+        }
+
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('meta:sync-gastos', $options);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+
+        if ($exitCode === 0) {
+            return response()->json([
+                'message' => 'Sincronización con Meta Ads completada',
+                'output' => trim($output)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Hubo un error al sincronizar con Meta Ads',
+            'output' => trim($output)
+        ], 500);
+    }
+
+    public function importMeta(Request $request, \App\Infrastructure\Meta\MetaAdsService $metaService): JsonResponse
+    {
+        set_time_limit(0); // Prevenir timeout de 30s al obtener campañas y métricas
+        $accountIdsStr = env('META_AD_ACCOUNT_IDS');
+        if (empty($accountIdsStr)) {
+            return response()->json(['error' => 'Falta configurar META_AD_ACCOUNT_IDS en .env'], 400);
+        }
+
+        $accountIds = array_filter(array_map('trim', explode(',', $accountIdsStr)));
+        $imported = 0;
+        $errors = [];
+
+        foreach ($accountIds as $accountId) {
+            $campaigns = $metaService->getAccountCampaigns($accountId);
+            
+            if ($campaigns === null) {
+                $errors[] = "Error al obtener campañas de la cuenta $accountId";
+                continue;
+            }
+
+            foreach ($campaigns as $camp) {
+                // Verificar si ya existe
+                $existe = \Illuminate\Support\Facades\DB::table('campana_publicidad')
+                    ->where('id_campana_externa', $camp['id'])
+                    ->exists();
+
+                if (!$existe) {
+                    // Mapear estado
+                    $estadoMap = [
+                        'ACTIVE' => 'activa',
+                        'PAUSED' => 'pausada',
+                        'ARCHIVED' => 'cancelada',
+                        'COMPLETED' => 'finalizada'
+                    ];
+                    $estado = $estadoMap[$camp['status']] ?? 'planificada';
+
+                    // Fechas
+                    $fechaInicio = isset($camp['start_time']) ? date('Y-m-d', strtotime($camp['start_time'])) : date('Y-m-d');
+                    $fechaFin = isset($camp['stop_time']) ? date('Y-m-d', strtotime($camp['stop_time'])) : null;
+
+                    \Illuminate\Support\Facades\DB::table('campana_publicidad')->insert([
+                        'nombre' => $camp['name'],
+                        'plataforma' => 'meta_ads',
+                        'fecha_inicio' => $fechaInicio,
+                        'fecha_fin' => $fechaFin,
+                        'estado' => $estado,
+                        'id_campana_externa' => $camp['id'],
+                        'cuenta_externa_id' => $accountId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $imported++;
+                }
+            }
+        }
+
+        // Ejecutar un sync automático para jalar el gasto de las recién importadas
+        if ($imported > 0) {
+            \Illuminate\Support\Facades\Artisan::call('meta:sync-gastos');
+        }
+
+        $msg = "Se importaron $imported campañas nuevas de Meta Ads.";
+        if (count($errors) > 0) {
+            $msg .= " Sin embargo, hubo problemas con algunas cuentas.";
+        }
+
+        return response()->json([
+            'message' => $msg,
+            'imported' => $imported,
+            'errors' => $errors
+        ]);
     }
 }

@@ -996,6 +996,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/programas-academicos/{id}', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'destroy'])
         ->middleware('permiso:programas.eliminar');
 
+    // Imparticiones (versiones) de un programa
+    Route::get('/programas-academicos/{id}/imparticiones', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'imparticiones'])
+        ->middleware('permiso:programas.ver');
+    Route::post('/programas-academicos/{id}/imparticiones', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'storeImparticion'])
+        ->middleware('permiso:programas.editar');
+    Route::put('/programas-academicos/{id}/imparticiones/{id_imp}', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'updateImparticion'])
+        ->middleware('permiso:programas.editar');
+
+    // Planes habilitados para un programa
+    Route::get('/programas-academicos/{id}/planes', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'planes'])
+        ->middleware('permiso:programas.ver');
+    Route::post('/programas-academicos/{id}/planes', [\App\Http\Controllers\Api\ProgramaAcademicoController::class, 'syncPlanes'])
+        ->middleware('permiso:programas.editar');
+
     Route::get('/tipos-postgrado', [\App\Http\Controllers\Api\TipoPostgradoController::class, 'index'])
         ->middleware('permiso:programas.ver');
     Route::post('/tipos-postgrado', [\App\Http\Controllers\Api\TipoPostgradoController::class, 'store'])
@@ -1772,6 +1786,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('permiso:campanas.ver');
     Route::get('/campanas-publicidad/reporte',           [\App\Http\Controllers\Api\CampanaPublicidadController::class, 'reporte'])
         ->middleware('permiso:campanas.ver');
+    Route::post('/campanas-publicidad/sync-meta',        [\App\Http\Controllers\Api\CampanaPublicidadController::class, 'syncMeta'])
+        ->middleware('permiso:campanas.editar');
+    Route::post('/campanas-publicidad/import-meta',      [\App\Http\Controllers\Api\CampanaPublicidadController::class, 'importMeta'])
+        ->middleware('permiso:campanas.crear');
     Route::get('/campanas-publicidad/{id}',              [\App\Http\Controllers\Api\CampanaPublicidadController::class, 'show'])
         ->middleware('permiso:campanas.ver');
     Route::post('/campanas-publicidad',                  [\App\Http\Controllers\Api\CampanaPublicidadController::class, 'store'])
@@ -1910,3 +1928,5 @@ require __DIR__ . '/v1/certificados_webhook.php';
 require __DIR__ . '/v1/estudiante_portal.php';
 
 
+
+require __DIR__ . '/v1/caja.php';

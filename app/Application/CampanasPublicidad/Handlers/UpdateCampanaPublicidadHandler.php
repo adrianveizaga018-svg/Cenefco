@@ -27,7 +27,15 @@ class UpdateCampanaPublicidadHandler
             'id_campana_externa'       => $c->id_campana_externa,
             'responsable'              => $c->responsable,
             'notas'                    => $c->notas,
+            'fecha_publicacion'        => $c->fecha_publicacion,
+            'fecha_refuerzo'           => $c->fecha_refuerzo,
+            'leads_whatsapp'           => $c->leads_whatsapp,
         ], fn ($v) => $v !== null);
+
+        // en_testeo is boolean — handle separately to not filter out false
+        if ($c->en_testeo !== null) {
+            $data['en_testeo'] = $c->en_testeo;
+        }
 
         return $this->repository->update($c->id, $data);
     }

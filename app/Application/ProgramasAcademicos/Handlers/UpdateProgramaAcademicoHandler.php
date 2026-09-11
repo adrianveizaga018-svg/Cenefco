@@ -38,6 +38,7 @@ class UpdateProgramaAcademicoHandler
             'id_tipoprograma'          => $command->id_tipoprograma,
             'url_video'                => $command->url_video,
             'estado'                   => $command->estado,
+            'estado_web'               => $command->estado_web,
         ], fn ($v) => $v !== null);
 
         return $this->repository->update($command->id, $data);

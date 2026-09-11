@@ -41,6 +41,7 @@ class CreateProgramaAcademicoHandler
             'id_tipoprograma'          => $command->id_tipoprograma,
             'url_video'                => $command->url_video,
             'estado'                   => $command->estado,
+            'estado_web'               => $command->estado_web,
             'fecha_reg'                => now(),
         ]);
     }

@@ -5,6 +5,7 @@ use App\Console\Commands\GenerarAlertasNotificaciones;
 use App\Console\Commands\LimpiarNotificacionesAntiguas;
 use App\Console\Commands\NotificarCompromisosCobro;
 use App\Console\Commands\NotificarCuotasVendedor;
+use App\Console\Commands\SyncMetaAdsSpend;
 use App\Infrastructure\Productos\Models\Producto;
 use App\Infrastructure\Usuarios\Models\User;
 use App\Notifications\StockBajoNotification;
@@ -71,4 +72,10 @@ Schedule::command(NotificarCompromisosCobro::class)
 Schedule::command(NotificarCuotasVendedor::class, ['--dias=3'])
     ->dailyAt('07:30')
     ->name('cuotas-notificar-vendedor')
+    ->withoutOverlapping();
+
+// Sincronización diaria del gasto de Meta Ads (requiere META_ACCESS_TOKEN en .env)
+Schedule::command(SyncMetaAdsSpend::class)
+    ->dailyAt('06:00')
+    ->name('meta-ads-sync-gastos')
     ->withoutOverlapping();

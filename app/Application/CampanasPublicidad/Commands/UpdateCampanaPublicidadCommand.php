@@ -20,5 +20,9 @@ final readonly class UpdateCampanaPublicidadCommand
         public ?string $id_campana_externa      = null,
         public ?string $responsable              = null,
         public ?string $notas                    = null,
+        public ?string $fecha_publicacion        = null,
+        public ?string $fecha_refuerzo           = null,
+        public ?bool   $en_testeo               = null,
+        public ?int    $leads_whatsapp           = null,
     ) {}
 }
