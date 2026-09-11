@@ -37,6 +37,14 @@ export class SidebarMenu implements OnInit {
     },
     {
       type: 'item',
+      label: 'Dashboard Gerencial',
+      icon: 'lucideBarChart3',
+      color: 'text-emerald-500',
+      link: '/gerencia/dashboard',
+      permission: 'reportes.ver',
+    },
+    {
+      type: 'item',
       label: 'Analytics del Portal',
       icon: 'lucideBarChart2',
       color: 'text-indigo-500',
@@ -52,7 +60,7 @@ export class SidebarMenu implements OnInit {
       color: 'text-blue-500',
       children: [
         { type: 'item', label: 'Programas / Cursos',   icon: 'lucideBookOpen',      color: 'text-blue-500',   link: '/cenefco/cursos', permission: 'programas.ver' },
-        // { type: 'item', label: 'Formularios de Inscripción', icon: 'lucideClipboardList', color: 'text-purple-500', link: '/cenefco/formularios', permission: 'configuracion.ver' },
+        { type: 'item', label: 'Planes de Pago',       icon: 'lucideWallet',        color: 'text-emerald-500', link: '/cenefco/planes-academicos', permission: 'programas.ver' },
         { type: 'item', label: 'Áreas',                icon: 'lucideShapes',        color: 'text-violet-500', link: '/cenefco/areas', permission: 'programas.ver' },
         { type: 'item', label: 'Categorías / Tipos',   icon: 'lucideLayoutGrid',    color: 'text-sky-500',    link: '/cenefco/categorias-programa', permission: 'programas.ver' },
         { type: 'item', label: 'Cursos Migrados',       icon: 'lucideArchive',       color: 'text-indigo-500', link: '/cenefco/cursos-migrados', permission: 'cursos_migrados.ver' },
@@ -92,6 +100,14 @@ export class SidebarMenu implements OnInit {
     },
 
     { type: 'title', label: 'Inscripciones y Pagos' },
+    {
+      type: 'item',
+      label: 'Caja / Inscripción',
+      icon: 'lucideMonitorSmartphone',
+      color: 'text-amber-500',
+      link: '/caja/inscripcion',
+      permission: 'inscripciones.crear',
+    },
     { type: 'item', label: 'Inscripciones',              icon: 'lucideClipboardCheck', color: 'text-teal-600',    link: '/cenefco/inscripciones', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Directorio de Archivos',     icon: 'lucideFolderOpen',     color: 'text-amber-600',   link: '/cenefco/directorio-archivos', permission: 'directorio-archivos.ver' },
     {

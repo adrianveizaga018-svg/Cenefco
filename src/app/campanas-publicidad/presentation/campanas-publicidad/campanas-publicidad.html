@@ -17,12 +17,19 @@
               <div class="size-3.5 text-default-400"><ng-icon name="lucideSearch"></ng-icon></div>
             </div>
           </div>
-          <div class="w-56">
+          <div class="w-48">
             <app-searchable-select
               [options]="plataformaOptions"
               [ngModel]="plataformaFiltro()"
               (ngModelChange)="onFiltrarPlataforma($event)"
               placeholder="Todas las plataformas" />
+          </div>
+          <div class="w-52">
+            <app-searchable-select
+              [options]="cuentaOptions"
+              [ngModel]="cuentaFiltro()"
+              (ngModelChange)="cuentaFiltro.set($event); currentPage.set(1); load()"
+              placeholder="Todos los portafolios" />
           </div>
           <div class="w-48">
             <app-searchable-select
@@ -31,13 +38,40 @@
               (ngModelChange)="onFiltrarEstado($event)"
               placeholder="Todos los estados" />
           </div>
+          <div class="flex items-center gap-1">
+            <input type="date" class="form-input form-input-sm" title="Fecha Desde" [ngModel]="fechaDesdeFiltro()" (ngModelChange)="fechaDesdeFiltro.set($event); load()" />
+            <span class="text-default-400">-</span>
+            <input type="date" class="form-input form-input-sm" title="Fecha Hasta" [ngModel]="fechaHastaFiltro()" (ngModelChange)="fechaHastaFiltro.set($event); load()" />
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <a routerLink="/cenefco/campanas-reporte" class="btn btn-sm border border-default-300 text-default-600 hover:bg-default-100">
-            <div class="size-4 me-1"><ng-icon name="lucideBarChart3"></ng-icon></div>
-            Reporte
-          </a>
+          <button (click)="importMeta()" [disabled]="isImporting() || isSyncing()" class="btn btn-sm border border-violet-300 text-violet-600 hover:bg-violet-50 disabled:opacity-50 flex items-center gap-1">
+            @if (isImporting()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Importando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucideBarChart3"></ng-icon></div>
+              Importar desde Meta
+            }
+          </button>
+          <button (click)="syncMeta()" [disabled]="isSyncing() || isImporting()" class="btn btn-sm border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50 flex items-center gap-1">
+            @if (isSyncing()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+              Sincronizando...
+            } @else {
+              <div class="size-4 me-1"><ng-icon name="lucideBarChart3"></ng-icon></div>
+              Sincronizar Meta Ads
+            }
+          </button>
+          <button (click)="exportarExcel()" class="btn btn-sm border border-emerald-300 text-emerald-600 hover:bg-emerald-50">
+            <svg class="size-4 me-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Excel
+          </button>
+          <button (click)="exportarPDF()" class="btn btn-sm border border-red-300 text-red-600 hover:bg-red-50">
+            <svg class="size-4 me-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15.5a1.5 1.5 0 0 1-3 0v-3a1.5 1.5 0 0 1 3 0v1.5a1.5 1.5 0 0 1-3 0"></path><path d="M15 15.5v-3h2"></path><path d="M12 15.5v-3"></path></svg>
+            PDF
+          </button>
           <a routerLink="/cenefco/campana-create" class="btn btn-sm bg-primary text-white">
             <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
             Nueva campaña
@@ -63,14 +97,28 @@
                       <th scope="col" class="px-3.5 py-3 text-start">Plataforma</th>
                       <th scope="col" class="px-3.5 py-3 text-start">Período</th>
                       <th scope="col" class="px-3.5 py-3 text-start">Estado</th>
-                      <th scope="col" class="px-3.5 py-3 text-end">Invertido</th>
+                      <th scope="col" class="px-3.5 py-3 text-start">Encargado</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Invertido (Bs)</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Alcance</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Impresiones</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Clics</th>
+                      <th scope="col" class="px-3.5 py-3 text-end">Leads Meta</th>
+                      <th scope="col" class="px-3.5 py-3 text-end" title="Miembros del grupo de WhatsApp">Leads WA 💬</th>
+                      <th scope="col" class="px-3.5 py-3 text-end" title="Costo por Lead = Invertido ÷ Total Leads">Costo/Lead</th>
+                      <th scope="col" class="px-3.5 py-3 text-end" title="Inscritos al curso desde el inicio de la campaña">Inscritos 🎓</th>
+                      <th scope="col" class="px-3.5 py-3 text-end" title="Costo por Inscrito = Invertido ÷ Inscritos">Costo/Inscrito</th>
                       <th scope="col" class="px-3.5 py-3 text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-default-200">
                     @for (campana of campanas(); track campana.id) {
                       <tr class="text-default-800 font-normal">
-                        <td class="px-3.5 py-2.5 text-sm font-medium">{{ campana.nombre }}</td>
+                        <td class="px-3.5 py-2.5 text-sm font-medium">
+                          {{ campana.nombre }}
+                          @if (campana.en_testeo) {
+                            <span class="ml-1 badge bg-yellow-100 text-yellow-700 text-xs px-1.5 py-0.5 rounded-full">Testeo</span>
+                          }
+                        </td>
                         <td class="px-3.5 py-2.5 text-sm text-default-500">
                           {{ campana.programa_nombre || (campana.proposito === 'curso' ? '—' : (campana.proposito | titlecase)) }}
                         </td>
@@ -87,7 +135,57 @@
                             {{ campana.estado | titlecase }}
                           </span>
                         </td>
-                        <td class="px-3.5 py-2.5 text-sm text-end font-medium">Bs {{ campana.total_gastado }}</td>
+                        <!-- Encargado -->
+                        <td class="px-3.5 py-2.5 text-sm text-default-500">
+                          {{ campana.responsable || '—' }}
+                        </td>
+                        <!-- Invertido -->
+                        <td class="px-3.5 py-2.5 text-sm text-end font-semibold text-emerald-600">
+                          @if (campana.presupuesto_bob) {
+                            Bs {{ campana.presupuesto_bob | number:'1.2-2' }}
+                          } @else {
+                            <span class="text-default-400">—</span>
+                          }
+                        </td>
+                        <!-- Alcance, Impresiones, Clics -->
+                        <td class="px-3.5 py-2.5 text-sm text-end text-default-600">
+                          {{ (campana.metricas?.[0]?.alcance | number) ?? '—' }}
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-end text-default-600">
+                          {{ (campana.metricas?.[0]?.impresiones | number) ?? '—' }}
+                        </td>
+                        <td class="px-3.5 py-2.5 text-sm text-end text-default-600">
+                          {{ (campana.metricas?.[0]?.clics_enlace | number) ?? '—' }}
+                        </td>
+                        <!-- Leads Meta -->
+                        <td class="px-3.5 py-2.5 text-sm text-end font-semibold text-primary">
+                          {{ (campana.leads | number) ?? '—' }}
+                        </td>
+                        <!-- Leads WhatsApp (manual editable) -->
+                        <td class="px-3.5 py-2.5 text-sm text-end text-teal-600 font-semibold">
+                          {{ (campana.leads_whatsapp | number) ?? '—' }}
+                        </td>
+                        <!-- Costo por Lead -->
+                        <td class="px-3.5 py-2.5 text-sm text-end text-orange-600">
+                          @if (campana.costo_por_lead) {
+                            Bs {{ campana.costo_por_lead | number:'1.2-2' }}
+                          } @else {
+                            <span class="text-default-400">—</span>
+                          }
+                        </td>
+                        <!-- Inscritos automáticos -->
+                        <td class="px-3.5 py-2.5 text-sm text-end font-semibold text-indigo-600">
+                          {{ campana.inscritos_auto ?? '—' }}
+                        </td>
+                        <!-- Costo por Inscrito -->
+                        <td class="px-3.5 py-2.5 text-sm text-end text-rose-600">
+                          @if (campana.costo_por_inscrito) {
+                            Bs {{ campana.costo_por_inscrito | number:'1.2-2' }}
+                          } @else {
+                            <span class="text-default-400">—</span>
+                          }
+                        </td>
+                        <!-- Acciones -->
                         <td class="px-3.5 py-2.5">
                           <div class="flex items-center justify-center gap-1.5">
                             <a

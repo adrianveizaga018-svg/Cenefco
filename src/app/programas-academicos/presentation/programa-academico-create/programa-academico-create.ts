@@ -31,6 +31,7 @@ export class ProgramaAcademicoCreate {
     finalizacion_actividades: [''],
     inicio_inscripciones:     [''],
     estado:                   [1],
+    estado_web:               ['borrador'],
   });
 
   onSubmit(): void {

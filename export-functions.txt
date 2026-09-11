@@ -1,0 +1,83 @@
+  async exportarExcel() {
+    this.toast.info('Exportando...', 'Generando Excel')
+    // Traer todos los datos sin paginación (ej. 1000 items)
+    this.svc.getAll({
+      pageIndex: 1,
+      pageSize: 10000,
+      query: this.query(),
+      estado: (this.estadoFiltro() as unknown as string) ?? undefined,
+      plataforma: (this.plataformaFiltro() as unknown as string) ?? undefined,
+      fecha_desde: this.fechaDesdeFiltro() || undefined,
+      fecha_hasta: this.fechaHastaFiltro() || undefined,
+    }).subscribe({
+      next: async (res) => {
+        const { utils, writeFile } = await import('xlsx')
+        
+        const data = res.data.map(c => ({
+          'Campaña': c.nombre,
+          'Curso / Propósito': c.programa_nombre || (c.proposito === 'curso' ? '—' : c.proposito),
+          'Plataforma': c.plataforma,
+          'Cuenta ID': c.cuenta_externa_id || '—',
+          'Estado': c.estado,
+          'Fecha Inicio': c.fecha_inicio,
+          'Fecha Fin': c.fecha_fin || '—',
+          'Invertido (Bs)': c.presupuesto_bob || 0,
+          'Clics': c.metricas?.[0]?.clics_enlace || 0,
+          'Leads': c.leads || 0,
+          'Costo por Lead (Bs)': (c.leads && c.presupuesto_bob) ? (c.presupuesto_bob / c.leads).toFixed(2) : 0,
+        }))
+
+        const ws = utils.json_to_sheet(data)
+        const wb = utils.book_new()
+        utils.book_append_sheet(wb, ws, 'Campañas')
+        
+        writeFile(wb, `Reporte_Campanas_${new Date().getTime()}.xlsx`)
+      }
+    })
+  }
+
+  async exportarPDF() {
+    this.toast.info('Exportando...', 'Generando PDF')
+    this.svc.getAll({
+      pageIndex: 1,
+      pageSize: 10000,
+      query: this.query(),
+      estado: (this.estadoFiltro() as unknown as string) ?? undefined,
+      plataforma: (this.plataformaFiltro() as unknown as string) ?? undefined,
+      fecha_desde: this.fechaDesdeFiltro() || undefined,
+      fecha_hasta: this.fechaHastaFiltro() || undefined,
+    }).subscribe({
+      next: async (res) => {
+        const { jsPDF } = await import('jspdf')
+        const autoTable = (await import('jspdf-autotable')).default
+        
+        const doc = new jsPDF('landscape')
+        
+        doc.setFontSize(16)
+        doc.text('Reporte de Campañas Publicitarias', 14, 15)
+        doc.setFontSize(10)
+        doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, 14, 22)
+
+        const tableData = res.data.map(c => [
+          c.nombre,
+          c.programa_nombre || c.proposito,
+          c.plataforma,
+          c.estado,
+          c.fecha_inicio,
+          `Bs ${c.presupuesto_bob || 0}`,
+          c.metricas?.[0]?.clics_enlace || 0,
+          c.leads || 0
+        ])
+
+        autoTable(doc, {
+          startY: 28,
+          head: [['Campaña', 'Propósito', 'Plataforma', 'Estado', 'Inicio', 'Invertido', 'Clics', 'Leads']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185] }
+        })
+
+        doc.save(`Reporte_Campanas_${new Date().getTime()}.pdf`)
+      }
+    })
+  }

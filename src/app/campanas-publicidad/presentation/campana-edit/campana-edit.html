@@ -125,6 +125,48 @@
 
           </div>
         </div>
+
+        <!-- SECCIÓN: FLUJO Y SEGUIMIENTO -->
+        <div class="card">
+          <div class="card-header">
+            <h6 class="card-title">Flujo y Seguimiento</h6>
+            <p class="text-xs text-default-500 mt-0.5">Información de gestión interna (manual)</p>
+          </div>
+          <div class="card-body space-y-4">
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de Publicación Lanzada</label>
+                <input type="date" class="form-input" [ngModel]="fechaPublicacion()" (ngModelChange)="fechaPublicacion.set($event)" />
+                <p class="text-xs text-default-400 mt-1">¿Cuándo se lanzó la publicidad por primera vez?</p>
+              </div>
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Fecha de Refuerzo</label>
+                <input type="date" class="form-input" [ngModel]="fechaRefuerzo()" (ngModelChange)="fechaRefuerzo.set($event)" />
+                <p class="text-xs text-default-400 mt-1">¿Cuándo se hizo el refuerzo?</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">Leads del Grupo de WhatsApp 💬</label>
+                <input type="number" class="form-input" min="0" step="1"
+                       [ngModel]="leadsWhatsapp()" (ngModelChange)="leadsWhatsapp.set($event ? +$event : null)"
+                       placeholder="0" />
+                <p class="text-xs text-default-400 mt-1">Personas que se unieron al grupo de WhatsApp (ingresar manualmente)</p>
+              </div>
+              <div class="flex flex-col justify-center">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" class="size-4 rounded" [ngModel]="enTesteo()" (ngModelChange)="enTesteo.set($event)" />
+                  <span class="text-sm font-medium text-default-800">La campaña está en Testeo</span>
+                </label>
+                <p class="text-xs text-default-400 mt-1 ml-7">Marcar si está en fase de prueba/validación</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
       <div class="space-y-5">

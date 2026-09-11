@@ -78,6 +78,11 @@ export class CampanaEdit implements OnInit {
   idCampanaExterna                = signal('')
   responsable                      = signal('')
   notas                             = signal('')
+  // Nuevos campos de flujo
+  fechaPublicacion  = signal<string | null>(null)
+  fechaRefuerzo     = signal<string | null>(null)
+  enTesteo          = signal(false)
+  leadsWhatsapp     = signal<number | null>(null)
 
   ngOnInit() {
     this.cargarCursos()
@@ -110,6 +115,11 @@ export class CampanaEdit implements OnInit {
         this.idCampanaExterna.set(c.id_campana_externa ?? '')
         this.responsable.set(c.responsable ?? '')
         this.notas.set(c.notas ?? '')
+        // Nuevos campos de flujo
+        this.fechaPublicacion.set(c.fecha_publicacion ?? null)
+        this.fechaRefuerzo.set(c.fecha_refuerzo ?? null)
+        this.enTesteo.set(c.en_testeo ?? false)
+        this.leadsWhatsapp.set(c.leads_whatsapp ?? null)
         this.loading.set(false)
         this.cdr.detectChanges()
       },
@@ -155,6 +165,11 @@ export class CampanaEdit implements OnInit {
       id_campana_externa:       this.idCampanaExterna() || null,
       responsable:              this.responsable() || null,
       notas:                    this.notas() || null,
+      // Nuevos campos de flujo
+      fecha_publicacion:        this.fechaPublicacion() || null,
+      fecha_refuerzo:           this.fechaRefuerzo() || null,
+      en_testeo:                this.enTesteo(),
+      leads_whatsapp:           this.leadsWhatsapp(),
     }
 
     const request = this.isNew()

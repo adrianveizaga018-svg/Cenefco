@@ -20,8 +20,12 @@
             <div><label class="block text-sm font-medium text-default-700 mb-1">Inicio de Actividades</label><input type="date" formControlName="inicio_actividades" class="form-input w-full"></div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">Fin de Actividades</label><input type="date" formControlName="finalizacion_actividades" class="form-input w-full"></div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">Inicio de Inscripciones</label><input type="date" formControlName="inicio_inscripciones" class="form-input w-full"></div>
-            <div><label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
-              <select formControlName="estado" class="form-input w-full"><option [value]="1">Activo</option><option [value]="0">Inactivo</option></select>
+            <div><label class="block text-sm font-medium text-default-700 mb-1">Estado en Web / Caja</label>
+              <select formControlName="estado_web" class="form-input w-full">
+                <option value="borrador">Borrador</option>
+                <option value="publicado">Publicado</option>
+                <option value="inactivo">Desactivado</option>
+              </select>
             </div>
             <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Descripción</label><textarea formControlName="descripcion" rows="3" class="form-input w-full"></textarea></div>
             <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Objetivo</label><textarea formControlName="objetivo" rows="3" class="form-input w-full"></textarea></div>

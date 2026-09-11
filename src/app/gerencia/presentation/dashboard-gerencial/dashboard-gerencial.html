@@ -1,0 +1,231 @@
+<div class="min-h-screen bg-default-100 p-4 md:p-6">
+
+  <!-- Encabezado -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-default-900">Dashboard Gerencial</h1>
+      <p class="text-sm text-default-500">
+        @if (data()) { Periodo: {{ data()!.periodo.desde | date:"dd/MM/yyyy" }} - {{ data()!.periodo.hasta | date:"dd/MM/yyyy" }} }
+      </p>
+    </div>
+
+    <!-- Filtros rapidos -->
+    <div class="flex flex-wrap gap-2 items-center">
+      @for (btn of periodosBtns; track btn.key) {
+        <button (click)="aplicarPeriodo(btn.key)"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          [class]="periodoActivo() === btn.key
+            ? 'bg-primary text-white shadow'
+            : 'bg-white text-default-600 border border-default-200 hover:bg-default-50'">
+          {{ btn.label }}
+        </button>
+      }
+
+      <!-- Rango personalizado -->
+      <div class="flex items-center gap-1 bg-white border border-default-200 rounded-lg px-2 py-1">
+        <input type="date" [(ngModel)]="fechaDesde" class="text-xs text-default-700 outline-none w-28">
+        <span class="text-default-400 text-xs">-</span>
+        <input type="date" [(ngModel)]="fechaHasta" class="text-xs text-default-700 outline-none w-28">
+        <button (click)="cargarPersonalizado()" class="ml-1 text-primary text-xs font-semibold hover:underline">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-64">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+    </div>
+  }
+
+  @if (!isLoading() && data()) {
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+      <!-- Ingresos -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-default-500 uppercase tracking-wide">Ingresos</span>
+          <span class="size-8 rounded-full bg-green-100 flex items-center justify-center">
+            <ng-icon name="lucideDollarSign" class="text-green-600 size-4"></ng-icon>
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-default-900">Bs. {{ (data()!.kpis.ingresos | number:'1.0-0') }}</p>
+        <p class="text-xs text-green-600">Pagos verificados</p>
+      </div>
+
+      <!-- Inscripciones -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-default-500 uppercase tracking-wide">Inscritos</span>
+          <span class="size-8 rounded-full bg-blue-100 flex items-center justify-center">
+            <ng-icon name="lucideUsers" class="text-blue-600 size-4"></ng-icon>
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-default-900">{{ data()!.kpis.inscripciones }}</p>
+        <p class="text-xs text-blue-600">Alumnos nuevos</p>
+      </div>
+
+      <!-- Leads -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-default-500 uppercase tracking-wide">Leads</span>
+          <span class="size-8 rounded-full bg-violet-100 flex items-center justify-center">
+            <ng-icon name="lucideTarget" class="text-violet-600 size-4"></ng-icon>
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-default-900">{{ data()!.kpis.leads_total }}</p>
+        <p class="text-xs text-violet-600">Generados en el periodo</p>
+      </div>
+
+      <!-- Inversion Ads + ROI -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-default-500 uppercase tracking-wide">Inversion Ads</span>
+          <span class="size-8 rounded-full bg-orange-100 flex items-center justify-center">
+            <ng-icon name="lucideTrendingUp" class="text-orange-600 size-4"></ng-icon>
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-default-900">Bs. {{ (data()!.kpis.inversion_publicidad | number:'1.0-0') }}</p>
+        @if (data()!.kpis.roi !== null) {
+          <p class="text-xs" [class]="data()!.kpis.roi! >= 0 ? 'text-green-600' : 'text-red-500'">
+            ROI: {{ data()!.kpis.roi }}%
+          </p>
+        } @else {
+          <p class="text-xs text-default-400">Sin datos de inversion</p>
+        }
+      </div>
+    </div>
+
+    <!-- Alertas Operativas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="rounded-2xl p-4 shadow-sm border flex items-center gap-4"
+        [class]="data()!.kpis.leads_sin_contactar > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'">
+        <span class="size-10 rounded-full flex items-center justify-center flex-shrink-0"
+          [class]="data()!.kpis.leads_sin_contactar > 0 ? 'bg-red-100' : 'bg-green-100'">
+          <ng-icon name="lucideAlertTriangle"
+            [class]="data()!.kpis.leads_sin_contactar > 0 ? 'text-red-600 size-5' : 'text-green-600 size-5'"></ng-icon>
+        </span>
+        <div>
+          <p class="font-bold text-lg" [class]="data()!.kpis.leads_sin_contactar > 0 ? 'text-red-700' : 'text-green-700'">
+            {{ data()!.kpis.leads_sin_contactar }} Leads sin contactar
+          </p>
+          <p class="text-xs text-default-500">Pendientes de primer contacto por el equipo de ventas</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl p-4 shadow-sm border flex items-center gap-4"
+        [class]="data()!.kpis.tareas_pendientes > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
+        <span class="size-10 rounded-full flex items-center justify-center flex-shrink-0"
+          [class]="data()!.kpis.tareas_pendientes > 0 ? 'bg-amber-100' : 'bg-green-100'">
+          <ng-icon name="lucideClipboardList"
+            [class]="data()!.kpis.tareas_pendientes > 0 ? 'text-amber-600 size-5' : 'text-green-600 size-5'"></ng-icon>
+        </span>
+        <div>
+          <p class="font-bold text-lg" [class]="data()!.kpis.tareas_pendientes > 0 ? 'text-amber-700' : 'text-green-700'">
+            {{ data()!.kpis.tareas_pendientes }} Requisitos Academicos pendientes
+          </p>
+          <p class="text-xs text-default-500">Tareas de Control Academico sin completar</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+      <!-- Ingresos por mes -->
+      <div class="lg:col-span-2 bg-white rounded-2xl p-4 shadow-sm border border-default-100">
+        <h3 class="font-semibold text-default-800 mb-4">Ingresos por Mes</h3>
+        @if (data()!.graficos.ingresos_por_mes.length === 0) {
+          <p class="text-default-400 text-sm text-center py-10">Sin datos de ingresos en este periodo</p>
+        } @else {
+          <div class="flex items-end gap-2 h-40">
+            @for (item of data()!.graficos.ingresos_por_mes; track item.mes) {
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <span class="text-xs text-default-500 font-medium">Bs.{{ (item.total! | number:'1.0-0') }}</span>
+                <div class="w-full rounded-t-lg bg-primary transition-all"
+                  [style.height.%]="((item.total ?? 0) / maxIngreso) * 100"></div>
+                <span class="text-xs text-default-400">{{ formatMes(item.mes!) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Leads por estado -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100">
+        <h3 class="font-semibold text-default-800 mb-4">Estado de Leads</h3>
+        @if (data()!.graficos.leads_por_estado.length === 0) {
+          <p class="text-default-400 text-sm text-center py-10">Sin leads registrados</p>
+        } @else {
+          <div class="flex flex-col gap-2.5">
+            @for (item of data()!.graficos.leads_por_estado; track item.estado) {
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-default-600 font-medium">{{ estadoLabel(item.estado!) }}</span>
+                  <span class="text-default-500">{{ item.total }} ({{ totalLeadsGrafico > 0 ? ((item.total! / totalLeadsGrafico) * 100 | number:'1.0-0') : 0 }}%)</span>
+                </div>
+                <div class="h-2 bg-default-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all" [class]="estadoColor(item.estado!)"
+                    [style.width.%]="totalLeadsGrafico > 0 ? (item.total! / totalLeadsGrafico) * 100 : 0"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Tablas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- Top 5 Programas -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100">
+        <h3 class="font-semibold text-default-800 mb-4">Top 5 Programas con mas Ingresos</h3>
+        @if (data()!.graficos.top_programas.length === 0) {
+          <p class="text-default-400 text-sm text-center py-8">Sin datos en este periodo</p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-default-100">
+                  <th class="text-left py-2 text-xs text-default-500 font-medium">#</th>
+                  <th class="text-left py-2 text-xs text-default-500 font-medium">Programa</th>
+                  <th class="text-right py-2 text-xs text-default-500 font-medium">Ingresos</th>
+                  <th class="text-right py-2 text-xs text-default-500 font-medium">Inscritos</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (prog of data()!.graficos.top_programas; track prog.nombre_programa; let i = $index) {
+                  <tr class="border-b border-default-50 hover:bg-default-50">
+                    <td class="py-2.5 text-default-400 font-bold">{{ i + 1 }}</td>
+                    <td class="py-2.5 text-default-700 font-medium max-w-[160px] truncate">{{ prog.nombre_programa }}</td>
+                    <td class="py-2.5 text-right text-green-600 font-semibold">Bs. {{ (prog.total_ingresos! | number:'1.0-0') }}</td>
+                    <td class="py-2.5 text-right text-blue-600 font-semibold">{{ prog.total_inscritos }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- Canal de venta -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-default-100">
+        <h3 class="font-semibold text-default-800 mb-4">Inscripciones por Canal de Venta</h3>
+        @if (data()!.graficos.inscripciones_por_canal.length === 0) {
+          <p class="text-default-400 text-sm text-center py-8">Sin datos en este periodo</p>
+        } @else {
+          <div class="flex flex-col gap-3">
+            @for (item of data()!.graficos.inscripciones_por_canal; track item.canal) {
+              <div class="flex items-center justify-between p-3 bg-default-50 rounded-xl">
+                <span class="text-sm font-medium text-default-700 capitalize">{{ item.canal }}</span>
+                <span class="font-bold text-primary">{{ item.total }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

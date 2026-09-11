@@ -27,6 +27,7 @@ export class CampanaPublicidadService {
     estado?: string;
     fecha_desde?: string;
     fecha_hasta?: string;
+    cuenta_id?: string;
   }): Observable<CampanaPublicidadListResponse> {
     let httpParams = new HttpParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -62,5 +63,13 @@ export class CampanaPublicidadService {
     if (fechaDesde) httpParams = httpParams.set('fecha_desde', fechaDesde);
     if (fechaHasta) httpParams = httpParams.set('fecha_hasta', fechaHasta);
     return this.http.get<ReporteCampana[]>(`${this.base}/reporte`, { params: httpParams });
+  }
+
+  syncMeta(params?: { cuenta?: string; fecha_desde?: string; fecha_hasta?: string }): Observable<{message: string, output: string}> {
+    return this.http.post<{message: string, output: string}>(`${this.base}/sync-meta`, params ?? {});
+  }
+
+  importMeta(): Observable<{message: string, imported: number}> {
+    return this.http.post<{message: string, imported: number}>(`${this.base}/import-meta`, {});
   }
 }

@@ -1,0 +1,430 @@
+<div class="min-h-screen bg-default-50 p-4 md:p-6 print:bg-white print:p-0 print:min-h-0">
+
+  <!-- Header No-Print -->
+  <div class="mb-6 print:hidden">
+    <h1 class="text-2xl font-bold text-default-900">Caja - Inscripción Presencial</h1>
+    <p class="text-sm text-default-500">Inscribe a un estudiante y registra su pago en un solo flujo.</p>
+  </div>
+
+  <!-- Stepper -->
+  <div class="mb-8 print:hidden">
+    <ol class="flex items-center w-full text-sm font-medium text-center text-default-500 sm:text-base">
+      <li class="flex md:w-full items-center" [class]="pasoActual() >= 1 ? 'text-primary' : ''">
+        <span class="flex items-center after:content-['/'] sm:after:hidden after:mx-2 after:text-default-200">
+          <ng-icon name="lucideUser" class="mr-2"></ng-icon>
+          Estudiante
+        </span>
+        <div class="hidden sm:block w-full h-1 ml-4 bg-default-200 rounded-full" [class.bg-primary]="pasoActual() >= 2"></div>
+      </li>
+      <li class="flex md:w-full items-center" [class]="pasoActual() >= 2 ? 'text-primary' : ''">
+        <span class="flex items-center after:content-['/'] sm:after:hidden after:mx-2 after:text-default-200">
+          <ng-icon name="lucideBookOpen" class="mr-2 sm:ml-4"></ng-icon>
+          Programa
+        </span>
+        <div class="hidden sm:block w-full h-1 ml-4 bg-default-200 rounded-full" [class.bg-primary]="pasoActual() >= 3"></div>
+      </li>
+      <li class="flex md:w-full items-center" [class]="pasoActual() >= 3 ? 'text-primary' : ''">
+        <span class="flex items-center after:content-['/'] sm:after:hidden after:mx-2 after:text-default-200">
+          <ng-icon name="lucideCreditCard" class="mr-2 sm:ml-4"></ng-icon>
+          Pago
+        </span>
+        <div class="hidden sm:block w-full h-1 ml-4 bg-default-200 rounded-full" [class.bg-primary]="pasoActual() >= 4"></div>
+      </li>
+      <li class="flex items-center" [class]="pasoActual() >= 4 ? 'text-primary' : ''">
+        <ng-icon name="lucideCheckCircle" class="mr-2 sm:ml-4"></ng-icon>
+        Confirmación
+      </li>
+    </ol>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-default-200 overflow-hidden print:border-none print:shadow-none">
+    
+    <!-- ================= PASO 1: ESTUDIANTE ================= -->
+    @if (pasoActual() === 1) {
+    <div class="p-6">
+      <div class="flex gap-2 mb-6">
+        <div class="flex-1 max-w-sm relative">
+          <input type="text" [ngModel]="searchCi()" (ngModelChange)="searchCi.set($event)" (keyup.enter)="buscarCi()"
+            placeholder="Buscar por número de carnet (CI)..."
+            class="w-full pl-10 pr-4 py-2 border border-default-300 rounded-lg focus:ring-primary focus:border-primary">
+          <ng-icon name="lucideSearch" class="absolute left-3 top-2.5 text-default-400"></ng-icon>
+        </div>
+        <button (click)="buscarCi()" [disabled]="isSearchingCi()"
+          class="px-4 py-2 bg-default-100 text-default-700 rounded-lg hover:bg-default-200 font-medium flex items-center gap-2">
+          @if (isSearchingCi()) {
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-default-700"></div>
+          } @else {
+            Buscar
+          }
+        </button>
+        <button (click)="nuevoEstudiante()" class="px-4 py-2 text-primary hover:bg-primary-50 rounded-lg font-medium">
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Aviso estudiante encontrado -->
+      @if (estudianteEncontrado()) {
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex gap-4">
+          <div class="mt-1">
+            <span class="flex items-center justify-center size-10 bg-blue-100 text-blue-600 rounded-full">
+              <ng-icon name="lucideUserCheck" class="size-5"></ng-icon>
+            </span>
+          </div>
+          <div>
+            <h3 class="font-bold text-blue-900 text-lg">Estudiante encontrado</h3>
+            <p class="text-blue-700">{{ estudianteEncontrado()?.nombre }} {{ estudianteEncontrado()?.apellido_paterno }}</p>
+            <p class="text-sm text-blue-600 mt-1">Si necesitas actualizar sus datos, puedes hacerlo en el formulario de abajo.</p>
+          </div>
+        </div>
+
+        <!-- Historial rapido -->
+        @if (estudianteEncontrado()!.inscripciones.length > 0) {
+          <div class="mb-6">
+            <h4 class="text-sm font-semibold text-default-600 mb-2 uppercase">Inscripciones Anteriores</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              @for (ins of estudianteEncontrado()!.inscripciones; track ins.fecha_ins) {
+                <div class="p-3 border border-default-200 rounded-lg bg-default-50 flex justify-between items-center">
+                  <span class="font-medium text-default-700 text-sm truncate pr-2">{{ ins.nombre_programa }}</span>
+                  <span class="text-xs text-default-500 whitespace-nowrap">{{ ins.fecha_ins | date:'dd/MM/yyyy' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      <form [formGroup]="formEstudiante">
+        <h4 class="text-sm font-semibold text-default-600 mb-4 uppercase border-b pb-2">Datos del Estudiante</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Carnet de Identidad *</label>
+            <input type="text" formControlName="ci" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Nombre Completo *</label>
+            <div class="grid grid-cols-3 gap-2">
+              <input type="text" formControlName="nombre" placeholder="Nombres" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+              <input type="text" formControlName="apellido_paterno" placeholder="Ap. Paterno" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+              <input type="text" formControlName="apellido_materno" placeholder="Ap. Materno" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Género</label>
+            <select formControlName="genero" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
+              <option [ngValue]="2">Masculino</option>
+              <option [ngValue]="1">Femenino</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Celular / Teléfono</label>
+            <input type="text" formControlName="celular" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Correo Electrónico</label>
+            <input type="email" formControlName="email" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+          </div>
+        </div>
+
+        @if (!estudianteEncontrado()) {
+          <div class="bg-amber-50 text-amber-700 p-3 rounded-lg text-sm mb-6 flex gap-2">
+            <ng-icon name="lucideInfo" class="size-5 flex-shrink-0"></ng-icon>
+            <p>Se creará una cuenta nueva para este estudiante. Su <b>contraseña provisional</b> será su número de carnet.</p>
+          </div>
+        }
+
+        <div class="flex justify-end">
+          <button type="button" (click)="irPaso2()" [disabled]="formEstudiante.invalid"
+            class="px-6 py-2.5 bg-primary text-white rounded-lg font-medium shadow-sm hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2">
+            Continuar a Programa
+            <ng-icon name="lucideArrowRight"></ng-icon>
+          </button>
+        </div>
+      </form>
+    </div>
+    }
+
+    <!-- ================= PASO 2: PROGRAMA ================= -->
+    @if (pasoActual() === 2) {
+    <div class="p-6">
+      <div class="flex gap-2 mb-6">
+        <div class="flex-1 relative">
+          <input type="text" [ngModel]="searchProg()" (ngModelChange)="searchProg.set($event)" (keyup.enter)="buscarProgramas()"
+            placeholder="Buscar diplomado, curso o programa..."
+            class="w-full pl-10 pr-4 py-2 border border-default-300 rounded-lg focus:ring-primary focus:border-primary">
+          <ng-icon name="lucideSearch" class="absolute left-3 top-2.5 text-default-400"></ng-icon>
+        </div>
+        <button (click)="buscarProgramas()" [disabled]="isSearchingProg()"
+          class="px-4 py-2 bg-default-100 text-default-700 rounded-lg hover:bg-default-200 font-medium">
+          Buscar
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Lista de programas -->
+        <div class="border border-default-200 rounded-xl overflow-hidden flex flex-col h-[400px]">
+          <div class="bg-default-100 px-4 py-2 border-b border-default-200 font-medium text-default-700 text-sm">
+            Programas Activos
+          </div>
+          <div class="overflow-y-auto flex-1 p-2 space-y-2">
+            @for (prog of programas(); track prog.id_programa) {
+              <button (click)="seleccionarPrograma(prog)"
+                class="w-full text-left p-3 rounded-lg border transition-all"
+                [class]="progSeleccionado()?.id_programa === prog.id_programa ? 'bg-primary-50 border-primary shadow-sm' : 'border-transparent hover:bg-default-50'">
+                <p class="font-medium text-default-900 leading-tight">{{ prog.nombre_programa }}</p>
+                <p class="text-xs text-default-500 mt-1">{{ prog.imparticiones.length }} versiones disponibles</p>
+              </button>
+            }
+            @if (programas().length === 0 && searchProg() !== '') {
+              <div class="p-6 text-center text-default-400 text-sm">No se encontraron programas.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Detalles del programa seleccionado -->
+        <div class="border border-default-200 rounded-xl overflow-hidden bg-default-50 flex flex-col h-[400px]">
+          <div class="bg-default-100 px-4 py-2 border-b border-default-200 font-medium text-default-700 text-sm">
+            Versión y Cuotas
+          </div>
+          <div class="overflow-y-auto flex-1 p-4">
+            @if (progSeleccionado()) {
+              
+              <h4 class="text-sm font-bold text-default-700 mb-2">1. Selecciona la versión:</h4>
+              <div class="space-y-2 mb-6">
+                @for (imp of progSeleccionado()!.imparticiones; track imp.id_imp) {
+                  <label class="flex items-center p-3 bg-white border rounded-lg cursor-pointer transition-all"
+                    [class]="impSeleccionada()?.id_imp === imp.id_imp ? 'border-primary ring-1 ring-primary' : 'border-default-200'">
+                    <input type="radio" name="imp" [value]="imp" (change)="seleccionarImparticion(imp)" class="text-primary focus:ring-primary size-4">
+                    <div class="ml-3">
+                      <p class="text-sm font-bold text-default-800">{{ imp.periodo }} / {{ imp.gestion }}</p>
+                      <p class="text-xs text-default-500">Inicio: {{ imp.imparte_fecha_inicio | date:'dd/MM/yyyy' }}</p>
+                    </div>
+                  </label>
+                }
+              </div>
+
+              @if (impSeleccionada()) {
+                <h4 class="text-sm font-bold text-default-700 mb-2">2. Selecciona el plan de pago:</h4>
+                <div class="space-y-2 mb-4">
+                  @for (plan of impSeleccionada()!.planes; track plan.id_plan) {
+                    <label class="flex items-center p-3 bg-white border rounded-lg cursor-pointer transition-all"
+                      [class]="planSeleccionado()?.id_plan === plan.id_plan ? 'border-primary ring-1 ring-primary' : 'border-default-200'">
+                      <input type="radio" name="plan" [value]="plan" (change)="seleccionarPlan(plan)" class="text-primary focus:ring-primary size-4">
+                      <div class="ml-3 flex-1">
+                        <p class="text-sm font-bold text-default-800">{{ plan.titulo || 'Plan Regular' }}</p>
+                        <p class="text-xs text-default-500">{{ plan.nro_cuotas }} cuota(s)</p>
+                      </div>
+                      <div class="text-right">
+                        <p class="text-sm font-bold text-green-600">Bs. {{ plan.costo }}</p>
+                      </div>
+                    </label>
+                  }
+                  @if (impSeleccionada()!.planes.length === 0) {
+                     <p class="text-sm text-amber-600 p-2 bg-amber-50 rounded">Esta versión no tiene planes de pago definidos. Podrás ingresar el monto libremente en el siguiente paso.</p>
+                  }
+                </div>
+              }
+            } @else {
+              <div class="flex items-center justify-center h-full text-default-400 text-sm">
+                Selecciona un programa de la lista izquierda
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex justify-between mt-6 pt-4 border-t border-default-200">
+        <button type="button" (click)="pasoActual.set(1)" class="px-6 py-2.5 text-default-600 bg-default-100 hover:bg-default-200 rounded-lg font-medium">Volver</button>
+        <button type="button" (click)="irPaso3()" [disabled]="!impSeleccionada()"
+          class="px-6 py-2.5 bg-primary text-white rounded-lg font-medium shadow-sm hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2">
+          Continuar a Pago
+          <ng-icon name="lucideArrowRight"></ng-icon>
+        </button>
+      </div>
+    </div>
+    }
+
+    <!-- ================= PASO 3: PAGO ================= -->
+    @if (pasoActual() === 3) {
+    <div class="p-6">
+      
+      <!-- Resumen rapido -->
+      <div class="bg-default-50 rounded-xl p-4 mb-6 border border-default-200 flex flex-col md:flex-row justify-between gap-4">
+        <div>
+          <p class="text-xs text-default-500 uppercase">Estudiante</p>
+          <p class="font-bold text-default-900">{{ formEstudiante.value.nombre }} {{ formEstudiante.value.apellido_paterno }}</p>
+          <p class="text-sm text-default-600">CI: {{ formEstudiante.value.ci }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-default-500 uppercase">Programa</p>
+          <p class="font-bold text-default-900">{{ progSeleccionado()?.nombre_programa }}</p>
+          <p class="text-sm text-default-600">Periodo: {{ impSeleccionada()?.periodo }}/{{ impSeleccionada()?.gestion }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-default-500 uppercase">Plan Seleccionado</p>
+          <p class="font-bold text-primary">{{ planSeleccionado()?.titulo || 'Sin Plan' }}</p>
+          <p class="text-sm text-green-600 font-medium">{{ planSeleccionado() ? 'Costo Base: Bs. ' + planSeleccionado()?.costo : '' }}</p>
+        </div>
+      </div>
+
+      <form [formGroup]="formPago">
+        <h4 class="text-sm font-semibold text-default-600 mb-4 uppercase border-b pb-2">Registro de Pago (Caja)</h4>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <!-- Monto -->
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado (Bs.) *</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
+              <input type="number" formControlName="monto_pagado" class="w-full pl-10 pr-3 py-2 border border-default-300 rounded-lg text-lg font-bold text-green-700">
+            </div>
+            @if (formPago.get('monto_pagado')?.touched && formPago.get('monto_pagado')?.invalid) {
+              <p class="text-xs text-red-500 mt-1">El monto es requerido y mayor a 0.</p>
+            }
+          </div>
+
+          <!-- Nro Boleta -->
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo *</label>
+            <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-300 rounded-lg" placeholder="Ej. 123456789">
+            @if (formPago.get('nro_boleta')?.touched && formPago.get('nro_boleta')?.invalid) {
+              <p class="text-xs text-red-500 mt-1">El número de comprobante es requerido.</p>
+            }
+          </div>
+
+          <!-- Metodo y Banco -->
+          <div class="grid grid-cols-2 gap-2 md:col-span-2">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Método de Pago *</label>
+              <select formControlName="metodo_pago" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
+                <option value="deposito">Depósito Bancario</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivo">Efectivo (en Caja)</option>
+                <option value="pos">Tarjeta (POS)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino</label>
+              <select formControlName="tipo_banco_id" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
+                <option [ngValue]="null">-- Seleccionar --</option>
+                @for (b of bancos(); track b.id) {
+                  <option [value]="b.id">{{ b.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Fecha -->
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Depósito/Pago *</label>
+            <input type="date" formControlName="fecha_deposito" class="w-full px-3 py-2 border border-default-300 rounded-lg">
+          </div>
+        </div>
+
+        <div class="flex justify-between mt-6 pt-4 border-t border-default-200">
+          <button type="button" (click)="pasoActual.set(2)" class="px-6 py-2.5 text-default-600 bg-default-100 hover:bg-default-200 rounded-lg font-medium">Volver</button>
+          <button type="button" (click)="finalizarInscripcion()" [disabled]="isSubmitting()"
+            class="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium shadow-sm hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
+            @if (isSubmitting()) {
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Procesando...
+            } @else {
+              Confirmar Inscripción y Pago
+              <ng-icon name="lucideCheck"></ng-icon>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+    }
+
+    <!-- ================= PASO 4: CONFIRMACION ================= -->
+    @if (pasoActual() === 4) {
+    <div class="p-8 text-center print:text-left print:p-0">
+      
+      <div class="print:hidden mb-6 flex flex-col items-center">
+        <div class="size-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+          <ng-icon name="lucideCheckCircle" class="size-8"></ng-icon>
+        </div>
+        <h2 class="text-2xl font-bold text-default-900 mb-2">¡Inscripción Exitosa!</h2>
+        <p class="text-default-500">El pago y la inscripción han sido registrados correctamente en el sistema.</p>
+        
+        @if (resultado()?.es_nuevo) {
+          <div class="mt-4 bg-amber-50 text-amber-800 px-4 py-2 rounded-lg inline-block font-medium">
+            ¡Usuario nuevo creado! Contraseña provisional: {{ formEstudiante.value.ci }}
+          </div>
+        }
+      </div>
+
+      <!-- Comprobante imprimible -->
+      <div class="max-w-2xl mx-auto border-2 border-default-200 p-8 rounded-2xl bg-white text-left mt-8 print:border-none print:mt-0 print:p-4">
+        
+        <div class="flex justify-between items-start mb-8 pb-4 border-b-2 border-default-100">
+          <div>
+            <h1 class="text-2xl font-black text-default-900 tracking-tight">CENEFCO</h1>
+            <p class="text-sm text-default-500 font-medium">Comprobante de Inscripción</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold text-default-700">Nro. Registro: #{{ resultado()?.id_ins }}</p>
+            <p class="text-xs text-default-500">Fecha: {{ formPago.value.fecha_deposito | date:'dd/MM/yyyy' }}</p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Datos del Estudiante</h3>
+          <p class="font-bold text-lg text-default-800">{{ formEstudiante.value.nombre }} {{ formEstudiante.value.apellido_paterno }} {{ formEstudiante.value.apellido_materno }}</p>
+          <p class="text-default-600">CI: {{ formEstudiante.value.ci }}</p>
+          <p class="text-default-600">Celular: {{ formEstudiante.value.celular || 'No registrado' }}</p>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Detalles del Programa</h3>
+          <div class="bg-default-50 rounded-xl p-4 border border-default-100">
+            <p class="font-bold text-default-900">{{ progSeleccionado()?.nombre_programa }}</p>
+            <p class="text-sm text-default-600 mt-1">Periodo: {{ impSeleccionada()?.periodo }} / {{ impSeleccionada()?.gestion }}</p>
+            <p class="text-sm text-default-600 mt-1">Plan: {{ planSeleccionado()?.titulo || 'Plan Regular' }}</p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Detalle del Pago</h3>
+          <table class="w-full text-sm">
+            <tbody>
+              <tr class="border-b border-default-100">
+                <td class="py-2 text-default-600">Método de Pago</td>
+                <td class="py-2 font-medium text-right capitalize">{{ formPago.value.metodo_pago }}</td>
+              </tr>
+              <tr class="border-b border-default-100">
+                <td class="py-2 text-default-600">Nro. Comprobante</td>
+                <td class="py-2 font-medium text-right">{{ formPago.value.nro_boleta }}</td>
+              </tr>
+              <tr>
+                <td class="py-3 font-bold text-default-900">Monto Cancelado</td>
+                <td class="py-3 font-bold text-green-600 text-right text-lg">Bs. {{ (formPago.value.monto_pagado | number:'1.2-2') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-center pt-8 border-t-2 border-default-100 text-xs text-default-500">
+          <p>Este documento es un comprobante interno de caja.</p>
+          @if (resultado()?.es_nuevo) {
+            <p class="mt-2 font-bold text-default-700">Acceso al portal virtual: Usuario y Contraseña es su Nro. de Carnet.</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex justify-center gap-4 mt-8 print:hidden">
+        <button (click)="imprimirComprobante()" class="px-6 py-2.5 bg-default-800 text-white rounded-lg font-medium shadow-sm hover:bg-default-900 flex items-center gap-2">
+          <ng-icon name="lucidePrinter"></ng-icon>
+          Imprimir Comprobante
+        </button>
+        <button (click)="nuevaInscripcion()" class="px-6 py-2.5 border border-default-300 text-default-700 bg-white rounded-lg font-medium hover:bg-default-50">
+          Nueva Inscripción
+        </button>
+      </div>
+
+    </div>
+    }
+  </div>
+</div>

@@ -22,6 +22,7 @@ export class ProgramaAcademicoEdit {
     id_tipoprograma:          [null as number | null], url_video: [''],
     inicio_actividades:       [''], finalizacion_actividades: [''], inicio_inscripciones: [''],
     estado:                   [1],
+    estado_web:               ['borrador'],
   });
 
   constructor() {

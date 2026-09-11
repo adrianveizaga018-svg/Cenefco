@@ -38,11 +38,21 @@ export interface CampanaPublicidad {
   presupuesto_usd: number | null;
   presupuesto_bob: number | null;
   id_campana_externa: string | null;
+  cuenta_externa_id?: string | null;
   responsable: string | null;
   notas: string | null;
   total_gastado: number;
   created_at: string | null;
   updated_at: string | null;
+  // Campos de flujo (manual)
+  fecha_publicacion: string | null;
+  fecha_refuerzo: string | null;
+  en_testeo: boolean;
+  leads_whatsapp: number | null;
+  // Calculados
+  inscritos_auto: number | null;
+  costo_por_lead: number | null;
+  costo_por_inscrito: number | null;
   metricas: CampanaMetrica[];
 }
 
