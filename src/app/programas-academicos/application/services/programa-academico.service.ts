@@ -33,4 +33,27 @@ export class ProgramaAcademicoService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  // --- Imparticiones (Versiones) ---
+  getImparticiones(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/imparticiones`);
+  }
+
+  createImparticion(id: number, data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/imparticiones`, data);
+  }
+
+  updateImparticion(id: number, id_imp: number, data: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/${id}/imparticiones/${id_imp}`, data);
+  }
+
+  // --- Planes de Pago ---
+  getPlanes(id: number): Observable<{planes_habilitados: any[], todos_los_planes: any[]}> {
+    return this.http.get<any>(`${this.baseUrl}/${id}/planes`);
+  }
+
+  syncPlanes(id: number, planesIds: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/planes`, { planes: planesIds });
+  }
 }
+

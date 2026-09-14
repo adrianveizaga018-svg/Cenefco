@@ -158,11 +158,16 @@ export default class InscripcionPresencialComponent implements OnInit {
   }
 
   irPaso3() {
-    if (this.impSeleccionada() && this.planSeleccionado()) {
-      this.pasoActual.set(3);
-    } else {
-      Swal.fire('Atención', 'Debes seleccionar una versión y un plan de pago para continuar.', 'warning');
+    if (!this.impSeleccionada()) {
+      Swal.fire('Atención', 'Debes seleccionar una versión para continuar.', 'warning');
+      return;
     }
+    const hayPlanes = (this.progSeleccionado()?.planes?.length ?? 0) > 0;
+    if (hayPlanes && !this.planSeleccionado()) {
+      Swal.fire('Atención', 'Debes seleccionar un plan de pago para continuar.', 'warning');
+      return;
+    }
+    this.pasoActual.set(3);
   }
 
   // --- MÉTODOS PASO 3 ---

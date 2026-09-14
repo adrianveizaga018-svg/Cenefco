@@ -1,4 +1,4 @@
-export interface ProgramaAcademico {
+﻿export interface ProgramaAcademico {
   id_programa:              number;
   id_us_reg:                number;
   num_programa:             number;
@@ -17,6 +17,7 @@ export interface ProgramaAcademico {
   id_tipoprograma:          number | null;
   url_video:                string | null;
   estado:                   number;
+  estado_web:               string | null;
   fecha_reg:                string | null;
 }
 export interface ProgramaAcademicoListResponse { data: ProgramaAcademico[]; total: number; }
@@ -38,4 +39,5 @@ export interface CreateProgramaAcademicoPayload {
   id_tipoprograma?:          number | null;
   url_video?:                string | null;
   estado?:                   number;
+  estado_web?:               string | null;
 }
