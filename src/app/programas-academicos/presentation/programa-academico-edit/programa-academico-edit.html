@@ -1,5 +1,5 @@
 ﻿<main>
-  <app-page-title title="Editar Programa AcadÃ©mico" subtitle="Programas AcadÃ©micos" />
+  <app-page-title title="Editar Programa Académico" subtitle="Programas Académicos" />
   
   @if (loading()) {
     <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2"><div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...</div>
@@ -29,7 +29,7 @@
               <input type="text" formControlName="nombre_programa" class="form-input w-full">
             </div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">ID Tipo de Programa</label><input type="number" formControlName="id_tipoprograma" class="form-input w-full"></div>
-            <div><label class="block text-sm font-medium text-default-700 mb-1">InversiÃ³n</label><input type="text" formControlName="inversion" class="form-input w-full"></div>
+            <div><label class="block text-sm font-medium text-default-700 mb-1">InVersión</label><input type="text" formControlName="inversion" class="form-input w-full"></div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">Creditaje</label><input type="text" formControlName="creditaje" class="form-input w-full"></div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">URL Video</label><input type="url" formControlName="url_video" class="form-input w-full"></div>
             <div><label class="block text-sm font-medium text-default-700 mb-1">Inicio de Actividades</label><input type="date" formControlName="inicio_actividades" class="form-input w-full"></div>
@@ -42,7 +42,7 @@
                 <option value="inactivo">Desactivado</option>
               </select>
             </div>
-            <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">DescripciÃ³n</label><textarea formControlName="descripcion" rows="3" class="form-input w-full"></textarea></div>
+            <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Descripción</label><textarea formControlName="descripcion" rows="3" class="form-input w-full"></textarea></div>
             <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Objetivo</label><textarea formControlName="objetivo" rows="3" class="form-input w-full"></textarea></div>
             <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Dirigido a</label><textarea formControlName="dirigido" rows="2" class="form-input w-full"></textarea></div>
             <div class="md:col-span-2"><label class="block text-sm font-medium text-default-700 mb-1">Requisitos</label><textarea formControlName="requisitos" rows="2" class="form-input w-full"></textarea></div>
@@ -61,16 +61,16 @@
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">
             <h4 class="card-title">Versiones de este Programa</h4>
-            <button (click)="abrirNuevaVersion()" class="btn bg-primary text-white py-1.5 px-3 text-sm">Nueva VersiÃ³n</button>
+            <button (click)="abrirNuevaVersion()" class="btn bg-primary text-white py-1.5 px-3 text-sm">Nueva Versión</button>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-default-200">
               <thead class="bg-default-50">
                 <tr>
                   <th class="px-4 py-3 text-left text-xs font-medium text-default-500 uppercase">Nombre</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-default-500 uppercase">PerÃ­odo/GestiÃ³n</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-default-500 uppercase">Período/Gestión</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-default-500 uppercase">Fechas</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-default-500 uppercase">AcciÃ³n</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-default-500 uppercase">acción</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-default-200">
@@ -100,7 +100,7 @@
         <div class="p-6">
           <div class="mb-4">
             <h4 class="card-title text-default-900 mb-1">Planes de Pago Habilitados</h4>
-            <p class="text-sm text-default-500">Selecciona los planes de pago que estarÃ¡n disponibles para los estudiantes de este programa.</p>
+            <p class="text-sm text-default-500">Selecciona los planes de pago que estarán disponibles para los estudiantes de este programa.</p>
           </div>
 
           <div class="space-y-3 mb-6">
@@ -138,22 +138,22 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
     <div class="bg-white rounded-xl shadow-lg w-full max-w-lg overflow-hidden flex flex-col max-h-full">
       <div class="flex justify-between items-center p-4 border-b">
-        <h3 class="font-bold text-lg">{{ versionEditId() ? 'Editar' : 'Nueva' }} VersiÃ³n</h3>
+        <h3 class="font-bold text-lg">{{ versionEditId() ? 'Editar' : 'Nueva' }} Versión</h3>
         <button (click)="showVersionModal.set(false)" class="text-default-400 hover:text-default-600"><ng-icon name="lucideX"></ng-icon></button>
       </div>
       <div class="p-4 overflow-y-auto">
         <form [formGroup]="formVersion" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Nombre (ej. VersiÃ³n 1, Grupo A) *</label>
+            <label class="block text-sm font-medium mb-1">Nombre (ej. Versión 1, Grupo A) *</label>
             <input type="text" formControlName="nombre" class="form-input w-full">
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-1">PerÃ­odo (ej. I, Sem 1)</label>
+              <label class="block text-sm font-medium mb-1">Período (ej. I, Sem 1)</label>
               <input type="text" formControlName="periodo" class="form-input w-full">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">GestiÃ³n (AÃ±o) *</label>
+              <label class="block text-sm font-medium mb-1">Gestión (Año) *</label>
               <input type="number" formControlName="gestion" class="form-input w-full">
             </div>
           </div>
