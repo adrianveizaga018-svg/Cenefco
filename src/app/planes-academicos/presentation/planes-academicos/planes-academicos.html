@@ -30,22 +30,20 @@
                   </div>
             <table class="min-w-full divide-y divide-default-200 relative z-10">
               <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
-                <th class="px-3.5 py-3 text-start">Nro. Resolución</th>
-                <th class="px-3.5 py-3 text-start">Título</th>
-                <th class="px-3.5 py-3 text-start">Año</th>
-                <th class="px-3.5 py-3 text-start">Costo</th>
+                <th class="px-3.5 py-3 text-start">Nombre del Plan</th>
+                <th class="px-3.5 py-3 text-start">Costo (Bs.)</th>
                 <th class="px-3.5 py-3 text-start">N° Cuotas</th>
+                <th class="px-3.5 py-3 text-start">Descuento (%)</th>
                 <th class="px-3.5 py-3 text-start">Estado</th>
                 <th class="px-3.5 py-3 text-start">Acciones</th>
               </tr></thead>
               <tbody class="divide-y divide-default-200">
                 @for (item of items; track item.id_plan) {
-                  <tr class="text-default-800 font-normal">
-                    <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ item.numero_resolucion || '—' }}</td>
-                    <td class="px-3.5 py-2.5 text-sm font-medium">{{ item.titulo }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.anio || '—' }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.costo || '—' }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.nro_cuotas || '—' }}</td>
+                  <tr class="text-default-800 font-normal hover:bg-default-50">
+                    <td class="px-3.5 py-2.5 text-sm font-bold text-default-900">{{ item.titulo }}</td>
+                    <td class="px-3.5 py-2.5 text-sm font-medium text-green-600">{{ item.costo || '0' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-600">{{ item.nro_cuotas || '1' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-600">{{ item.descuento || '0' }}</td>
                     <td class="px-3.5 py-2.5 text-sm">
                       @if (item.estado === 1) { <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Activo</span> }
                       @else { <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Inactivo</span> }
@@ -56,7 +54,7 @@
                     </div></td>
                   </tr>
                 }
-                @empty { <tr><td colspan="7" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron planes académicos.</td></tr> }
+                @empty { <tr><td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron planes de pago.</td></tr> }
               </tbody>
             </table>
             </div>

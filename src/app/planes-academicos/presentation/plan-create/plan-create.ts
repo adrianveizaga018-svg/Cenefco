@@ -43,9 +43,22 @@ export class PlanCreate {
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.submitting.set(true);
-    this.service.create(this.form.value as any).subscribe({
+    
+    // Convertir a string para que Laravel no rechace la validación
+    const formVals = this.form.value;
+    const payload = {
+      ...formVals,
+      id_plan: Math.floor(Date.now() / 1000),
+      nro_cuotas: String(formVals.nro_cuotas || '1'),
+      costo: String(formVals.costo || '0'),
+      descuento: String(formVals.descuento || '0')
+    };
+
+    this.service.create(payload as any).subscribe({
       next: () => { this.toast.success('¡Creado!', 'Plan de pago registrado'); this.router.navigate(['/cenefco/planes-academicos']); },
       error: (err: HttpErrorResponse) => { this.toast.error('Error', extractErrorMessage(err, 'No se pudo guardar')); this.submitting.set(false); }
     });
   }
 }
+
+

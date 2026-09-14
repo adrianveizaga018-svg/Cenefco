@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -44,7 +44,7 @@ interface DocentePerfil {
   email_publico: string | null;
 }
 
-type Tab = 'datos' | 'docentes' | 'reglamento' | 'inscritos' | 'participantes';
+type Tab = 'datos' | 'planes' | 'docentes' | 'reglamento' | 'inscritos' | 'participantes';
 
 interface InscriptoRow {
   id_ins:            number;
@@ -1194,7 +1194,7 @@ export class CursoEdit implements OnInit {
           this.form.disable();
           this.activeTab.set('inscritos');
         }
-        this.loadingCurso.set(false);
+        this.loadingCurso.set(false); this.cargarPlanes();
       },
       error: (err: HttpErrorResponse) => {
         this.toast.error('Error', extractErrorMessage(err, 'No se pudo cargar el curso'));
@@ -1301,3 +1301,4 @@ export class CursoEdit implements OnInit {
     });
   }
 }
+

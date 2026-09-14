@@ -60,9 +60,20 @@ export class PlanEdit {
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.submitting.set(true);
-    this.service.update(this.id, this.form.value as any).subscribe({
+    
+    // Convertir a string para que Laravel no rechace la validación
+    const formVals = this.form.value;
+    const payload = {
+      ...formVals,
+      nro_cuotas: String(formVals.nro_cuotas || '1'),
+      costo: String(formVals.costo || '0'),
+      descuento: String(formVals.descuento || '0')
+    };
+
+    this.service.update(this.id, payload as any).subscribe({
       next: () => { this.toast.success('¡Actualizado!', 'Plan actualizado correctamente'); this.router.navigate(['/cenefco/planes-academicos']); },
       error: (err: HttpErrorResponse) => { this.toast.error('Error', extractErrorMessage(err, 'No se pudo actualizar')); this.submitting.set(false); }
     });
   }
 }
+
