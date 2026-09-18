@@ -1,14 +1,25 @@
 ﻿<main>
-  <app-page-title title="Programas Académicos" subtitle="Oferta Académica del Sistema" />
+  <app-page-title title="Versiones / Imparticiones" subtitle="Siguientes cohortes de un programa ya creado" />
   <div class="grid grid-cols-1 gap-5 mb-5">
+    <div class="card border border-sky-200 bg-sky-50/60">
+      <div class="card-body !py-3 text-sm text-sky-900">
+        <p class="font-medium mb-1">No vuelvas a crear el diplomado.</p>
+        <p class="text-sky-800">
+          La ficha (nombre, precios, planes, portal) se carga una sola vez en
+          <a routerLink="/cenefco/cursos" class="underline font-medium">Programas / Cursos</a>
+          y al guardar ya nace la <strong>Versión 1</strong>.
+          Esta pantalla sirve para abrir <strong>Versión 2, 3…</strong> del mismo programa (otra fecha, otro grupo).
+        </p>
+      </div>
+    </div>
     <div class="card">
       <div class="card-header">
         <div class="relative">
           <input type="text" class="ps-11 form-input form-input-sm w-full sm:w-64" placeholder="Buscar programa..." (input)="onSearch($event)">
           <div class="absolute inset-y-0 start-0 flex items-center ps-3"><div class="size-3.5 text-default-500"><ng-icon name="lucideSearch"></ng-icon></div></div>
         </div>
-        <a routerLink="/cenefco/programa-academico-create" class="btn btn-sm bg-primary text-white">
-          <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div> Nuevo Programa
+        <a routerLink="/cenefco/curso-create" class="btn btn-sm bg-default-200 text-default-700">
+          ¿Programa nuevo? Ir a crear curso
         </a>
       </div>
       <div class="flex flex-col">
@@ -31,10 +42,8 @@
             <table class="min-w-full divide-y divide-default-200 relative z-10">
               <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
                 <th class="px-3.5 py-3 text-start">#</th>
-                <th class="px-3.5 py-3 text-start">Nombre del Programa</th>
-                <th class="px-3.5 py-3 text-start">Inversión</th>
-                <th class="px-3.5 py-3 text-start">Creditaje</th>
-                <th class="px-3.5 py-3 text-start">Inicio</th>
+                <th class="px-3.5 py-3 text-start">Programa</th>
+                <th class="px-3.5 py-3 text-start">Inicio ficha</th>
                 <th class="px-3.5 py-3 text-start">Estado</th>
                 <th class="px-3.5 py-3 text-start">Acciones</th>
               </tr></thead>
@@ -43,8 +52,6 @@
                   <tr class="text-default-800 font-normal">
                     <td class="px-3.5 py-2.5 text-sm text-primary font-medium">{{ item.id_programa }}</td>
                     <td class="px-3.5 py-2.5 text-sm font-medium max-w-xs truncate" [title]="item.nombre_programa">{{ item.nombre_programa }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.inversion || '—' }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.creditaje || '—' }}</td>
                     <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.inicio_actividades || '—' }}</td>
                     <td class="px-3.5 py-2.5 text-sm">
                       @if (item.estado_web === 'publicado') {
@@ -52,15 +59,26 @@
                       } @else if (item.estado_web === 'borrador') {
                         <span class="badge bg-warning/10 text-warning text-xs px-2 py-0.5 rounded-full">Borrador</span>
                       } @else {
-                        <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Desactivado</span>
+                        <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">{{ item.estado_web || 'Sin estado web' }}</span>
                       }
                     </td>
                     <td class="px-3.5 py-2.5"><div class="flex items-center gap-1.5">
-                      <a [routerLink]="['/cenefco/programa-academico-edit', item.id_programa]" class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"><div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div></a>
+                      <a [routerLink]="['/cenefco/programa-academico-edit', item.id_programa]"
+                         class="btn btn-sm bg-primary text-white"
+                         title="Abrir o editar cohortes">
+                        Versiones
+                      </a>
+                      @if (item.slug) {
+                        <a [routerLink]="['/cenefco/curso-edit', item.slug]"
+                           class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
+                           title="Editar ficha del curso">
+                          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                        </a>
+                      }
                     </div></td>
                   </tr>
                 }
-                @empty { <tr><td colspan="7" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron programas académicos.</td></tr> }
+                @empty { <tr><td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron programas. Créalos en Programas / Cursos.</td></tr> }
               </tbody>
             </table>
             </div>

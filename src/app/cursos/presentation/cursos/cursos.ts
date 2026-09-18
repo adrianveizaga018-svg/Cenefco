@@ -1,4 +1,4 @@
-﻿import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe, NgClass, SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -2098,26 +2098,35 @@ export class Cursos {
     this.pageIndex.set(page);
   }
 
-  deleteCurso(id: number): void {
+  desactivarCurso(curso: any): void {
+    const estaActivo = curso.estado_web === 'publicado';
+    const nuevoEstado = estaActivo ? 'inactivo' : 'publicado';
+    const titulo = estaActivo ? '¿Desactivar curso?' : '¿Activar curso?';
+    const texto = estaActivo
+      ? 'El curso ya no será visible para los estudiantes en la web.'
+      : 'El curso volverá a ser visible para todos.';
+
     Swal.fire({
-      title: '¿Eliminar curso?',
-      text: 'Esta acción no se puede deshacer',
+      title: titulo,
+      text: texto,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonColor: estaActivo ? '#d33' : '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: estaActivo ? 'Sí, desactivar' : 'Sí, publicar',
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (result.isConfirmed) {
-        this.cursoService.delete(id).subscribe({
+        this.cursoService.update(curso.id_programa, { estado_web: nuevoEstado }).subscribe({
           next: () => {
-            this.toast.success('¡Eliminado!', 'El curso ha sido eliminado');
+            this.toast.success('¡Actualizado!', 'El estado del curso ha cambiado');
             this.refreshTrigger.update(n => n + 1);
           },
-          error: (err: HttpErrorResponse) => this.toast.error('Error', extractErrorMessage(err, 'No se pudo eliminar el curso'))
+          error: (err: HttpErrorResponse) => this.toast.error('Error', extractErrorMessage(err, 'No se pudo cambiar el estado'))
         });
       }
     });
   }
 }
+
+

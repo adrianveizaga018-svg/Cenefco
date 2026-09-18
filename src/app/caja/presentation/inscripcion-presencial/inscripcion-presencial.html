@@ -1,4 +1,4 @@
-﻿<div class="min-h-screen bg-default-50 p-4 md:p-6 print:bg-white print:p-0 print:min-h-0">
+<div class="min-h-screen bg-default-50 p-4 md:p-6 print:bg-white print:p-0 print:min-h-0">
 
   <!-- Header No-Print -->
   <div class="mb-6 print:hidden">
@@ -196,7 +196,7 @@
                     [class]="impSeleccionada()?.id_imp === imp.id_imp ? 'border-primary ring-1 ring-primary' : 'border-default-200'">
                     <input type="radio" name="imp" [value]="imp" (change)="seleccionarImparticion(imp)" class="text-primary focus:ring-primary size-4">
                     <div class="ml-3">
-                      <p class="text-sm font-bold text-default-800">{{ imp.periodo }} / {{ imp.gestion }}</p>
+                      <p class="text-sm font-bold text-default-800">{{ imp.nombre_version || imp.periodo || 'Versión' }} {{ imp.gestion ? '/ ' + imp.gestion : '' }}</p>
                       <p class="text-xs text-default-500">Inicio: {{ imp.imparte_fecha_inicio | date:'dd/MM/yyyy' }}</p>
                     </div>
                   </label>
@@ -206,7 +206,7 @@
               @if (impSeleccionada()) {
                 <h4 class="text-sm font-bold text-default-700 mb-2">2. Selecciona el plan de pago:</h4>
                 <div class="space-y-2 mb-4">
-                  @for (plan of progSeleccionado()!.planes; track plan.id_plan) {
+                  @for (plan of planesDisponibles(); track plan.id_plan) {
                     <label class="flex items-center p-3 bg-white border rounded-lg cursor-pointer transition-all"
                       [class]="planSeleccionado()?.id_plan === plan.id_plan ? 'border-primary ring-1 ring-primary' : 'border-default-200'">
                       <input type="radio" name="plan" [value]="plan" (change)="seleccionarPlan(plan)" class="text-primary focus:ring-primary size-4">
@@ -219,8 +219,8 @@
                       </div>
                     </label>
                   }
-                  @if (progSeleccionado()!.planes.length === 0) {
-                     <p class="text-sm text-amber-600 p-2 bg-amber-50 rounded">Este programa no tiene planes de pago definidos. ContactÃ¡ al administrador para configurarlos.</p>
+                  @if (planesDisponibles().length === 0) {
+                     <p class="text-sm text-amber-600 p-2 bg-amber-50 rounded">Esta versión no tiene planes de pago. Configúralos al crear o editar la versión.</p>
                   }
                 </div>
               }
@@ -259,7 +259,7 @@
         <div>
           <p class="text-xs text-default-500 uppercase">Programa</p>
           <p class="font-bold text-default-900">{{ progSeleccionado()?.nombre_programa }}</p>
-          <p class="text-sm text-default-600">Periodo: {{ impSeleccionada()?.periodo }}/{{ impSeleccionada()?.gestion }}</p>
+          <p class="text-sm text-default-600">{{ impSeleccionada()?.nombre_version || impSeleccionada()?.periodo || 'Versión' }}{{ impSeleccionada()?.gestion ? ' / ' + impSeleccionada()?.gestion : '' }}</p>
         </div>
         <div class="text-right">
           <p class="text-xs text-default-500 uppercase">Plan Seleccionado</p>
@@ -277,21 +277,28 @@
             <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado (Bs.) *</label>
             <div class="relative">
               <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
-              <input type="number" formControlName="monto_pagado" class="w-full pl-10 pr-3 py-2 border border-default-300 rounded-lg text-lg font-bold text-green-700">
+              <input type="number" formControlName="monto_pagado" class="w-full pl-10 pr-3 py-2 border border-default-200 rounded-lg text-lg font-bold text-green-700 bg-default-50 pointer-events-none select-none" tabindex="-1">
             </div>
             @if (formPago.get('monto_pagado')?.touched && formPago.get('monto_pagado')?.invalid) {
               <p class="text-xs text-red-500 mt-1">El monto es requerido y mayor a 0.</p>
             }
           </div>
 
-          <!-- Nro Boleta -->
-          <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo *</label>
-            <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-300 rounded-lg" placeholder="Ej. 123456789">
-            @if (formPago.get('nro_boleta')?.touched && formPago.get('nro_boleta')?.invalid) {
-              <p class="text-xs text-red-500 mt-1">El número de comprobante es requerido.</p>
-            }
-          </div>
+          <!-- Nro Boleta (no aplica para efectivo) -->
+          @if (formPago.get('metodo_pago')?.value !== 'efectivo') {
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo *</label>
+              <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-300 rounded-lg" placeholder="Ej. 123456789">
+              @if (formPago.get('nro_boleta')?.touched && formPago.get('nro_boleta')?.invalid) {
+                <p class="text-xs text-red-500 mt-1">El numero de comprobante es requerido.</p>
+              }
+            </div>
+          } @else {
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo</label>
+              <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-200 rounded-lg bg-default-50" placeholder="No aplica para efectivo">
+            </div>
+          }
 
           <!-- Metodo y Banco -->
           <div class="grid grid-cols-2 gap-2 md:col-span-2">
@@ -300,20 +307,73 @@
               <select formControlName="metodo_pago" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
                 <option value="deposito">Depósito Bancario</option>
                 <option value="transferencia">Transferencia</option>
+                <option value="qr">Pago por QR</option>
                 <option value="efectivo">Efectivo (en Caja)</option>
                 <option value="pos">Tarjeta (POS)</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino</label>
-              <select formControlName="tipo_banco_id" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
-                <option [ngValue]="null">-- Seleccionar --</option>
-                @for (b of bancos(); track b.id) {
-                  <option [value]="b.id">{{ b.nombre }}</option>
+              @if (formPago.get('metodo_pago')?.value === 'deposito' || formPago.get('metodo_pago')?.value === 'transferencia') {
+                <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino</label>
+                <select formControlName="tipo_banco_id" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white"
+                  (change)="onBancoChange($event)">
+                  <option [ngValue]="null">-- Seleccionar --</option>
+                  @for (b of bancos(); track b.id) {
+                    <option [value]="b.id">{{ b.nombre }}</option>
+                  }
+                </select>
+                @if (bancoSeleccionado() && (bancoSeleccionado()?.numero_cuenta || bancoSeleccionado()?.titular)) {
+                  <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm space-y-1 animate-fade-in">
+                    @if (bancoSeleccionado()?.numero_cuenta) {
+                      <p class="text-default-800"><span class="font-semibold">Nro. de Cuenta:</span> {{ bancoSeleccionado()?.numero_cuenta }}</p>
+                    }
+                    @if (bancoSeleccionado()?.titular) {
+                      <p class="text-default-800"><span class="font-semibold">Titular:</span> {{ bancoSeleccionado()?.titular }}</p>
+                    }
+                  </div>
                 }
-              </select>
+              } @else {
+                <!-- Espaciador invisible para mantener la alineación -->
+                <label class="block text-sm font-medium text-transparent mb-1 select-none">Banco Destino</label>
+                <div class="w-full px-3 py-2 border border-transparent"></div>
+              }
             </div>
           </div>
+
+          @if (formPago.get('metodo_pago')?.value === 'qr') {
+            @if (planSeleccionado()?.qr_image_url) {
+              <div class="md:col-span-2 mt-2 flex flex-col items-center gap-3 p-5 bg-green-50 border border-green-200 rounded-xl">
+              <p class="text-sm font-semibold text-green-800 text-center">
+                Código QR - {{ planSeleccionado()?.titulo }}<br>
+                <span class="text-xs text-green-600 font-normal">Muestra este código al cliente o envíaselo por WhatsApp</span>
+              </p>
+              
+              <img [src]="planSeleccionado()!.qr_image_url!" alt="QR de pago" class="w-56 h-56 object-contain bg-white rounded-xl border border-green-300 p-2 shadow-sm">
+              
+              <div class="flex gap-3 mt-2 w-full justify-center">
+                <button type="button" (click)="descargarQr()"
+                   class="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 flex items-center justify-center">
+                  Descargar
+                </button>
+                <button type="button" (click)="copiarQr()"
+                   class="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 flex items-center justify-center">
+                  Copiar Imagen
+                </button>
+                <button type="button" (click)="enviarQrWhatsapp()"
+                   class="px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#1ebd5a] flex items-center justify-center shadow-sm">
+                  Mensaje WhatsApp
+                </button>
+              </div>
+            </div>
+            } @else {
+              <div class="md:col-span-2 mt-2 p-4 bg-orange-50 border border-orange-200 rounded-xl text-center">
+                <p class="text-sm text-orange-800">
+                  <span class="font-semibold">No hay QR:</span> El plan <b>{{ planSeleccionado()?.titulo }}</b> no tiene una imagen QR subida. <br>
+                  Ve a la pestana de Planes de Pago, edita este plan y subele una imagen para que aparezca aqui.
+                </p>
+              </div>
+            }
+          }
 
           <!-- Fecha -->
           <div>
@@ -404,7 +464,7 @@
           <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Detalles del Programa</h3>
           <div class="bg-default-50 rounded-xl p-4 border border-default-100">
             <p class="font-bold text-default-900">{{ progSeleccionado()?.nombre_programa }}</p>
-            <p class="text-sm text-default-600 mt-1">Periodo: {{ impSeleccionada()?.periodo }} / {{ impSeleccionada()?.gestion }}</p>
+            <p class="text-sm text-default-600 mt-1">{{ impSeleccionada()?.nombre_version || impSeleccionada()?.periodo || 'Versión' }}{{ impSeleccionada()?.gestion ? ' / ' + impSeleccionada()?.gestion : '' }}</p>
             <p class="text-sm text-default-600 mt-1">Plan: {{ planSeleccionado()?.titulo || 'Plan Regular' }}</p>
           </div>
         </div>
@@ -451,5 +511,7 @@
     }
   </div>
 </div>
+
+
 
 

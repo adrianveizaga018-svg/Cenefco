@@ -24,6 +24,8 @@ export class PlanEdit {
   loading       = signal(true);
   costoPorCuota = signal('');
   id = Number(this.route.snapshot.paramMap.get('id'));
+  qrPreview = signal<string | null>(null);
+  private qrFile: File | null = null;
 
   form = this.fb.group({
     titulo:     ['', [Validators.required, Validators.maxLength(200)]],
@@ -37,6 +39,7 @@ export class PlanEdit {
     this.service.getById(this.id).subscribe({
       next: (d) => {
         this.form.patchValue(d as any);
+        if (d.qr_image_url) this.qrPreview.set(d.qr_image_url);
         this.loading.set(false);
         this.actualizarCostoCuota();
       },
@@ -45,6 +48,20 @@ export class PlanEdit {
 
     this.form.get('costo')!.valueChanges.subscribe(() => this.actualizarCostoCuota());
     this.form.get('nro_cuotas')!.valueChanges.subscribe(() => this.actualizarCostoCuota());
+  }
+
+  onQrChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.qrFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => this.qrPreview.set(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  quitarQr(): void {
+    this.qrFile = null;
+    this.qrPreview.set(null);
   }
 
   actualizarCostoCuota() {
@@ -61,16 +78,20 @@ export class PlanEdit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.submitting.set(true);
     
-    // Convertir a string para que Laravel no rechace la validación
     const formVals = this.form.value;
-    const payload = {
-      ...formVals,
-      nro_cuotas: String(formVals.nro_cuotas || '1'),
-      costo: String(formVals.costo || '0'),
-      descuento: String(formVals.descuento || '0')
-    };
+    const fd = new FormData();
+    // Use _method for PUT simulating POST in FormData
+    fd.append('_method', 'PUT');
+    fd.append('titulo', formVals.titulo ?? '');
+    fd.append('costo', String(formVals.costo ?? '0'));
+    fd.append('nro_cuotas', String(formVals.nro_cuotas ?? '1'));
+    fd.append('descuento', String(formVals.descuento ?? '0'));
+    fd.append('estado', String(formVals.estado ?? 1));
+    if (this.qrFile) fd.append('qr_image', this.qrFile);
+    else if (this.qrPreview() === null) fd.append('remove_qr', '1'); // Optional, depending on backend
 
-    this.service.update(this.id, payload as any).subscribe({
+    // Note: using POST with _method=PUT is standard Laravel for file uploads.
+    this.service.updateWithFormData(this.id, fd).subscribe({
       next: () => { this.toast.success('¡Actualizado!', 'Plan actualizado correctamente'); this.router.navigate(['/cenefco/planes-academicos']); },
       error: (err: HttpErrorResponse) => { this.toast.error('Error', extractErrorMessage(err, 'No se pudo actualizar')); this.submitting.set(false); }
     });

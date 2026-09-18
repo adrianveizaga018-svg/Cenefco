@@ -1,7 +1,7 @@
 ﻿import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { CursoService } from '../../application/services/curso.service';
@@ -61,6 +61,22 @@ interface InscriptoRow {
   gestion:           string | null;
   es_participante:   boolean;
 }
+
+
+export const fechasValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const inicioInsc = control.get('inicio_inscripciones')?.value;
+  const inicioAct = control.get('inicio_actividades')?.value;
+  const finAct = control.get('finalizacion_actividades')?.value;
+  if (!inicioInsc && !inicioAct && !finAct) return null;
+  let errors: any = {};
+  if (inicioInsc && inicioAct && new Date(inicioInsc) > new Date(inicioAct)) {
+    errors.inscripcionTardia = true;
+  }
+  if (inicioAct && finAct && new Date(inicioAct) > new Date(finAct)) {
+    errors.finTemprano = true;
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
+};
 
 @Component({
   selector: 'app-curso-edit',
@@ -153,6 +169,11 @@ export class CursoEdit implements OnInit {
 
   submitting       = signal(false);
   togglingEstado   = signal(false);
+  todosLosPlanes    = signal<any[]>([]);
+  planesHabilitados = signal<number[]>([]);
+  busquedaPlanes = signal('');
+  planesFiltrados = computed(() => this.todosLosPlanes().filter(p => p.titulo.toLowerCase().includes(this.busquedaPlanes().toLowerCase())));
+  submittingPlanes  = signal(false);
   Editor          = ClassicEditor as any;
   private ckEditors: Record<string, any> = {};
   onEditorReady(editor: any, campo: string) { this.ckEditors[campo] = editor; }
@@ -167,6 +188,7 @@ export class CursoEdit implements OnInit {
   catalogoTareas = signal<any[]>([]);
 
   imparticiones = signal<Imparticion[]>([]);
+  creandoVersion = signal(false);
   uploadingImg  = signal(false);
   imgPreview    = signal<string | null>(null);
   uploadingPdf  = signal(false);
@@ -293,6 +315,49 @@ export class CursoEdit implements OnInit {
     this.imparticionActualLabel.set(imp ? this.imparticionLabel(imp) : `Impartición #${idImp}`);
   }
 
+  crearVersion1(): void {
+    if (!this.id || this.creandoVersion()) return;
+    this.creandoVersion.set(true);
+    const inicio = this.form.get('inicio_actividades')?.value || null;
+    const fin = this.form.get('finalizacion_actividades')?.value || null;
+    const gestion = inicio ? new Date(inicio).getFullYear() : new Date().getFullYear();
+    this.http.post<{ id_imp: number }>('/api/v1/programas-academicos/' + this.id + '/imparticiones', {
+      nombre: 'Versión 1',
+      periodo: '1',
+      gestion,
+      imparte_fecha_inicio: inicio,
+      imparte_fecha_fin: fin,
+    }).subscribe({
+      next: (res) => {
+        this.form.patchValue({ id_imp: res.id_imp });
+        this.imparticiones.update(list => [...list, {
+          id_imp: res.id_imp,
+          periodo: '1',
+          gestion: String(gestion),
+          materia_nombre: 'Versión 1',
+          paralelo: null,
+          id_mat: this.id,
+          docente_nombre: null,
+        }]);
+        this.actualizarImparticionActualLabel(res.id_imp);
+        this.cursoService.update(this.id, { id_imp: res.id_imp }).subscribe({
+          next: () => {
+            this.toast.success('Versión 1 creada', 'El curso ya puede aparecer en Caja si está publicado y tiene planes.');
+            this.creandoVersion.set(false);
+          },
+          error: (err: HttpErrorResponse) => {
+            this.toast.error('Error', extractErrorMessage(err, 'Se creó la versión pero no se pudo vincular al curso'));
+            this.creandoVersion.set(false);
+          },
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error('Error', extractErrorMessage(err, 'No se pudo crear la versión'));
+        this.creandoVersion.set(false);
+      },
+    });
+  }
+
   inicialesDocente(nombre: string): string {
     return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
   }
@@ -363,7 +428,8 @@ export class CursoEdit implements OnInit {
 
   setTab(tab: Tab): void {
     this.activeTab.set(tab);
-    if (tab === 'docentes'      && !this.cursoDocentesLoaded())  this.loadCursoDocentes();
+    if (tab === 'planes'        && this.todosLosPlanes().length === 0) this.cargarPlanes();
+      if (tab === 'docentes'      && !this.cursoDocentesLoaded())  this.loadCursoDocentes();
     if (tab === 'inscritos'     && !this.inscritosLoaded())      this.loadInscritos();
     if (tab === 'participantes' && !this.participantesLoaded())  this.loadParticipantes();
   }
@@ -1113,10 +1179,14 @@ export class CursoEdit implements OnInit {
     meta_descripcion:         ['', [Validators.maxLength(500)]],
     mensaje_exito:            [''],
     tareas_catalogo_ids:      [[] as number[]],
-  });
+  }, { validators: fechasValidator });
 
   ngOnInit(): void {
     this.slug = this.route.snapshot.paramMap.get('slug') ?? '';
+      const tabParam = this.route.snapshot.queryParamMap.get('tab');
+      if (tabParam && ['datos','planes','docentes','reglamento','inscritos','participantes'].includes(tabParam)) {
+        this.activeTab.set(tabParam as Tab);
+      }
 
     this.cursoService.getCategorias().subscribe({ next: r => this.categorias.set(r.data) });
     this.cursoService.getTipos().subscribe({ next: r => this.tipos.set(r.data) });
@@ -1300,5 +1370,39 @@ export class CursoEdit implements OnInit {
       }
     });
   }
+  cargarPlanes() {
+    this.http.get('/api/v1/programas-academicos/' + this.id + '/planes').subscribe((res) => {
+      const r = res as any;
+      this.todosLosPlanes.set(r.todos_los_planes || []);
+      this.planesHabilitados.set((r.planes_habilitados || []).map((p: any) => p.id_plan));
+    });
+  }
+
+  togglePlan(planId: number) {
+    const current = this.planesHabilitados() as number[];
+    if (current.includes(planId)) {
+      this.planesHabilitados.set(current.filter(id => id !== planId));
+    } else {
+      this.planesHabilitados.set([...current, planId]);
+    }
+  }
+
+  guardarPlanes() {
+    this.submittingPlanes.set(true);
+    const id = this.id;
+    const planes = this.planesHabilitados();
+    this.http.post('/api/v1/programas-academicos/' + id + '/planes', { planes }).subscribe({
+      next: () => {
+        this.toast.success('Exito', 'Planes actualizados correctamente');
+        this.submittingPlanes.set(false);
+      },
+      error: () => {
+        this.toast.error('Error', 'No se pudieron guardar los planes');
+        this.submittingPlanes.set(false);
+      }
+    });
+  }
+
 }
+
 

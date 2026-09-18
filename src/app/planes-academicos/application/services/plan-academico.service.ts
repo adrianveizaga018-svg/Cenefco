@@ -29,6 +29,10 @@ export class PlanAcademicoService {
     return this.http.put<PlanAcademico>(`${this.baseUrl}/${id}`, data);
   }
 
+  updateWithFormData(id: number, data: FormData): Observable<PlanAcademico> {
+    return this.http.post<PlanAcademico>(`${this.baseUrl}/${id}`, data);
+  }
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

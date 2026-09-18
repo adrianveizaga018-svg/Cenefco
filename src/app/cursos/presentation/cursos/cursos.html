@@ -257,8 +257,14 @@
                               <a
                                 [routerLink]="['/cenefco/curso-edit', curso.slug]"
                                 class="btn size-7.5 bg-default-200 hover:bg-primary text-default-500 hover:text-white"
-                                title="Editar">
+                                title="Editar ficha">
                                 <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
+                              </a>
+                              <a
+                                [routerLink]="['/cenefco/programa-academico-edit', curso.id_programa]"
+                                class="btn size-7.5 bg-sky-100 hover:bg-sky-500 text-sky-600 hover:text-white"
+                                title="Versiones / siguiente cohorte">
+                                <div class="size-4"><ng-icon name="lucideCalendarRange"></ng-icon></div>
                               </a>
                             }
 
@@ -329,16 +335,17 @@
                               (click)="abrirCertificados(curso)">
                               <div class="size-4"><ng-icon name="lucideAward"></ng-icon></div>
                             </button>
+                              @if (puedeEliminar) {
+                                <button
+                                  type="button"
+                                  class="btn size-7.5 bg-warning/10 hover:bg-warning text-warning hover:text-white"
+                                  [title]="curso.estado_web === 'publicado' ? 'Desactivar curso' : 'Publicar curso'"
+                                  (click)="desactivarCurso(curso)">
+                                  <div class="size-4"><ng-icon [name]="curso.estado_web === 'publicado' ? 'lucideEyeOff' : 'lucideEye'"></ng-icon></div>
+                                </button>
+                              }
 
-                            @if (puedeEliminar) {
-                              <button
-                                type="button"
-                                class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
-                                title="Eliminar"
-                                (click)="deleteCurso(curso.id_programa)">
-                                <div class="size-4"><ng-icon name="lucideTrash2"></ng-icon></div>
-                              </button>
-                            }
+                            
 
                           </div>
                         </td>
@@ -1404,3 +1411,6 @@
     </div>
   </div>
 }
+
+
+

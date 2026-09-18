@@ -13,7 +13,7 @@
         @for (tab of [
                     { key: 'datos',          label: 'Datos del Curso', icon: 'lucideBookOpen'      },
           { key: 'planes',         label: 'Planes Habilitados', icon: 'lucideWallet'     },
-          { key: 'docentes',       label: 'Docentes',        icon: 'lucideUserCog', count: cursoDocentes().length },,       label: 'Docentes',        icon: 'lucideUserCog', count: cursoDocentes().length },
+          { key: 'docentes',       label: 'Docentes',        icon: 'lucideUserCog', count: cursoDocentes().length },
           { key: 'reglamento',     label: 'Reglamento',      icon: 'lucideScrollText'    },
           { key: 'inscritos',      label: 'Inscritos',       icon: 'lucideUsers', count: inscritosLoaded() ? inscritos().length : null },
           { key: 'participantes',  label: 'Participantes',   icon: 'lucideUserCheck'     }
@@ -24,12 +24,12 @@
               class="relative flex items-center gap-1.5 py-3 text-sm font-medium whitespace-nowrap transition-colors"
               [class]="activeTab() === tab.key ? 'text-primary' : 'text-default-400 hover:text-default-700'"
               (click)="setTab($any(tab.key))">
-              <ng-icon [name]="tab.icon" class="size-4" />
-              {{ tab.label }}
-              @if (tab.count) {
+              <ng-icon [name]="$any(tab).icon" class="size-4" />
+              {{ $any(tab).label }}
+              @if ($any(tab).count) {
                 <span class="text-xs font-semibold"
                   [class]="activeTab() === tab.key ? 'text-primary/70' : 'text-default-300'">
-                  {{ tab.count }}
+                  {{ $any(tab).count }}
                 </span>
               }
               <span class="absolute left-0 right-0 -bottom-px h-0.5 rounded-full transition-all"
@@ -290,7 +290,14 @@
                   <input type="date" class="form-input" formControlName="inicio_inscripciones">
                 </div>
               </div>
-            </div>
+            @if (form.errors?.['inscripcionTardia']) {
+              <p class="mt-2 text-danger text-sm font-medium">⚠ El inicio de inscripciones debe ser anterior al inicio de actividades.</p>
+            }
+            @if (form.errors?.['finTemprano']) {
+              <p class="mt-2 text-danger text-sm font-medium">⚠ La fecha de finalización debe ser posterior al inicio de actividades.</p>
+            
+            }
+</div>
           </div>
 
           <div class="card">
@@ -445,7 +452,22 @@
               <div>
                 <label class="block mb-1.5 text-sm font-medium text-default-800">Impartición (apertura de curso)</label>
                 <input type="text" class="form-input bg-default-100" [value]="imparticionActualLabel()" readonly disabled>
-                <p class="mt-1 text-default-400 text-xs">Se asigna automáticamente al crear el curso — no editable para evitar que dos cursos distintos compartan por error la misma impartición.</p>
+                @if (!form.get('id_imp')?.value) {
+                  <p class="mt-1 text-default-400 text-xs">Los cursos nuevos generan la Versión 1 al crearse. Este aún no tiene una apertura ligada a Caja.</p>
+                  <button type="button" class="btn btn-sm btn-primary mt-2" [disabled]="creandoVersion()" (click)="crearVersion1()">
+                    {{ creandoVersion() ? 'Creando…' : 'Crear Versión 1' }}
+                  </button>
+                } @else {
+                  <p class="mt-1 text-default-400 text-xs">
+                    La Versión 1 ya está ligada a Caja.
+                    @if (cursoIdPrograma()) {
+                      <a [routerLink]="['/cenefco/programa-academico-edit', cursoIdPrograma()]" class="text-primary underline">Abrir siguiente versión</a>
+                    } @else {
+                      Las siguientes cohortes se agregan en Versiones / Imparticiones.
+                    }
+                    (mismo diplomado, otra fecha).
+                  </p>
+                }
               </div>
 
               <div>
@@ -596,10 +618,11 @@
         @if (activeTab() === 'planes') {
       <div class="card p-6">
         <h3 class="text-lg font-bold mb-4">Planes de Pago Habilitados</h3>
-        <p class="text-sm text-default-500 mb-6">Selecciona los planes de pago que estarán disponibles para este curso en la Caja de Inscripción.</p>
+        <p class="text-sm text-default-500 mb-2">Planes por defecto del programa (Versión 1). Si la Versión 2 cambia de precio, configúralo en Versiones / Imparticiones al crear esa cohorte.</p>
+          <input type="text" class="form-input mb-6" placeholder="Buscar plan..." (input)="busquedaPlanes.set($any($event.target).value)">
         
         <div class="grid md:grid-cols-2 gap-4 mb-6">
-          @for (plan of todosLosPlanes(); track plan.id_plan) {
+          @for (plan of planesFiltrados(); track plan.id_plan) {
             <label class="flex items-center gap-3 p-4 border border-default-200 rounded-lg cursor-pointer hover:bg-default-50 transition-colors"
                    [class.border-primary]="planesHabilitados().includes(plan.id_plan)"
                    [class.bg-primary/5]="planesHabilitados().includes(plan.id_plan)">
@@ -1971,5 +1994,10 @@
     </div>
   }
 </main>
+
+
+
+
+
 
 

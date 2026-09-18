@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
@@ -17,6 +17,8 @@ export class PlanCreate {
 
   submitting = signal(false);
   costoPorCuota = signal('');
+  qrPreview = signal<string | null>(null);
+  private qrFile: File | null = null;
 
   form = this.fb.group({
     titulo:      ['', [Validators.required, Validators.maxLength(200)]],
@@ -40,21 +42,35 @@ export class PlanCreate {
     this.form.get('nro_cuotas')!.valueChanges.subscribe(calcCuota);
   }
 
+  onQrChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.qrFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => this.qrPreview.set(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  quitarQr(): void {
+    this.qrFile = null;
+    this.qrPreview.set(null);
+  }
+
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.submitting.set(true);
-    
-    // Convertir a string para que Laravel no rechace la validación
-    const formVals = this.form.value;
-    const payload = {
-      ...formVals,
-      id_plan: Math.floor(Date.now() / 1000),
-      nro_cuotas: String(formVals.nro_cuotas || '1'),
-      costo: String(formVals.costo || '0'),
-      descuento: String(formVals.descuento || '0')
-    };
 
-    this.service.create(payload as any).subscribe({
+    const formVals = this.form.value;
+    const fd = new FormData();
+    fd.append('titulo', formVals.titulo ?? '');
+    fd.append('costo', String(formVals.costo ?? '0'));
+    fd.append('nro_cuotas', String(formVals.nro_cuotas ?? '1'));
+    fd.append('descuento', String(formVals.descuento ?? '0'));
+    fd.append('estado', String(formVals.estado ?? 1));
+    fd.append('id_plan', String(Math.floor(Date.now() / 1000)));
+    if (this.qrFile) fd.append('qr_image', this.qrFile);
+
+    this.service.create(fd as any).subscribe({
       next: () => { this.toast.success('¡Creado!', 'Plan de pago registrado'); this.router.navigate(['/cenefco/planes-academicos']); },
       error: (err: HttpErrorResponse) => { this.toast.error('Error', extractErrorMessage(err, 'No se pudo guardar')); this.submitting.set(false); }
     });

@@ -60,6 +60,7 @@ export class SidebarMenu implements OnInit {
       color: 'text-blue-500',
       children: [
         { type: 'item', label: 'Programas / Cursos',   icon: 'lucideBookOpen',      color: 'text-blue-500',   link: '/cenefco/cursos', permission: 'programas.ver' },
+        { type: 'item', label: 'Versiones / Imparticiones', icon: 'lucideCalendarRange', color: 'text-blue-400', link: '/cenefco/programas-academicos', permission: 'programas.ver' },
         { type: 'item', label: 'Planes de Pago',       icon: 'lucideWallet',        color: 'text-emerald-500', link: '/cenefco/planes-academicos', permission: 'programas.ver' },
         { type: 'item', label: 'Áreas',                icon: 'lucideShapes',        color: 'text-violet-500', link: '/cenefco/areas', permission: 'programas.ver' },
         { type: 'item', label: 'Categorías / Tipos',   icon: 'lucideLayoutGrid',    color: 'text-sky-500',    link: '/cenefco/categorias-programa', permission: 'programas.ver' },

@@ -29,6 +29,7 @@ export interface CajaImparticion {
   gestion: string;
   imparte_fecha_inicio: string;
   imparte_fecha_fin: string;
+  planes?: CajaPlan[];
 }
 
 export interface CajaPlan {
@@ -37,11 +38,14 @@ export interface CajaPlan {
   costo: string;
   nro_cuotas: string;
   descuento: string;
+  qr_image_url?: string | null;
 }
 
 export interface CajaBanco {
   id: number;
   nombre: string;
+  numero_cuenta?: string | null;
+  titular?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

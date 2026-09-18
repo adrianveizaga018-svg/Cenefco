@@ -26,7 +26,8 @@
             <table class="min-w-full divide-y divide-default-200">
               <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
                 <th class="px-3.5 py-3 text-start">Nombre</th>
-                <th class="px-3.5 py-3 text-start">Orden</th>
+                <th class="px-3.5 py-3 text-start">Nro. de Cuenta</th>
+                <th class="px-3.5 py-3 text-start">Titular</th>
                 <th class="px-3.5 py-3 text-start">Estado</th>
                 <th class="px-3.5 py-3 text-center">Acciones</th>
               </tr></thead>
@@ -34,7 +35,8 @@
                 @for (item of items; track item.id) {
                   <tr class="text-default-800 font-normal">
                     <td class="px-3.5 py-2.5 text-sm font-medium">{{ item.nombre }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.orden }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.numero_cuenta || '-' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ item.titular || '-' }}</td>
                     <td class="px-3.5 py-2.5">
                       @if (item.activo) { <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Activo</span> }
                       @else { <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Inactivo</span> }
@@ -47,7 +49,7 @@
                     </td>
                   </tr>
                 }
-                @empty { <tr><td colspan="4" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron tipos de banco.</td></tr> }
+                @empty { <tr><td colspan="5" class="px-3.5 py-12 text-center text-sm text-default-400">No se encontraron tipos de banco.</td></tr> }
               </tbody>
             </table>
           }

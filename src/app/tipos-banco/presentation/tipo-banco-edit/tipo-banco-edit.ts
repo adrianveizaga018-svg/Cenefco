@@ -27,6 +27,8 @@ export class TipoBancoEdit {
 
   form = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(150)]],
+    numero_cuenta: ['', [Validators.maxLength(100)]],
+    titular: ['', [Validators.maxLength(150)]],
     orden:  [0],
     activo: [true],
   });

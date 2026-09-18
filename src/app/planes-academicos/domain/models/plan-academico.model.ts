@@ -13,6 +13,7 @@ export interface PlanAcademico {
   id_catplan:         number | null;
   estado:             number;
   fecha_reg:          string | null;
+  qr_image_url:       string | null;
 }
 export interface PlanAcademicoListResponse { data: PlanAcademico[]; total: number; }
 export interface PlanAcademicoListParams   { query?: string; pageIndex?: number; pageSize?: number; refresh?: number; }

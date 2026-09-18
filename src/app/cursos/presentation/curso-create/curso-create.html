@@ -1,6 +1,13 @@
 ﻿<main>
   <app-page-title title="Nuevo Curso" subtitle="Gestión de Cursos" />
 
+  <div class="card border border-sky-200 bg-sky-50/60 mb-5">
+    <div class="card-body !py-3 text-sm text-sky-900">
+      Un solo formulario: al guardar se crea el programa, la <strong>Versión 1</strong> (Caja) y los planes marcados.
+      No hace falta repetir el alta en Versiones / Imparticiones. Esa pantalla es solo para la próxima cohorte.
+    </div>
+  </div>
+
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
 
@@ -221,6 +228,16 @@
                 <input type="date" class="form-input" formControlName="inicio_inscripciones">
               </div>
             </div>
+            <p class="mt-3 text-xs text-default-500">
+              Estas fechas se usan para la <strong>Versión 1</strong>, que se crea automáticamente al guardar.
+              La próxima cohorte (Versión 2) se agrega desde el mismo programa, sin volver a crear el diplomado.
+            </p>
+            @if (form.errors?.['inscripcionTardia']) {
+              <p class="mt-2 text-danger text-sm font-medium">⚠ El inicio de inscripciones debe ser anterior al inicio de actividades.</p>
+            }
+            @if (form.errors?.['finTemprano']) {
+              <p class="mt-2 text-danger text-sm font-medium">⚠ La fecha de finalización debe ser posterior al inicio de actividades.</p>
+            }
           </div>
         </div>
 
@@ -316,7 +333,7 @@
 
         <div class="card">
           <div class="card-header">
-            <h6 class="card-title">Planes por Defecto</h6>
+            <h6 class="card-title">Configuración Comercial</h6>
           </div>
           <div class="card-body space-y-4">
 
@@ -346,6 +363,33 @@
         </div>
 
         <div class="card">
+          <div class="card-header">
+            <h6 class="card-title">Planes de Pago</h6>
+          </div>
+          <div class="card-body space-y-3">
+            <p class="text-xs text-default-500 mb-2">Selecciona los planes de pago que estarán habilitados para este curso.</p>
+              <input type="text" class="form-input mb-4" placeholder="Buscar plan..." (input)="busquedaPlanes.set($any($event.target).value)">
+            @for (plan of planesFiltrados(); track plan.id_plan) {
+              <label class="flex items-center gap-3 p-3 border border-default-200 rounded-lg cursor-pointer hover:bg-default-50 transition-colors"
+                     [class.border-primary]="planesSeleccionados().includes(plan.id_plan)"
+                     [class.bg-primary/5]="planesSeleccionados().includes(plan.id_plan)">
+                <input type="checkbox"
+                       class="form-checkbox text-primary rounded shrink-0"
+                       [checked]="planesSeleccionados().includes(plan.id_plan)"
+                       (change)="togglePlan(plan.id_plan)">
+                <div>
+                  <p class="text-sm font-bold text-default-900">{{ plan.titulo }}</p>
+                  <p class="text-xs text-default-500">Bs. {{ plan.costo }} &bull; {{ plan.nro_cuotas }} cuota(s)</p>
+                </div>
+              </label>
+            }
+            @empty {
+              <p class="text-sm text-default-400 py-2">No hay planes activos. <a routerLink="/cenefco/plan-create" class="text-primary underline">Crear uno</a>.</p>
+            }
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-header"><h6 class="card-title">Publicación</h6></div>
           <div class="card-body space-y-4">
 
@@ -355,6 +399,7 @@
                 <option value="borrador">Borrador</option>
                 <option value="publicado">Publicado</option>
               </select>
+              <p class="mt-1.5 text-xs text-default-400">Para que aparezca en Caja elige <strong>Publicado</strong> y marca al menos un plan de pago (contado o cuotas).</p>
             </div>
 
             <div>
@@ -379,4 +424,11 @@
 
   </form>
 </main>
+
+
+
+
+
+
+
 

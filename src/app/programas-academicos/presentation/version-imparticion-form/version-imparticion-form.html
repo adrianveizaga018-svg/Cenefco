@@ -1,0 +1,132 @@
+﻿<main>
+  <app-page-title
+    [title]="esEdicion ? 'Editar Versión' : 'Nueva Versión'"
+    [subtitle]="nombrePrograma() || 'Cohorte del programa'" />
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+      Cargando...
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid lg:grid-cols-3 grid-cols-1 gap-5">
+
+        <div class="lg:col-span-2 space-y-5">
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Datos de la cohorte</h6></div>
+            <div class="card-body space-y-4">
+              <div>
+                <label class="block mb-1.5 text-sm font-medium text-default-800">
+                  Nombre <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-input" placeholder="Ej. Versión 2, Grupo A" formControlName="nombre">
+                @if (form.get('nombre')?.errors?.['required'] && form.get('nombre')?.touched) {
+                  <p class="mt-1 text-danger text-xs">Este campo es requerido</p>
+                }
+                @if (form.get('nombre')?.errors?.['nombreDuplicado']) {
+                  <p class="mt-1 text-warning text-xs font-medium">⚠  Ya existe una versión con este nombre exacto en este programa.</p>
+                }
+              </div>
+
+              <div class="grid sm:grid-cols-2 grid-cols-1 gap-4">
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Semestre académico</label>
+                  <select class="form-input" formControlName="periodo">
+                    <option value="I">I — 1 ene al 30 jun {{ anioGestion() }}</option>
+                    <option value="II">II — 1 jul al 31 dic {{ anioGestion() }}</option>
+                  </select>
+                  <p class="mt-1 text-xs text-default-400">Rango del semestre académico (actas / comprobantes). Las fechas reales de esta cohorte van en el bloque Fechas.</p>
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Año *</label>
+                  <input type="number" class="form-input" formControlName="gestion">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Fechas</h6></div>
+            <div class="card-body">
+              <div class="grid sm:grid-cols-3 grid-cols-1 gap-4">
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de inscripciones</label>
+                  <input type="date" class="form-input" formControlName="inicio_inscripciones">
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">
+                    Inicio de actividades <span class="text-danger">*</span>
+                  </label>
+                  <input type="date" class="form-input" formControlName="imparte_fecha_inicio">
+                </div>
+                <div>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">
+                    Finalización <span class="text-danger">*</span>
+                  </label>
+                  <input type="date" class="form-input" formControlName="imparte_fecha_fin">
+                </div>
+              </div>
+              @if (form.errors?.['inscripcionTardia']) {
+                <p class="mt-2 text-danger text-sm font-medium">El inicio de inscripciones debe ser anterior o igual al inicio de actividades.</p>
+              }
+              @if (form.errors?.['finTemprano']) {
+                <p class="mt-2 text-danger text-sm font-medium">La finalización debe ser posterior o igual al inicio de actividades.</p>
+              }
+              @if (form.get('imparte_fecha_inicio')?.invalid && form.get('imparte_fecha_inicio')?.touched) {
+                <p class="mt-2 text-danger text-xs">Falta el inicio de actividades.</p>
+              }
+              @if (form.get('imparte_fecha_fin')?.invalid && form.get('imparte_fecha_fin')?.touched) {
+                <p class="mt-2 text-danger text-xs">Falta la fecha de finalización.</p>
+              }
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Planes de pago de esta versión</h6></div>
+            <div class="card-body space-y-3">
+              <p class="text-xs text-default-500">
+                Se marcan los que ya existen en <a routerLink="/cenefco/planes-academicos" class="text-primary underline">Planes de Pago</a>.
+                Si el precio cambió, crea el plan ahí­ y vuelve a esta pantalla para marcarlo.
+              </p>
+              <input type="text" class="form-input" placeholder="Buscar plan..." (input)="busquedaPlanes.set($any($event.target).value)">
+              @for (plan of planesFiltrados(); track plan.id_plan) {
+                <label class="flex items-center gap-3 p-3 border border-default-200 rounded-lg cursor-pointer hover:bg-default-50"
+                       [class.border-primary]="planesVersion().includes(plan.id_plan)"
+                       [class.bg-primary/5]="planesVersion().includes(plan.id_plan)">
+                  <input type="checkbox" class="form-checkbox text-primary rounded shrink-0"
+                         [checked]="planesVersion().includes(plan.id_plan)"
+                         (change)="togglePlan(plan.id_plan)">
+                  <div>
+                    <p class="text-sm font-bold text-default-900">{{ plan.titulo }}</p>
+                    <p class="text-xs text-default-500">Bs. {{ plan.costo }} · {{ plan.nro_cuotas }} cuota(s)</p>
+                  </div>
+                </label>
+              } @empty {
+                <p class="text-sm text-default-400 py-2">
+                  No hay planes activos.
+                  <a routerLink="/cenefco/plan-create" class="text-primary underline">Crear en Planes de Pago</a>.
+                </p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="card">
+            <div class="card-header"><h6 class="card-title">Acciones</h6></div>
+            <div class="card-body space-y-3">
+              <button type="submit" class="btn w-full bg-primary text-white" [disabled]="submitting()">
+                {{ submitting() ? 'Guardando…' : (esEdicion ? 'Guardar cambios' : 'Crear versión') }}
+              </button>
+              <button type="button" class="btn w-full bg-default-200 text-default-700" (click)="volver()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  }
+</main>
+

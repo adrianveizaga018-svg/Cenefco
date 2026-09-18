@@ -100,6 +100,7 @@ export interface CreateCursoPayload {
   meta_titulo?:             string | null;
   meta_descripcion?:        string | null;
   mensaje_exito?:           string | null;
+  planes?:                  number[];
 }
 
 export type PeriodoEstadisticas = 'dia' | 'mes' | 'anio' | 'rango';

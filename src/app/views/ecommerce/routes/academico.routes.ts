@@ -17,8 +17,8 @@ import { PlanCreate }       from '../../../planes-academicos/presentation/plan-c
 import { PlanEdit }         from '../../../planes-academicos/presentation/plan-edit/plan-edit'
 
 import { ProgramasAcademicos }     from '../../../programas-academicos/presentation/programas-academicos/programas-academicos'
-import { ProgramaAcademicoCreate } from '../../../programas-academicos/presentation/programa-academico-create/programa-academico-create'
 import { ProgramaAcademicoEdit }   from '../../../programas-academicos/presentation/programa-academico-edit/programa-academico-edit'
+import { VersionImparticionForm }  from '../../../programas-academicos/presentation/version-imparticion-form/version-imparticion-form'
 
 import { Convenios }      from '../../../convenios/presentation/convenios/convenios'
 import { ConvenioCreate } from '../../../convenios/presentation/convenio-create/convenio-create'
@@ -157,9 +157,11 @@ export const ACADEMICO_ROUTES: Routes = [
     { path: 'cenefco/plan-create',         component: PlanCreate,       data: { title: 'Nuevo Plan' } },
     { path: 'cenefco/plan-edit/:id',       component: PlanEdit,         data: { title: 'Editar Plan' } },
 
-    { path: 'cenefco/programas-academicos',          component: ProgramasAcademicos,     data: { title: 'Programas Académicos' } },
-    { path: 'cenefco/programa-academico-create',     component: ProgramaAcademicoCreate, data: { title: 'Nuevo Programa Académico' } },
-    { path: 'cenefco/programa-academico-edit/:id',   component: ProgramaAcademicoEdit,   data: { title: 'Editar Programa Académico' } },
+    { path: 'cenefco/programas-academicos',          component: ProgramasAcademicos,     data: { title: 'Versiones / Imparticiones' } },
+    { path: 'cenefco/programa-academico-create',     redirectTo: '/cenefco/curso-create', pathMatch: 'full' },
+    { path: 'cenefco/programa-academico-edit/:id',   component: ProgramaAcademicoEdit,   data: { title: 'Versiones del Programa' } },
+    { path: 'cenefco/programas-academicos/:id/version-create', component: VersionImparticionForm, data: { title: 'Nueva Versión' } },
+    { path: 'cenefco/programas-academicos/:id/version-edit/:idImp', component: VersionImparticionForm, data: { title: 'Editar Versión' } },
 
     { path: 'cenefco/convenios',          component: Convenios,      data: { title: 'Convenios' } },
     { path: 'cenefco/convenio-create',    component: ConvenioCreate, data: { title: 'Nuevo Convenio' } },

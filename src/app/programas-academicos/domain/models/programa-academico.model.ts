@@ -18,6 +18,7 @@
   url_video:                string | null;
   estado:                   number;
   estado_web:               string | null;
+  slug:                     string | null;
   fecha_reg:                string | null;
 }
 export interface ProgramaAcademicoListResponse { data: ProgramaAcademico[]; total: number; }

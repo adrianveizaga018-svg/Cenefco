@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { CursoService } from '../../application/services/curso.service';
@@ -22,6 +22,21 @@ import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 interface Imparticion { id_imp: number; periodo: string | null; gestion: string | null; materia_nombre: string | null; paralelo: string | null; id_mat: number | null; docente_nombre: string | null; }
+
+export const fechasValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const inicioInsc = control.get('inicio_inscripciones')?.value;
+  const inicioAct = control.get('inicio_actividades')?.value;
+  const finAct = control.get('finalizacion_actividades')?.value;
+  if (!inicioInsc && !inicioAct && !finAct) return null;
+  let errors: any = {};
+  if (inicioInsc && inicioAct && new Date(inicioInsc) > new Date(inicioAct)) {
+    errors.inscripcionTardia = true;
+  }
+  if (inicioAct && finAct && new Date(inicioAct) > new Date(finAct)) {
+    errors.finTemprano = true;
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
+};
 
 @Component({
   selector: 'app-curso-create',
@@ -56,6 +71,10 @@ export class CursoCreate {
   uploadingPdf  = signal(false);
   pdfName       = signal<string | null>(null);
   catalogoTareas = signal<any[]>([]);
+  todosLosPlanes   = signal<any[]>([]);
+  planesSeleccionados = signal<number[]>([]);
+  busquedaPlanes = signal('');
+  planesFiltrados = computed(() => this.todosLosPlanes().filter(p => p.titulo.toLowerCase().includes(this.busquedaPlanes().toLowerCase())));
 
   form: FormGroup = this.fb.group({
     nombre_programa:          ['', [Validators.required, Validators.maxLength(200)]],
@@ -90,7 +109,7 @@ export class CursoCreate {
     destacado:                [false],
     orden:                    [0],
     tareas_catalogo_ids:      [[] as number[]],
-  });
+  }, { validators: fechasValidator });
 
   constructor() {
     this.cursoService.getCategorias().subscribe({ next: r => this.categorias.set(r.data) });
@@ -101,6 +120,14 @@ export class CursoCreate {
     this.http.get<{ data: Imparticion[] }>('/api/v1/imparticiones', {
       params: { pageSize: '200', pageIndex: '1', conInactivos: 'true' }
     }).subscribe({ next: r => this.imparticiones.set(r.data) });
+
+    this.http.get<any>('/api/v1/planes-academicos?pageSize=200').subscribe({
+      next: (res: any) => {
+        const lista = res.data ?? res ?? [];
+        this.todosLosPlanes.set(lista.filter((p: any) => p.estado == 1 || p.estado === "activo" || p.estado === true));
+      },
+      error: () => {}
+    });
 
     this.http.get<any[]>('/api/v1/catalogo-tareas').subscribe({
       next: (data) => {
@@ -148,17 +175,38 @@ export class CursoCreate {
     return `[${imp.periodo}] ${mat}${doc ? ' — ' + doc : ''}`;
   }
 
+  togglePlan(planId: number) {
+    const current = this.planesSeleccionados();
+    if (current.includes(planId)) {
+      this.planesSeleccionados.set(current.filter(id => id !== planId));
+    } else {
+      this.planesSeleccionados.set([...current, planId]);
+    }
+  }
+
   onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.form.markAllAsTouched();
+    if (this.form.errors?.['inscripcionTardia']) {
+      this.toast.warning('Verifica las fechas', 'El inicio de inscripciones debe ser antes del inicio de actividades.');
+      return;
+    }
+    if (this.form.errors?.['finTemprano']) {
+      this.toast.warning('Verifica las fechas', 'La finalización debe ser posterior al inicio de actividades.');
+      return;
+    }
+    if (this.form.invalid) {
+      this.toast.warning('Revisa el formulario', 'Completa los campos obligatorios antes de continuar.');
+      return;
+    }
     if (this.uploadingImg() || this.uploadingPdf()) return;
     for (const [campo, editor] of Object.entries(this.ckEditors)) {
       this.form.get(campo)?.setValue(editor.getData());
     }
 
     this.submitting.set(true);
-    this.cursoService.create(this.form.value).subscribe({
+    this.cursoService.create({ ...this.form.value, planes: this.planesSeleccionados() }).subscribe({
       next: () => {
-        this.toast.success('¡Creado!', 'Curso registrado exitosamente');
+        this.toast.success('¡Creado!', 'El programa, la Versión 1 y los planes quedaron registrados.');
         this.router.navigate(['/cenefco/cursos']);
       },
       error: (err: HttpErrorResponse) => {
@@ -167,6 +215,8 @@ export class CursoCreate {
       }
     });
   }
+
+
 
   toggleTarea(id: number, event: Event) {
     const isChecked = (event.target as HTMLInputElement).checked;
@@ -178,3 +228,11 @@ export class CursoCreate {
     }
   }
 }
+
+
+
+
+
+
+
+
