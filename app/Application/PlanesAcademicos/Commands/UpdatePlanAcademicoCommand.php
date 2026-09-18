@@ -18,5 +18,6 @@ final readonly class UpdatePlanAcademicoCommand
         public ?string $costo_por_cuota,
         public ?int $id_catplan,
         public ?int $estado,
+        public ?string $qr_image_url = null,
     ) {}
 }

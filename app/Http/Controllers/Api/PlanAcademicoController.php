@@ -58,6 +58,11 @@ class PlanAcademicoController extends Controller
 
     public function store(StorePlanAcademicoRequest $request): JsonResponse
     {
+        $qrUrl = null;
+        if ($request->hasFile('qr_image')) {
+            $qrUrl = $request->file('qr_image')->store('planes/qr', 'public');
+        }
+
         $dto = $this->createHandler->handle(new CreatePlanAcademicoCommand(
             id_plan:           $request->integer('id_plan'),
             id_us_reg:         $request->integer('id_us_reg', 0),
@@ -73,6 +78,7 @@ class PlanAcademicoController extends Controller
             costo_por_cuota:   $request->costo_por_cuota,
             id_catplan:        $request->filled('id_catplan') ? $request->integer('id_catplan') : null,
             estado:            $request->integer('estado', 1),
+            qr_image_url:      $qrUrl,
         ));
 
         return response()->json($dto, 201);
@@ -80,6 +86,13 @@ class PlanAcademicoController extends Controller
 
     public function update(UpdatePlanAcademicoRequest $request, int $id): JsonResponse
     {
+        $qrImageUrl = null;
+        if ($request->hasFile('qr_image')) {
+            $qrImageUrl = $request->file('qr_image')->store('planes/qr', 'public');
+        } elseif ($request->input('remove_qr') == '1') {
+            $qrImageUrl = 'REMOVE';
+        }
+
         $dto = $this->updateHandler->handle(new UpdatePlanAcademicoCommand(
             id:                $id,
             titulo:            $request->titulo,
@@ -94,6 +107,7 @@ class PlanAcademicoController extends Controller
             costo_por_cuota:   $request->costo_por_cuota,
             id_catplan:        $request->filled('id_catplan') ? $request->integer('id_catplan') : null,
             estado:            $request->filled('estado') ? $request->integer('estado') : null,
+            qr_image_url:      $qrImageUrl
         ));
 
         return response()->json($dto);

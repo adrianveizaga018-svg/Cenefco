@@ -39,6 +39,7 @@ use App\Infrastructure\Vendedores\Services\VendedorScopeResolver;
 use App\Shared\Kernel\DTOs\PaginationDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CursoController extends Controller
@@ -266,7 +267,21 @@ class CursoController extends Controller
             convenio_id:              $request->convenio_id ? (int) $request->convenio_id : null,
             vendedor_id:              $request->vendedor_id ? (int) $request->vendedor_id : null,
             tareas_catalogo_ids:      $request->tareas_catalogo_ids,
+            planes:                   $request->input('planes'),
         ));
+
+        // Auto-crear impartición base para que el curso aparezca en Caja de inmediato
+        $idImp = (DB::table('t_imparte')->max('id_imp') ?? 0) + 1;
+        DB::table('t_imparte')->insert([
+            'id_imp'               => $idImp,
+            'id_mat'               => $dto->id_programa,
+            'nombre'               => 'Versión 1',
+            'periodo'              => null,
+            'gestion'              => now()->year,
+            'imparte_fecha_inicio' => $request->inicio_actividades ?? null,
+            'imparte_fecha_fin'    => $request->finalizacion_actividades ?? null,
+            'estado'               => 1,
+        ]);
 
         return response()->json($dto, 201);
     }

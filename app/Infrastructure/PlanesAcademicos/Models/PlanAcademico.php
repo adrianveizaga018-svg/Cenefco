@@ -27,5 +27,6 @@ class PlanAcademico extends Model
         'id_catplan',
         'estado',
         'fecha_reg',
+        'qr_image_url',
     ];
 }

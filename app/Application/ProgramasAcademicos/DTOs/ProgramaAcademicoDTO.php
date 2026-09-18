@@ -31,6 +31,8 @@ final readonly class ProgramaAcademicoDTO
         public ?int $id_tipoprograma,
         public ?string $url_video,
         public int $estado,
+        public ?string $slug = null,
+        public ?string $estado_web = null,
     ) {}
 
     public static function fromModel(object $model): self
@@ -62,6 +64,8 @@ final readonly class ProgramaAcademicoDTO
             id_tipoprograma:          isset($model->id_tipoprograma) ? (int) $model->id_tipoprograma : null,
             url_video:                $model->url_video ?? null,
             estado:                   (int) $model->estado,
+            slug:                     $model->slug ?? null,
+            estado_web:               $model->estado_web ?? null,
         );
     }
 }

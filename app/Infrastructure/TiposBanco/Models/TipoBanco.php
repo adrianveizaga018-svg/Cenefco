@@ -12,6 +12,8 @@ class TipoBanco extends Model
         'nombre',
         'activo',
         'orden',
+        'numero_cuenta',
+        'titular',
     ];
 
     protected $casts = [

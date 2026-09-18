@@ -14,6 +14,8 @@ class CreateTipoBancoHandler
     {
         $model = $this->repository->create([
             'nombre' => $c->nombre,
+            'numero_cuenta' => $c->numero_cuenta,
+            'titular' => $c->titular,
             'activo' => $c->activo,
             'orden'  => $c->orden,
         ]);

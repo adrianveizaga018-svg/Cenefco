@@ -12,6 +12,8 @@ class StoreTipoBancoRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:150', 'unique:tipos_banco,nombre'],
+            'numero_cuenta' => ['nullable', 'string', 'max:100'],
+            'titular' => ['nullable', 'string', 'max:150'],
             'activo' => ['nullable', 'boolean'],
             'orden'  => ['nullable', 'integer'],
         ];

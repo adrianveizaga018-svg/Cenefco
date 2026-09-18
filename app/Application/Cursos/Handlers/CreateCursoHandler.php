@@ -7,8 +7,8 @@ use App\Application\Cursos\DTOs\CursoDTO;
 use App\Domain\Cursos\Contracts\CursoRepositoryInterface;
 use App\Domain\Honorarios\Contracts\ConfigHonorarioRepositoryInterface;
 use App\Infrastructure\Imparticiones\Models\Imparte;
-use App\Infrastructure\Materias\Models\Materia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CreateCursoHandler
@@ -26,8 +26,6 @@ class CreateCursoHandler
 
     private function crear(CreateCursoCommand $c): CursoDTO
     {
-        $idImp = $c->id_imp ?? $this->crearImparticionPropia($c->nombre_programa);
-
         $dto = $this->repository->create([
             'nombre_programa'          => $c->nombre_programa,
             'slug'                     => $c->slug ?: Str::slug($c->nombre_programa),
@@ -63,7 +61,7 @@ class CreateCursoHandler
             'mensaje_exito'            => $c->mensaje_exito,
             'id_plan'                  => $c->id_plan,
             'id_plandoc'               => $c->id_plandoc,
-            'id_imp'                   => $idImp,
+            'id_imp'                   => $c->id_imp,
             'convenio_id'              => $c->convenio_id,
             'vendedor_id'              => $c->vendedor_id,
         ]);
@@ -91,35 +89,75 @@ class CreateCursoHandler
             }
         }
 
+        $idImp = $dto->id_imp;
+        if (! $idImp) {
+            $idImp = $this->crearVersionInicial($dto->id_programa, $c);
+            $dto = $this->repository->update($dto->id_programa, ['id_imp' => $idImp]);
+        }
+
+        $this->sincronizarPlanes($dto->id_programa, (int) $idImp, $c->planes ?? []);
+
         return $dto;
     }
 
-    private function crearImparticionPropia(string $nombrePrograma): int
+    /**
+     * Primera cohorte del programa. Caja une t_imparte.id_mat = t_programa.id_programa.
+     */
+    private function crearVersionInicial(int $idPrograma, CreateCursoCommand $c): int
     {
-        return DB::transaction(function () use ($nombrePrograma) {
-            $ultimaMateria = Materia::orderByDesc('id_mat')->lockForUpdate()->first();
-            $ultimaImparte = Imparte::orderByDesc('id_imp')->lockForUpdate()->first();
-            $idMat = ($ultimaMateria->id_mat ?? 9000) + 1;
-            $idImp = ($ultimaImparte->id_imp ?? 9000) + 1;
+        $ultima = Imparte::orderByDesc('id_imp')->lockForUpdate()->first();
+        $idImp = ((int) ($ultima->id_imp ?? 0)) + 1;
 
-            Materia::create([
-                'id_mat'        => $idMat,
-                'id_us_reg'     => 1,
-                'nombremat'     => $nombrePrograma,
-                'nombre'        => $nombrePrograma,
-                'estado'        => 1,
-                'fecha_reg'     => now(),
-            ]);
+        $inicio = $c->inicio_actividades ?: null;
+        $fin = $c->finalizacion_actividades ?: null;
+        $gestion = $inicio ? (int) date('Y', strtotime($inicio)) : (int) now()->year;
 
-            Imparte::create([
-                'id_imp'    => $idImp,
-                'id_us_reg' => 1,
-                'id_mat'    => $idMat,
-                'estado'    => 1,
-                'fecha_reg' => now(),
-            ]);
+        $row = [
+            'id_imp'               => $idImp,
+            'id_us_reg'            => 1,
+            'id_mat'               => $idPrograma,
+            'periodo'              => ((int) date('n')) <= 6 ? 'I' : 'II',
+            'gestion'              => (string) $gestion,
+            'imparte_fecha_inicio' => $inicio,
+            'imparte_fecha_fin'    => $fin,
+            'estado'               => 1,
+            'fecha_reg'            => now(),
+            'version'              => '1',
+        ];
 
-            return $idImp;
-        });
+        if (Schema::hasColumn('t_imparte', 'nombre')) {
+            $row['nombre'] = 'Versión 1';
+        }
+
+        DB::table('t_imparte')->insert($row);
+
+        return $idImp;
+    }
+
+    /** Caja lee planes de la versión; el programa guarda el default de la Versión 1. */
+    private function sincronizarPlanes(int $idPrograma, int $idImp, array $planes): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $planes))));
+        if ($ids === []) {
+            return;
+        }
+
+        $now = now();
+        if (Schema::hasTable('programa_planes')) {
+            DB::table('programa_planes')->insert(array_map(fn (int $idPlan) => [
+                'id_programa' => $idPrograma,
+                'id_plan'     => $idPlan,
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ], $ids));
+        }
+        if (Schema::hasTable('imparticion_planes')) {
+            DB::table('imparticion_planes')->insert(array_map(fn (int $idPlan) => [
+                'id_imp'     => $idImp,
+                'id_plan'    => $idPlan,
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ], $ids));
+        }
     }
 }

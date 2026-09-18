@@ -7,10 +7,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class CajaController extends Controller
 {
-    // ── 1. Buscar estudiante por CI ──────────────────────────────────────────
+    // â”€â”€ 1. Buscar estudiante por CI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function buscarEstudiante(Request $request): JsonResponse
     {
@@ -57,7 +58,7 @@ class CajaController extends Controller
         ]);
     }
 
-    // ── 2. Buscar programas activos con sus planes de pago ───────────────────
+    // â”€â”€ 2. Buscar programas activos con sus planes de pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function buscarProgramas(Request $request): JsonResponse
     {
@@ -73,6 +74,7 @@ class CajaController extends Controller
                 'prog.nombre_programa',
                 'imp.id_imp',
                 'imp.nombre as nombre_version',
+                'imp.version',
                 'imp.periodo',
                 'imp.gestion',
                 'imp.imparte_fecha_inicio',
@@ -83,25 +85,58 @@ class CajaController extends Controller
             ->get();
 
         // Agrupar por programa y traer SOLO los planes habilitados para ese programa
-        $result = $programas->groupBy('id_programa')->map(function ($imparticiones, $progId) {
+        $impIds = $programas->pluck('id_imp')->unique()->values();
+        $planesPorImp = collect();
+        if ($impIds->isNotEmpty() && Schema::hasTable('imparticion_planes')) {
+            $planesPorImp = DB::table('t_plan as p')
+                ->join('imparticion_planes as ip', 'ip.id_plan', '=', 'p.id_plan')
+                ->whereIn('ip.id_imp', $impIds)
+                ->where('p.estado', 1)
+                ->select('ip.id_imp', 'p.id_plan', 'p.titulo', 'p.costo', 'p.nro_cuotas', 'p.descuento', 'p.qr_image_url')
+                ->get()
+                ->groupBy('id_imp');
+        }
+
+        $result = $programas->groupBy('id_programa')->map(function ($imparticiones, $progId) use ($planesPorImp) {
             $first = $imparticiones->first();
 
-            // Planes habilitados para este programa via programa_planes
-            $planes = DB::table('t_plan as p')
+            $planesPrograma = DB::table('t_plan as p')
                 ->join('programa_planes as pp', 'pp.id_plan', '=', 'p.id_plan')
                 ->where('pp.id_programa', $progId)
                 ->where('p.estado', 1)
-                ->select('p.id_plan', 'p.titulo', 'p.costo', 'p.nro_cuotas', 'p.descuento')
+                ->select('p.id_plan', 'p.titulo', 'p.costo', 'p.nro_cuotas', 'p.descuento', 'p.qr_image_url')
                 ->get();
 
-            $imparticionesData = $imparticiones->map(function ($imp) {
+            $imparticionesData = $imparticiones->map(function ($imp) use ($planesPorImp, $planesPrograma) {
+                $nombreVersion = $imp->nombre_version
+                    ?: ('VersiÃ³n ' . ($imp->version ?: $imp->id_imp));
+                $planesVersion = $planesPorImp->get($imp->id_imp);
+                $planes = ($planesVersion && $planesVersion->isNotEmpty())
+                    ? $planesVersion->map(fn ($p) => [
+                        'id_plan'    => $p->id_plan,
+                        'titulo'     => $p->titulo,
+                        'costo'      => $p->costo,
+                        'nro_cuotas' => $p->nro_cuotas,
+                        'descuento'  => $p->descuento,
+                        'qr_image_url' => $p->qr_image_url ? url('storage/' . $p->qr_image_url) : null,
+                    ])->values()
+                    : $planesPrograma->map(fn ($p) => [
+                        'id_plan'    => $p->id_plan,
+                        'titulo'     => $p->titulo,
+                        'costo'      => $p->costo,
+                        'nro_cuotas' => $p->nro_cuotas,
+                        'descuento'  => $p->descuento,
+                        'qr_image_url' => $p->qr_image_url ? url('storage/' . $p->qr_image_url) : null,
+                    ])->values();
+
                 return [
                     'id_imp'               => $imp->id_imp,
-                    'nombre_version'       => $imp->nombre_version,
+                    'nombre_version'       => $nombreVersion,
                     'periodo'              => $imp->periodo,
                     'gestion'              => $imp->gestion,
                     'imparte_fecha_inicio' => $imp->imparte_fecha_inicio,
                     'imparte_fecha_fin'    => $imp->imparte_fecha_fin,
+                    'planes'               => $planes,
                 ];
             });
 
@@ -109,14 +144,14 @@ class CajaController extends Controller
                 'id_programa'     => $first->id_programa,
                 'nombre_programa' => $first->nombre_programa,
                 'imparticiones'   => $imparticionesData->values(),
-                'planes'          => $planes->values(), // planes a nivel de programa, no de impartición
+                'planes'          => $planesPrograma->values(),
             ];
         })->values();
 
         return response()->json($result);
     }
 
-    // ── 3. Registrar inscripcion presencial ──────────────────────────────────
+    // â”€â”€ 3. Registrar inscripcion presencial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function inscribir(Request $request): JsonResponse
     {
@@ -124,14 +159,14 @@ class CajaController extends Controller
             'id_imp'            => 'required|integer',
             'id_plan'           => 'nullable|integer',
             'monto_pagado'      => 'required|numeric|min:0',
-            'nro_boleta'        => 'required|string|max:200',
+            'nro_boleta'        => 'nullable|string|max:200',
             'fecha_deposito'    => 'required|date',
             'metodo_pago'       => 'required|string',
             'tipo_banco_id'     => 'nullable|integer',
             'comprobante'       => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             // Estudiante existente
             'id_us'             => 'nullable|integer',
-            'actualizar_estudiante' => 'nullable|boolean',
+            'actualizar_estudiante' => 'nullable', // removed boolean rule for max compatibility
             // Nuevo estudiante
             'nombre'            => 'required_without:id_us|string|max:100',
             'apellido_paterno'  => 'nullable|string|max:100',
@@ -142,6 +177,25 @@ class CajaController extends Controller
             'email'             => 'nullable|email|max:100',
             'genero'            => 'nullable|integer',
         ]);
+
+        // â”€â”€ Validar boleta duplicada â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        $nroBoleta = $request->input('nro_boleta');
+        if ($nroBoleta && strtolower($nroBoleta) !== 'efectivo') {
+            $existeBoleta = DB::table('t_pago')
+                ->where('nro_boleta_bancaria', $nroBoleta)
+                ->where('estado', 1)
+                ->first();
+
+            if ($existeBoleta) {
+                $usuario = DB::table('users')->where('id', $existeBoleta->id_us_reg)->first();
+                $cajeroAnterior = $usuario ? $usuario->nombre . ' ' . $usuario->apellido : 'otro cajero';
+                $fechaBoleta = $existeBoleta->fecha_reg ? date('d/m/Y', strtotime($existeBoleta->fecha_reg)) : 'otra fecha';
+                
+                return response()->json([
+                    'message' => "âš  Este nÃºmero de boleta ({$nroBoleta}) ya fue registrado el {$fechaBoleta} por {$cajeroAnterior}. Verifique el comprobante."
+                ], 422);
+            }
+        }
 
         // Guardar comprobante si viene
         $comprobanteUrl = null;
@@ -154,7 +208,7 @@ class CajaController extends Controller
             $idUs    = $request->input('id_us');
             $cajero  = $request->user();
 
-            // ── Crear estudiante si no existe ────────────────────────────────
+            // â”€â”€ Crear estudiante si no existe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (!$idUs) {
                 $maxId = DB::table('t_usuario')->max('id_us') ?? 0;
                 $idUs  = $maxId + 1;
@@ -176,7 +230,7 @@ class CajaController extends Controller
                     'fecha_reg'    => now(),
                     'tipoestudiante' => '2',
                 ]);
-            } else if ($request->input('actualizar_estudiante')) {
+            } else if (filter_var($request->input('actualizar_estudiante'), FILTER_VALIDATE_BOOLEAN)) {
                 // Actualizar estudiante si lo pide el cajero
                 DB::table('t_usuario')->where('id_us', $idUs)->update([
                     'nombre'       => $request->input('nombre'),
@@ -190,7 +244,7 @@ class CajaController extends Controller
                 ]);
             }
 
-            // ── Crear inscripcion ────────────────────────────────────────────
+            // â”€â”€ Crear inscripcion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $idIns = (DB::table('t_inscripcion')->max('id_ins') ?? 0) + 1;
 
             DB::table('t_inscripcion')->insert([
@@ -210,7 +264,7 @@ class CajaController extends Controller
                 'telefono'      => $request->input('celular'),
             ]);
 
-            // ── Registrar pago ───────────────────────────────────────────────
+            // â”€â”€ Registrar pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             $idPago = (DB::table('t_pago')->max('id_pago') ?? 0) + 1;
 
             DB::table('t_pago')->insert([
@@ -241,14 +295,14 @@ class CajaController extends Controller
         });
     }
 
-    // ── 4. Listar bancos activos ─────────────────────────────────────────────
+    // â”€â”€ 4. Listar bancos activos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function bancos(): JsonResponse
     {
         $bancos = DB::table('tipos_banco')
             ->where('activo', true)
             ->orderBy('orden')
-            ->select('id', 'nombre')
+            ->select('id', 'nombre', 'numero_cuenta', 'titular')
             ->get();
 
         return response()->json($bancos);

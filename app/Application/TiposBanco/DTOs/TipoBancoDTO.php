@@ -7,6 +7,8 @@ final readonly class TipoBancoDTO
     public function __construct(
         public int     $id,
         public string  $nombre,
+        public ?string $numero_cuenta,
+        public ?string $titular,
         public bool    $activo,
         public int     $orden,
         public ?string $created_at,
@@ -17,6 +19,8 @@ final readonly class TipoBancoDTO
         return new self(
             id:         (int) $model->id,
             nombre:     $model->nombre,
+            numero_cuenta: $model->numero_cuenta ?? null,
+            titular:    $model->titular ?? null,
             activo:     (bool) $model->activo,
             orden:      (int) ($model->orden ?? 0),
             created_at: is_string($model->created_at ?? null)

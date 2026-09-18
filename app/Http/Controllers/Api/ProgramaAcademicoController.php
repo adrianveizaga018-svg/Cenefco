@@ -19,6 +19,7 @@ use App\Shared\Kernel\DTOs\PaginationDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ProgramaAcademicoController extends Controller
 {
@@ -151,52 +152,125 @@ class ProgramaAcademicoController extends Controller
         $rows = DB::table('t_imparte')
             ->where('id_mat', $id)
             ->orderByDesc('id_imp')
-            ->select('id_imp', 'nombre', 'periodo', 'gestion', 'imparte_fecha_inicio', 'imparte_fecha_fin', 'estado')
+            ->select('id_imp', 'nombre', 'periodo', 'gestion', 'imparte_fecha_inicio', 'imparte_fecha_fin', 'estado', 'version')
             ->get();
-        return response()->json($rows);
+
+        $planesPorImp = collect();
+        if ($rows->isNotEmpty() && Schema::hasTable('imparticion_planes')) {
+            $planesPorImp = DB::table('imparticion_planes')
+                ->whereIn('id_imp', $rows->pluck('id_imp'))
+                ->get()
+                ->groupBy('id_imp');
+        }
+
+        $payload = $rows->map(function ($row) use ($planesPorImp) {
+            $item = (array) $row;
+            $item['planes'] = ($planesPorImp->get($row->id_imp) ?? collect())
+                ->pluck('id_plan')
+                ->map(fn ($v) => (int) $v)
+                ->values()
+                ->all();
+            return $item;
+        });
+
+        return response()->json($payload);
     }
 
     public function storeImparticion(Request $request, int $id): JsonResponse
     {
         $data = $request->validate([
             'nombre'               => 'required|string|max:200',
-            'periodo'              => 'nullable|string|max:50',
+            'periodo'              => 'nullable|string|in:I,II',
             'gestion'              => 'nullable|integer',
-            'imparte_fecha_inicio' => 'nullable|date',
-            'imparte_fecha_fin'    => 'nullable|date',
+            'imparte_fecha_inicio' => 'required|date',
+            'imparte_fecha_fin'    => 'required|date|after_or_equal:imparte_fecha_inicio',
+            'inicio_inscripciones' => 'nullable|date|before_or_equal:imparte_fecha_inicio',
+            'planes'               => 'nullable|array',
+            'planes.*'             => 'integer',
         ]);
 
-        $idImp = (DB::table('t_imparte')->max('id_imp') ?? 0) + 1;
+        return DB::transaction(function () use ($data, $id) {
+            $idImp = ((int) (DB::table('t_imparte')->orderByDesc('id_imp')->lockForUpdate()->value('id_imp') ?? 0)) + 1;
+            $nVersion = ((int) DB::table('t_imparte')->where('id_mat', $id)->count()) + 1;
 
-        DB::table('t_imparte')->insert([
-            'id_imp'               => $idImp,
-            'id_mat'               => $id,
-            'nombre'               => $data['nombre'],
-            'periodo'              => $data['periodo'] ?? null,
-            'gestion'              => $data['gestion'] ?? now()->year,
-            'imparte_fecha_inicio' => $data['imparte_fecha_inicio'] ?? null,
-            'imparte_fecha_fin'    => $data['imparte_fecha_fin'] ?? null,
-            'estado'               => 1,
-        ]);
+            $row = [
+                'id_imp'               => $idImp,
+                'id_us_reg'            => 1,
+                'id_mat'               => $id,
+                'periodo'              => $data['periodo'] ?? (string) $nVersion,
+                'gestion'              => $data['gestion'] ?? now()->year,
+                'imparte_fecha_inicio' => $data['imparte_fecha_inicio'] ?? null,
+                'imparte_fecha_fin'    => $data['imparte_fecha_fin'] ?? null,
+                'estado'               => 1,
+                'fecha_reg'            => now(),
+                'version'              => (string) $nVersion,
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('t_imparte', 'nombre')) {
+                $row['nombre'] = $data['nombre'];
+            }
+            DB::table('t_imparte')->insert($row);
 
-        return response()->json(['id_imp' => $idImp, 'id_mat' => $id] + $data, 201);
+            $ficha = array_filter([
+                'inicio_actividades'       => $data['imparte_fecha_inicio'] ?? null,
+                'finalizacion_actividades' => $data['imparte_fecha_fin'] ?? null,
+                'inicio_inscripciones'     => $data['inicio_inscripciones'] ?? null,
+            ]);
+            if ($ficha !== []) {
+                DB::table('t_programa')->where('id_programa', $id)->update($ficha);
+            }
+
+            $planesVersion = $data['planes'] ?? [];
+            if ($planesVersion === []) {
+                $planesVersion = DB::table('programa_planes')->where('id_programa', $id)->pluck('id_plan')->all();
+            }
+            $this->syncImparticionPlanes($idImp, $planesVersion);
+
+            DB::table('t_programa')
+                ->where('id_programa', $id)
+                ->where(function ($q) {
+                    $q->whereNull('id_imp')->orWhere('id_imp', 0);
+                })
+                ->update(['id_imp' => $idImp]);
+
+            return response()->json(['id_imp' => $idImp, 'id_mat' => $id] + $data, 201);
+        });
     }
 
     public function updateImparticion(Request $request, int $id, int $id_imp): JsonResponse
     {
         $data = $request->validate([
             'nombre'               => 'required|string|max:200',
-            'periodo'              => 'nullable|string|max:50',
+            'periodo'              => 'nullable|string|in:I,II',
             'gestion'              => 'nullable|integer',
-            'imparte_fecha_inicio' => 'nullable|date',
-            'imparte_fecha_fin'    => 'nullable|date',
+            'imparte_fecha_inicio' => 'required|date',
+            'imparte_fecha_fin'    => 'required|date|after_or_equal:imparte_fecha_inicio',
+            'inicio_inscripciones' => 'nullable|date|before_or_equal:imparte_fecha_inicio',
+            'planes'               => 'nullable|array',
+            'planes.*'             => 'integer',
             'estado'               => 'nullable|integer',
         ]);
+
+        $inicioIns = $data['inicio_inscripciones'] ?? null;
+        $planes = $data['planes'] ?? null;
+        unset($data['inicio_inscripciones'], $data['planes']);
 
         DB::table('t_imparte')
             ->where('id_imp', $id_imp)
             ->where('id_mat', $id)
             ->update($data);
+
+        $ficha = array_filter([
+            'inicio_actividades'       => $data['imparte_fecha_inicio'] ?? null,
+            'finalizacion_actividades' => $data['imparte_fecha_fin'] ?? null,
+            'inicio_inscripciones'     => $inicioIns,
+        ]);
+        if ($ficha !== []) {
+            DB::table('t_programa')->where('id_programa', $id)->update($ficha);
+        }
+
+        if (is_array($planes)) {
+            $this->syncImparticionPlanes($id_imp, $planes);
+        }
 
         return response()->json(['id_imp' => $id_imp] + $data);
     }
@@ -241,5 +315,26 @@ class ProgramaAcademicoController extends Controller
         }
 
         return response()->json(['planes_count' => count($rows)]);
+    }
+
+    private function syncImparticionPlanes(int $idImp, array $planes): void
+    {
+        if (! Schema::hasTable('imparticion_planes')) {
+            return;
+        }
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $planes))));
+        DB::table('imparticion_planes')->where('id_imp', $idImp)->delete();
+        if ($ids === []) {
+            return;
+        }
+
+        $now = now();
+        DB::table('imparticion_planes')->insert(array_map(fn (int $idPlan) => [
+            'id_imp'      => $idImp,
+            'id_plan'     => $idPlan,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ], $ids));
     }
 }

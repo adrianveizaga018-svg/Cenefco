@@ -29,6 +29,7 @@ class CreatePlanAcademicoHandler
             'costo_por_cuota'   => $command->costo_por_cuota,
             'id_catplan'        => $command->id_catplan,
             'estado'            => $command->estado,
+            'qr_image_url'      => $command->qr_image_url,
             'fecha_reg'         => now(),
         ]);
     }

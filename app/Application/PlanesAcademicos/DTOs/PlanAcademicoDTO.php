@@ -19,6 +19,7 @@ final readonly class PlanAcademicoDTO
         public ?string $costo_por_cuota,
         public ?int $id_catplan,
         public int $estado,
+        public ?string $qr_image_url = null,
     ) {}
 
     public static function fromModel(object $model): self
@@ -38,6 +39,7 @@ final readonly class PlanAcademicoDTO
             costo_por_cuota:   $model->costo_por_cuota ?? null,
             id_catplan:        isset($model->id_catplan) ? (int) $model->id_catplan : null,
             estado:            (int) $model->estado,
+            qr_image_url:      isset($model->qr_image_url) ? url('storage/' . $model->qr_image_url) : null,
         );
     }
 }

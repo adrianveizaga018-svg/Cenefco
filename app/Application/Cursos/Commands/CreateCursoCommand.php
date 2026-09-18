@@ -44,5 +44,6 @@ final readonly class CreateCursoCommand
         public ?int    $convenio_id              = null,
         public ?int    $vendedor_id              = null,
         public ?array  $tareas_catalogo_ids      = null,
+        public ?array  $planes                   = null,
     ) {}
 }

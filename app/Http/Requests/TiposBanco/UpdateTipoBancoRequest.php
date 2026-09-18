@@ -15,6 +15,8 @@ class UpdateTipoBancoRequest extends FormRequest
 
         return [
             'nombre' => ['sometimes', 'required', 'string', 'max:150', Rule::unique('tipos_banco', 'nombre')->ignore($id)],
+            'numero_cuenta' => ['nullable', 'string', 'max:100'],
+            'titular' => ['nullable', 'string', 'max:150'],
             'activo' => ['nullable', 'boolean'],
             'orden'  => ['nullable', 'integer'],
         ];

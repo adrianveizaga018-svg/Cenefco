@@ -12,11 +12,12 @@ class UpdateTipoBancoHandler
 
     public function handle(UpdateTipoBancoCommand $c): TipoBancoDTO
     {
-        $data = array_filter([
-            'nombre' => $c->nombre,
-            'activo' => $c->activo,
-            'orden'  => $c->orden,
-        ], fn ($v) => $v !== null);
+        $data = [];
+        if ($c->nombre !== null) $data['nombre'] = $c->nombre;
+        if ($c->numero_cuenta !== null) $data['numero_cuenta'] = $c->numero_cuenta;
+        if ($c->titular !== null) $data['titular'] = $c->titular;
+        if ($c->activo !== null) $data['activo'] = $c->activo;
+        if ($c->orden !== null) $data['orden'] = $c->orden;
 
         $model = $this->repository->update($c->id, $data);
 

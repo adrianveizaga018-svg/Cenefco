@@ -29,6 +29,11 @@ class UpdatePlanAcademicoHandler
             'estado'            => $command->estado,
         ], fn ($v) => $v !== null);
 
+        // Handle QR separately because it can be explicitly set to null (remove)
+        if ($command->qr_image_url !== null) {
+            $data['qr_image_url'] = $command->qr_image_url === 'REMOVE' ? null : $command->qr_image_url;
+        }
+
         return $this->repository->update($command->id, $data);
     }
 }

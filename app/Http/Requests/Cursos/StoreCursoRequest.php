@@ -53,6 +53,8 @@ class StoreCursoRequest extends FormRequest
             'vendedor_id'              => ['nullable', 'integer', Rule::exists('vendedores', 'id')->whereNotNull('usuario_id')],
             'tareas_catalogo_ids'      => ['nullable', 'array'],
             'tareas_catalogo_ids.*'    => ['integer', 'exists:catalogo_tareas_academicas,id'],
+            'planes'                   => ['nullable', 'array'],
+            'planes.*'                 => ['integer'],
         ];
     }
 

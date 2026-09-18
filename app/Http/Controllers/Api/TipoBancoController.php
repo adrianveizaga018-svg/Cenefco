@@ -59,6 +59,8 @@ class TipoBancoController extends Controller
     {
         $dto = $this->createHandler->handle(new CreateTipoBancoCommand(
             nombre: $request->nombre,
+            numero_cuenta: $request->numero_cuenta,
+            titular: $request->titular,
             activo: $request->boolean('activo', true),
             orden:  $request->integer('orden', 0),
         ));
@@ -71,6 +73,8 @@ class TipoBancoController extends Controller
         $dto = $this->updateHandler->handle(new UpdateTipoBancoCommand(
             id:     $id,
             nombre: $request->nombre,
+            numero_cuenta: $request->has('numero_cuenta') ? $request->numero_cuenta : null,
+            titular: $request->has('titular') ? $request->titular : null,
             activo: $request->has('activo') ? $request->boolean('activo') : null,
             orden:  $request->filled('orden') ? $request->integer('orden') : null,
         ));
