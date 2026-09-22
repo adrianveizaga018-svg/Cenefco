@@ -285,6 +285,12 @@ class CajaController extends Controller
                 'comprobante_url'    => $comprobanteUrl,
             ]);
 
+            // Generar cuotas si hay un plan asociado
+            if ($request->input('id_plan')) {
+                $cuotasService = new \App\Application\Inscripciones\Services\InscripcionCuotasService();
+                $cuotasService->generarCuotasParaInscripcion($idIns, $request->input('id_plan'), $idPago);
+            }
+
             return response()->json([
                 'mensaje'   => 'Inscripcion registrada correctamente',
                 'id_ins'    => $idIns,

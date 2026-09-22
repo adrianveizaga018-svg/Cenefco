@@ -10,6 +10,7 @@ final readonly class CreateFechaPagoCommand
         public float   $montoAPagar,
         public ?string $fechaInicio,
         public ?string $fechaFin,
+        public ?int    $diasDesdeInscripcion = null,
         public int     $obligatorio   = 1,
         public ?string $tipoTramite   = null,
         public int     $idUsReg       = 0,

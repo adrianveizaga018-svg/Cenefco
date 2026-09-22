@@ -21,6 +21,7 @@ class CreateFechaPagoHandler
             'monto_a_pagar' => $command->montoAPagar,
             'fecha_inicio'  => $command->fechaInicio,
             'fecha_fin'     => $command->fechaFin,
+            'dias_desde_inscripcion' => $command->diasDesdeInscripcion,
             'obligatorio'   => $command->obligatorio,
             'tipo_tramite'  => $command->tipoTramite,
             'estado'        => 1,

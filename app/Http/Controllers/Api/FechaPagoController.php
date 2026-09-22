@@ -66,6 +66,7 @@ class FechaPagoController extends Controller
             montoAPagar: (float) $request->monto_a_pagar,
             fechaInicio: $request->fecha_inicio,
             fechaFin:    $request->fecha_fin,
+            diasDesdeInscripcion: $request->filled('dias_desde_inscripcion') ? (int) $request->dias_desde_inscripcion : null,
             obligatorio: $request->boolean('obligatorio', true) ? 1 : 0,
             tipoTramite: $request->tipo_tramite,
             idUsReg:     auth()->id() ?? 0,

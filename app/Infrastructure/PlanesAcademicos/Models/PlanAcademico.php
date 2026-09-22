@@ -24,6 +24,7 @@ class PlanAcademico extends Model
         'nro_cuotas',
         'descuento',
         'costo_por_cuota',
+        'modo_fechas',
         'id_catplan',
         'estado',
         'fecha_reg',

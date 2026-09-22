@@ -12,4 +12,8 @@ Route::middleware(['auth:sanctum'])->prefix('caja')->group(function () {
         ->middleware('permiso:inscripciones.crear');
     Route::get('/bancos', [CajaController::class, 'bancos'])
         ->middleware('permiso:inscripciones.crear');
+    Route::get('/cuotas-pendientes/{ci}', [\App\Http\Controllers\Api\CobranzaController::class, 'cuotasPendientes'])
+        ->middleware('permiso:inscripciones.crear');
+    Route::post('/registrar-cuota', [\App\Http\Controllers\Api\CobranzaController::class, 'registrarPagoCuota'])
+        ->middleware('permiso:inscripciones.crear');
 });
