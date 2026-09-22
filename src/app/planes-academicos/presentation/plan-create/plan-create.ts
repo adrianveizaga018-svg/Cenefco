@@ -44,15 +44,9 @@ export class PlanCreate {
     estado:     [1],
   });
 
-  nroCuotasNum = computed(() => {
-    const v = this.form.get('nro_cuotas')?.value;
-    return parseInt(v ?? '1', 10) || 1;
-  });
+  nroCuotasNum = signal<number>(1);
 
-  costoNum = computed(() => {
-    const v = this.form.get('costo')?.value;
-    return parseFloat(v ?? '0') || 0;
-  });
+  costoNum = signal<number>(0);
 
   totalCuotas = computed(() => {
     return this.cuotas().reduce((a, c) => a + (c.monto || 0), 0);
@@ -66,8 +60,14 @@ export class PlanCreate {
   });
 
   constructor() {
-    this.form.get('nro_cuotas')!.valueChanges.subscribe(() => this.recalcularCuotas());
-    this.form.get('costo')!.valueChanges.subscribe(() => this.recalcularMontos());
+    this.form.get('nro_cuotas')!.valueChanges.subscribe(v => {
+      this.nroCuotasNum.set(parseInt(v ?? '1', 10) || 1);
+      this.recalcularCuotas();
+    });
+    this.form.get('costo')!.valueChanges.subscribe(v => {
+      this.costoNum.set(parseFloat(v ?? '0') || 0);
+      this.recalcularMontos();
+    });
   }
 
   private recalcularCuotas() {
