@@ -87,7 +87,7 @@ export class PlanCreate {
       nuevas.push({
         nro: i + 1,
         descripcion: existente?.descripcion ?? (nombres[i] ?? ('Cuota ' + (i + 1))),
-        monto: existente?.monto ?? monto,
+        monto: monto,
         fecha_vencimiento: existente?.fecha_vencimiento ?? fecha.toISOString().split('T')[0],
         dias_desde_inscripcion: existente?.dias_desde_inscripcion ?? (i * 30),
       });
