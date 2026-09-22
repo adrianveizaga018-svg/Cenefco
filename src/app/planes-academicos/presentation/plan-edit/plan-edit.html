@@ -1,4 +1,4 @@
-﻿<main>
+<main>
   <app-page-title title="Editar Plan de Pago" subtitle="Planes de Pago" />
   <div class="max-w-2xl">
     @if (loading()) {
@@ -112,6 +112,105 @@
         </form>
       </div>
     </div>
+
+    <!-- Seccion de Cuotas -->
+    @if (nroCuotas() > 1) {
+    <div class="card mt-6">
+      <div class="card-header">
+        <h4 class="card-title">Cuotas del Plan</h4>
+        <p class="text-sm text-default-500 mt-1">Configura el calendario de cobros para este plan.</p>
+      </div>
+      <div class="p-6 space-y-5">
+
+        <!-- Modo de fechas -->
+        <div class="flex items-center gap-6 p-4 bg-default-50 rounded-lg border border-default-200">
+          <div class="text-sm font-medium text-default-700">Modo de fechas:</div>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" [checked]="modoPlan() === 'fijo'" (change)="cambiarModo('fijo')" class="accent-primary">
+            <span class="text-sm">Fechas fijas (el día específico que elijas)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" [checked]="modoPlan() === 'relativo'" (change)="cambiarModo('relativo')" class="accent-primary">
+            <span class="text-sm">Relativo a inscripción (N días después de inscribirse)</span>
+          </label>
+        </div>
+
+        <!-- Boton generar automaticamente -->
+        <div class="flex items-center gap-3">
+          <button type="button" class="btn bg-secondary text-white text-sm" (click)="generarCuotasAuto()" [disabled]="guardandoCuotas()">
+            <ng-icon name="lucideRefreshCw" class="size-4 me-1" />
+            Distribuir automáticamente
+          </button>
+          <span class="text-xs text-default-400">Crea {{ nroCuotas() }} cuotas iguales partiendo desde hoy</span>
+        </div>
+
+        <!-- Tabla de cuotas -->
+        @if (cargandoCuotas()) {
+          <div class="text-center text-default-400 py-6 text-sm">Cargando cuotas...</div>
+        } @else if (cuotas().length === 0) {
+          <div class="text-center text-default-400 py-8 border-2 border-dashed border-default-200 rounded-lg">
+            <p class="text-sm">No hay cuotas configuradas.</p>
+            <p class="text-xs mt-1">Usa el botón "Distribuir automáticamente" o agrega una cuota manualmente.</p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto rounded-lg border border-default-200">
+            <table class="w-full text-sm">
+              <thead class="bg-default-50 text-default-600">
+                <tr>
+                  <th class="px-4 py-3 text-left font-medium w-12">#</th>
+                  <th class="px-4 py-3 text-left font-medium">Descripción</th>
+                  <th class="px-4 py-3 text-left font-medium">Monto (Bs.)</th>
+                  @if (modoPlan() === 'fijo') {
+                    <th class="px-4 py-3 text-left font-medium">Fecha límite</th>
+                  } @else {
+                    <th class="px-4 py-3 text-left font-medium">Días desde inscripción</th>
+                  }
+                  <th class="px-4 py-3 text-center font-medium w-20">Acción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-100">
+                @for (c of cuotas(); track c.id_fechapago) {
+                  <tr class="hover:bg-default-50">
+                    <td class="px-4 py-3 text-default-500">{{ c.nro_pago }}</td>
+                    <td class="px-4 py-3">
+                      <input type="text" [(ngModel)]="c.tipo_tramite" (blur)="guardarCuota(c)"
+                             class="form-input w-full text-sm" placeholder="Ej: Matrícula, 1ra cuota...">
+                    </td>
+                    <td class="px-4 py-3">
+                      <input type="number" [(ngModel)]="c.monto_a_pagar" (blur)="guardarCuota(c)"
+                             class="form-input w-24 text-sm" min="0" step="0.01">
+                    </td>
+                    @if (modoPlan() === 'fijo') {
+                      <td class="px-4 py-3">
+                        <input type="date" [(ngModel)]="c.fecha_fin" (change)="guardarCuota(c)"
+                               class="form-input text-sm">
+                      </td>
+                    } @else {
+                      <td class="px-4 py-3">
+                        <input type="number" [(ngModel)]="c.dias_desde_inscripcion" (blur)="guardarCuota(c)"
+                               class="form-input w-24 text-sm" min="0" placeholder="0">
+                      </td>
+                    }
+                    <td class="px-4 py-3 text-center">
+                      <button type="button" class="text-danger hover:text-danger/80" (click)="eliminarCuota(c)" title="Eliminar">
+                        <ng-icon name="lucideTrash2" class="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- Agregar cuota manual -->
+        <button type="button" class="btn border border-default-300 text-default-700 text-sm" (click)="agregarCuota()">
+          <ng-icon name="lucidePlus" class="size-4 me-1" /> Agregar cuota
+        </button>
+
+      </div>
+    </div>
+    }
     }
   </div>
 </main>
