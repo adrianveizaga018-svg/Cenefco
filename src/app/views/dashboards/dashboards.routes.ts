@@ -17,4 +17,10 @@ export const DASHBOARDS_ROUTES: Routes = [
         loadComponent: () => import('../../caja/presentation/inscripcion-presencial/inscripcion-presencial').then(m => m.default),
         data: { title: 'Caja - Inscripción Presencial' },
     }
+,
+    {
+        path: 'caja/pago-cuota',
+        loadComponent: () => import('../../caja/presentation/pago-cuota/pago-cuota').then(m => m.PagoCuota),
+        data: { title: 'Caja - Pago de Cuota' }
+    }
 ]

@@ -68,11 +68,31 @@ export class CajaService {
   inscribir(payload: any, comprobanteFile?: File | null): Observable<any> {
     const fd = new FormData();
     Object.entries(payload).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) fd.append(k, String(v));
+      // Fix para booleanos: enviar '1' o '0' en vez de 'true' o 'false'
+      if (typeof v === 'boolean') {
+        fd.append(k, v ? '1' : '0');
+      } else if (v !== null && v !== undefined) {
+        fd.append(k, String(v));
+      }
     });
     if (comprobanteFile) {
       fd.append('comprobante', comprobanteFile);
     }
     return this.http.post(`${this.api}/inscribir`, fd);
+  }
+
+  getCuotasPendientes(ci: string): Observable<any> {
+    return this.http.get<any>(`${this.api}/cuotas-pendientes/${ci}`);
+  }
+
+  registrarPagoCuota(payload: any, comprobanteFile?: File | null): Observable<any> {
+    const fd = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== null && v !== undefined) fd.append(k, String(v));
+    });
+    if (comprobanteFile) {
+      fd.append('comprobante', comprobanteFile);
+    }
+    return this.http.post(`${this.api}/registrar-cuota`, fd);
   }
 }

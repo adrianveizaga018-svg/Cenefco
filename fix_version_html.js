@@ -1,0 +1,15 @@
+const fs = require('fs');
+const f = 'src/app/programas-academicos/presentation/version-imparticion-form/version-imparticion-form.html';
+let c = fs.readFileSync(f, 'utf8');
+c = c.replace(/Guardandoâ€¦/g, 'Guardando…');
+c = c.replace(/â€¦/g, '…');
+c = c.replace(/â€"/g, '—');
+c = c.replace(/Ã³/g, 'ó');
+c = c.replace(/Ã¡/g, 'á');
+c = c.replace(/Ã©/g, 'é');
+c = c.replace(/Ã­/g, 'í');
+c = c.replace(/Ã±/g, 'ñ');
+c = c.replace(/Ãº/g, 'ú');
+c = c.replace(/Â·/g, '·');
+fs.writeFileSync(f, c);
+console.log('Done');

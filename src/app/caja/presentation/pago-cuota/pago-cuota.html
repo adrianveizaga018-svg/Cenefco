@@ -1,0 +1,163 @@
+<main>
+  <app-page-title title="Registrar Pago de Cuota" subtitle="Caja" />
+  <div class="max-w-4xl">
+    <!-- Buscador -->
+    <div class="card mb-6">
+      <div class="p-6">
+        <label class="block text-sm font-medium text-default-700 mb-2">Buscar Estudiante por C.I.</label>
+        <div class="flex gap-2">
+          <input type="text" [formControl]="ciControl" class="form-input flex-1 max-w-sm" placeholder="Ej: 1234567" (keyup.enter)="buscar()">
+          <button type="button" class="btn bg-primary text-white" (click)="buscar()" [disabled]="buscando()">
+            @if (buscando()) {
+              <div class="size-4 animate-spin me-2"><ng-icon name="lucideLoader"></ng-icon></div> Buscando...
+            } @else {
+              <ng-icon name="lucideSearch" class="size-4 me-2"></ng-icon> Buscar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+
+    @if (estudiante()) {
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Info Estudiante -->
+        <div class="card md:col-span-1 h-fit">
+          <div class="card-header border-b border-default-200">
+            <h4 class="card-title text-base">Datos del Estudiante</h4>
+          </div>
+          <div class="p-5 space-y-4 text-sm">
+            <div>
+              <span class="block text-default-500 mb-1">Nombre Completo</span>
+              <span class="font-medium text-default-800">{{ estudiante()!.nombre }} {{ estudiante()!.appaterno }} {{ estudiante()!.apmaterno }}</span>
+            </div>
+            <div>
+              <span class="block text-default-500 mb-1">Carnet de Identidad</span>
+              <span class="font-medium text-default-800">{{ estudiante()!.ci }}</span>
+            </div>
+            <div>
+              <span class="block text-default-500 mb-1">Celular</span>
+              <span class="font-medium text-default-800">{{ estudiante()!.celular || 'No registrado' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cuotas Pendientes -->
+        <div class="md:col-span-2">
+          <h3 class="text-lg font-bold text-default-800 mb-4">Cuotas Pendientes</h3>
+          
+          @if (cuotas().length === 0) {
+            <div class="bg-default-50 border border-default-200 rounded-lg p-8 text-center text-default-500">
+              <ng-icon name="lucideCheckCircle" class="size-12 text-success/50 mx-auto mb-3"></ng-icon>
+              <p>El estudiante no tiene cuotas pendientes de pago.</p>
+            </div>
+          } @else {
+            <div class="space-y-4">
+              @for (c of cuotas(); track c.id) {
+                <div class="card hover:border-primary/50 transition-colors border-l-4" 
+                     [class.border-l-warning]="isVencida(c.fecha_vencimiento)"
+                     [class.border-l-primary]="!isVencida(c.fecha_vencimiento)">
+                  <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-bold text-default-800">{{ c.descripcion }}</span>
+                        @if (isVencida(c.fecha_vencimiento)) {
+                          <span class="badge bg-danger/10 text-danger text-xs px-2 py-0.5 rounded">Vencida</span>
+                        }
+                      </div>
+                      <p class="text-sm text-default-600 mb-1">{{ c.nombre_programa }}</p>
+                      <p class="text-xs text-default-500">Vence: <span class="font-medium">{{ c.fecha_vencimiento }}</span></p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      <div class="text-right">
+                        <span class="block text-xs text-default-500">A pagar</span>
+                        <span class="block text-lg font-bold text-primary">Bs. {{ c.monto_a_pagar }}</span>
+                      </div>
+                      <button type="button" class="btn bg-primary text-white whitespace-nowrap" (click)="abrirModalPago(c)">
+                        Registrar Pago
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</main>
+
+<!-- Modal de Pago -->
+@if (cuotaSeleccionada()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-default-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 border-b flex justify-between items-center bg-default-50 shrink-0">
+        <h3 class="text-lg font-bold text-default-800">Registrar Pago</h3>
+        <button (click)="cerrarModal()" class="text-default-400 hover:text-default-700 transition-colors">
+          <ng-icon name="lucideX" class="size-5"></ng-icon>
+        </button>
+      </div>
+      
+      <div class="p-6 overflow-y-auto">
+        <div class="bg-primary/5 p-4 rounded-lg border border-primary/20 mb-6">
+          <p class="text-sm text-primary-700 font-medium mb-1">{{ cuotaSeleccionada()!.descripcion }} - {{ cuotaSeleccionada()!.nombre_programa }}</p>
+          <p class="text-2xl font-bold text-primary">Bs. {{ cuotaSeleccionada()!.monto_a_pagar }}</p>
+        </div>
+
+        <form [formGroup]="formPago" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Método de Pago <span class="text-danger">*</span></label>
+            <select formControlName="metodo_pago" class="form-input w-full">
+              <option value="efectivo">Efectivo</option>
+              <option value="deposito">Depósito Bancario</option>
+              <option value="transferencia">Transferencia Bancaria</option>
+              <option value="qr">Pago por QR</option>
+              <option value="pos">POS (Tarjeta)</option>
+            </select>
+          </div>
+
+          @if (formPago.get('metodo_pago')?.value === 'deposito' || formPago.get('metodo_pago')?.value === 'transferencia') {
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino <span class="text-danger">*</span></label>
+              <select formControlName="tipo_banco_id" class="form-input w-full">
+                <option value="">Seleccione un banco...</option>
+                @for (b of bancos(); track b.id) {
+                  <option [value]="b.id">{{ b.nombre }} ({{ b.numero_cuenta }})</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (formPago.get('metodo_pago')?.value !== 'efectivo') {
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Nro de Boleta / Referencia <span class="text-danger">*</span></label>
+              <input type="text" formControlName="nro_boleta" class="form-input w-full" placeholder="Ej: 123456789">
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Pago <span class="text-danger">*</span></label>
+              <input type="date" formControlName="fecha_deposito" class="form-input w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Comprobante (opcional)</label>
+              <input type="file" (change)="onFileChange($event)" accept="image/*,.pdf" class="form-input w-full text-sm file:mr-2 file:py-1 file:px-3 file:border-0 file:rounded-md file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="px-6 py-4 border-t bg-default-50 flex justify-end gap-3 shrink-0">
+        <button type="button" class="btn border border-default-300 text-default-700" (click)="cerrarModal()" [disabled]="procesando()">Cancelar</button>
+        <button type="button" class="btn bg-primary text-white" (click)="confirmarPago()" [disabled]="procesando() || formPago.invalid">
+          @if (procesando()) {
+            <div class="size-4 animate-spin me-2"><ng-icon name="lucideLoader"></ng-icon></div> Registrando...
+          } @else {
+            Confirmar Pago
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

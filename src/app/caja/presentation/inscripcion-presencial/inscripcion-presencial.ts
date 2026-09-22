@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } 
 import { NgIcon } from '@ng-icons/core';
 import Swal from 'sweetalert2';
 import { CajaService, CajaEstudiante, CajaPrograma, CajaImparticion, CajaPlan, CajaBanco } from '../../application/services/caja.service';
+import { AuthService } from '../../../auth/application/services/auth.service';
 
 @Component({
   selector: 'app-inscripcion-presencial',
