@@ -103,6 +103,10 @@ export class PlanCreate {
     this.cuotas.set(this.cuotas().map(q => ({ ...q, monto })));
   }
 
+  forzarActualizacion() {
+    this.cuotas.set([...this.cuotas()]);
+  }
+
   distribuirAutomaticamente() {
     this.recalcularCuotas();
   }
