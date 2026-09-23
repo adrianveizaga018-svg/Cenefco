@@ -28,6 +28,12 @@ export class PlanesAcademicos {
   get forbidden() { return this.state().type === 'forbidden'; }
   onSearch(e: Event): void { this.searchQuery.set((e.target as HTMLInputElement).value); this.pageIndex.set(1); }
   onPageChange(p: number): void { this.pageIndex.set(p); }
+  deactivate(id: number): void {
+    Swal.fire({ title: '¿Desactivar plan?', text: 'Este plan tiene inscripciones activas y no puede eliminarse. ¿Deseas marcarlo como Inactivo?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#f59e0b', cancelButtonColor: '#6b7280', confirmButtonText: 'Sí, desactivar', cancelButtonText: 'Cancelar' }).then(r => {
+      if (r.isConfirmed) { this.service.update(id, { estado: 0 } as any).subscribe({ next: () => { this.toast.success('Desactivado', 'El plan ahora está Inactivo'); this.refresh.update(n => n + 1); }, error: () => this.toast.error('Error', 'No se pudo desactivar') }); }
+    });
+  }
+
   delete(id: number): void {
     Swal.fire({ title: '¿Eliminar plan?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' }).then(r => {
       if (r.isConfirmed) { this.service.delete(id).subscribe({ next: () => { this.toast.success('Eliminado', 'Plan eliminado'); this.refresh.update(n => n + 1); }, error: (err) => this.toast.error('Error', err.error?.message || 'No se pudo eliminar') }); }

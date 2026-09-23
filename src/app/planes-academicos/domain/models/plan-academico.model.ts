@@ -15,6 +15,7 @@ export interface PlanAcademico {
   fecha_reg:          string | null;
   qr_image_url:       string | null;
   modo_fechas:        string | null;
+  total_inscripciones: number;
 }
 export interface PlanAcademicoListResponse { data: PlanAcademico[]; total: number; }
 export interface PlanAcademicoListParams   { query?: string; pageIndex?: number; pageSize?: number; refresh?: number; }
