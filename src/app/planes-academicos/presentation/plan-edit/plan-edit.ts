@@ -78,6 +78,10 @@ export class PlanEdit {
         });
         if (d.qr_image_url) this.qrPreview.set(d.qr_image_url);
         this.totalInscripciones.set(d.total_inscripciones ?? 0);
+        if (this.totalInscripciones() > 0) {
+          this.form.get('costo')?.disable();
+          this.form.get('nro_cuotas')?.disable();
+        }
         this.modoCuotas.set(d.modo_fechas === 'relativo' ? 'dias' : 'fecha');
         this.nroCuotasNum.set(Number(d.nro_cuotas || 1));
         this.costoNum.set(Number(d.costo || 0));
@@ -222,7 +226,7 @@ export class PlanEdit {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.submitting.set(true);
 
-    const formVals = this.form.value;
+    const formVals = this.form.getRawValue();
     const fd = new FormData();
     fd.append('_method', 'PUT');
     fd.append('titulo', formVals.titulo ?? '');

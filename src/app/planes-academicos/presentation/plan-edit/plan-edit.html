@@ -48,7 +48,7 @@
               Precio Total (Bs.) <span class="text-danger">*</span>
             </label>
             <input type="number" formControlName="costo" class="form-input w-full"
-                   placeholder="Ej: 3500">
+                   placeholder="Ej: 3500" [attr.disabled]="totalInscripciones() > 0 ? '' : null">
             @if (form.get('costo')?.invalid && form.get('costo')?.touched) {
               <p class="text-danger text-xs mt-1">Ingresa el precio total (minimo 1)</p>
             }
@@ -58,7 +58,8 @@
               Número de Pagos (Cuotas) <span class="text-danger">*</span>
             </label>
             <input type="number" formControlName="nro_cuotas" class="form-input w-full"
-                   placeholder="1 = Al contado, 2+ = En cuotas" min="1" max="60">
+                   placeholder="1 = Al contado, 2+ = En cuotas" min="1" max="60"
+                   [attr.disabled]="totalInscripciones() > 0 ? '' : null">
             <p class="text-xs text-default-500 mt-1">1 significa "Pago unico". Mas de 1 abrira el calendario de cuotas.</p>
             @if (form.get('nro_cuotas')?.invalid && form.get('nro_cuotas')?.touched) {
               <p class="text-danger text-xs mt-1">El numero de cuotas debe ser mayor a 0</p>
@@ -106,6 +107,7 @@
         </div>
         <div class="p-6 space-y-5">
 
+          @if (totalInscripciones() === 0) {
           <!-- Tipo de fecha -->
           <div>
             <p class="text-sm font-medium text-default-700 mb-3">Las fechas de cobro son...</p>
@@ -144,6 +146,7 @@
             </button>
             <span class="text-xs text-default-400">Calcula los montos automaticamente</span>
           </div>
+          }
 
           <!-- Tabla de cuotas -->
           <div class="overflow-x-auto rounded-xl border border-default-200">
@@ -165,32 +168,48 @@
                   <tr class="hover:bg-default-50">
                     <td class="px-4 py-3 text-default-400 font-bold">{{ c.nro }}</td>
                     <td class="px-4 py-3">
-                      <input type="text" [(ngModel)]="cuotas()[i].descripcion"
-                             (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
-                             class="form-input w-full text-sm" placeholder="Ej: Matricula, 1ra cuota...">
+                      @if (totalInscripciones() > 0) {
+                        <span class="text-sm text-default-700">{{ c.descripcion }}</span>
+                      } @else {
+                        <input type="text" [(ngModel)]="cuotas()[i].descripcion"
+                               (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                               class="form-input w-full text-sm" placeholder="Ej: Matricula, 1ra cuota...">
+                      }
                     </td>
                     <td class="px-4 py-3">
-                      <div class="relative">
-                        <span class="absolute left-2 top-2.5 text-default-400 text-xs">Bs.</span>
-                        <input type="number" [(ngModel)]="cuotas()[i].monto"
-                               (ngModelChange)="onMontoChange(i)" [ngModelOptions]="{standalone: true}"
-                               class="form-input w-full text-sm pl-8" min="0" step="0.01">
-                      </div>
+                      @if (totalInscripciones() > 0) {
+                        <span class="text-sm font-medium text-default-700">Bs. {{ c.monto }}</span>
+                      } @else {
+                        <div class="relative">
+                          <span class="absolute left-2 top-2.5 text-default-400 text-xs">Bs.</span>
+                          <input type="number" [(ngModel)]="cuotas()[i].monto"
+                                 (ngModelChange)="onMontoChange(i)" [ngModelOptions]="{standalone: true}"
+                                 class="form-input w-full text-sm pl-8" min="0" step="0.01">
+                        </div>
+                      }
                     </td>
                     @if (modoCuotas() === 'fecha') {
                       <td class="px-4 py-3">
-                        <input type="date" [(ngModel)]="cuotas()[i].fecha_vencimiento"
-                               (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
-                               class="form-input text-sm">
+                        @if (totalInscripciones() > 0) {
+                          <span class="text-sm text-default-700">{{ c.fecha_vencimiento }}</span>
+                        } @else {
+                          <input type="date" [(ngModel)]="cuotas()[i].fecha_vencimiento"
+                                 (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                                 class="form-input text-sm">
+                        }
                       </td>
                     } @else {
                       <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
-                          <input type="number" [(ngModel)]="cuotas()[i].dias_desde_inscripcion"
-                                 (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
-                                 class="form-input w-20 text-sm" min="0" placeholder="30">
-                          <span class="text-xs text-default-500 whitespace-nowrap">dias</span>
-                        </div>
+                        @if (totalInscripciones() > 0) {
+                          <span class="text-sm text-default-700">{{ c.dias_desde_inscripcion }} dias</span>
+                        } @else {
+                          <div class="flex items-center gap-2">
+                            <input type="number" [(ngModel)]="cuotas()[i].dias_desde_inscripcion"
+                                   (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                                   class="form-input w-20 text-sm" min="0" placeholder="30">
+                            <span class="text-xs text-default-500 whitespace-nowrap">dias</span>
+                          </div>
+                        }
                       </td>
                     }
                   </tr>
@@ -208,7 +227,7 @@
             </table>
           </div>
 
-          @if (costoNum() > 0 && totalCuotas().toFixed(2) !== costoNum().toFixed(2)) {
+          @if (totalInscripciones() === 0 && costoNum() > 0 && totalCuotas().toFixed(2) !== costoNum().toFixed(2)) {
             <div class="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2 text-sm text-warning-700">
               <ng-icon name="lucideAlertTriangle" class="size-4 text-warning shrink-0" />
               <span>
