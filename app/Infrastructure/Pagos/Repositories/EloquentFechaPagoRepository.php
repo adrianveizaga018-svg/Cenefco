@@ -56,8 +56,11 @@ class EloquentFechaPagoRepository implements FechaPagoRepositoryInterface
     {
         $model = new FechaPago($data);
         if (empty($data['id_fechapago'])) {
-            $maxId = FechaPago::max('id_fechapago') ?? 0;
-            $model->id_fechapago = $maxId + 1;
+            if (\DB::connection()->getDriverName() === 'sqlite') {
+                $maxId = FechaPago::max('id_fechapago') ?? 0;
+                $model->id_fechapago = $maxId + 1;
+            }
+            // Para MySQL/PostgreSQL dejamos que el AUTO_INCREMENT haga su trabajo
         } else {
             $model->id_fechapago = $data['id_fechapago'];
         }
