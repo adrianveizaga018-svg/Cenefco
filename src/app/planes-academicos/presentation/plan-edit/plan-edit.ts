@@ -36,6 +36,8 @@ export class PlanEdit {
   private fb       = inject(FormBuilder);
 
   submitting = signal(false);
+  private cargandoDesdeBD = true;
+  totalInscripciones = signal(0); // bloquea recalculo mientras carga
   qrPreview = signal<string | null>(null);
   private qrFile: File | null = null;
 
@@ -75,6 +77,7 @@ export class PlanEdit {
           estado: d.estado
         });
         if (d.qr_image_url) this.qrPreview.set(d.qr_image_url);
+        this.totalInscripciones.set(d.total_inscripciones ?? 0);
         this.modoCuotas.set(d.modo_fechas === 'relativo' ? 'dias' : 'fecha');
         this.nroCuotasNum.set(Number(d.nro_cuotas || 1));
         this.costoNum.set(Number(d.costo || 0));
@@ -95,8 +98,9 @@ export class PlanEdit {
             });
             this.cuotas.set(locales);
             this.loading.set(false);
+            this.cargandoDesdeBD = false; // ya cargó, ahora sí puede recalcular
           },
-          error: () => this.loading.set(false)
+          error: () => { this.loading.set(false); this.cargandoDesdeBD = false; }
         });
       },
       error: () => { 
@@ -118,6 +122,7 @@ export class PlanEdit {
   }
 
   private recalcularCuotas() {
+    if (this.cargandoDesdeBD) return; // espera a que cargue la BD
     const n = this.nroCuotasNum();
     const c = this.costoNum();
     if (n <= 1) { this.cuotas.set([]); return; }
@@ -144,6 +149,7 @@ export class PlanEdit {
   }
 
   private recalcularMontos() {
+    if (this.cargandoDesdeBD) return;
     const c = this.costoNum();
     const n = this.nroCuotasNum();
     if (c <= 0 || n <= 1) return;
