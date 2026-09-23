@@ -32,7 +32,7 @@
               <thead class="bg-default-150"><tr class="text-sm font-normal text-default-700">
                 <th class="px-3.5 py-3 text-start">Nombre del Plan</th>
                 <th class="px-3.5 py-3 text-start">Costo (Bs.)</th>
-                <th class="px-3.5 py-3 text-start">Descuento (%)</th>
+                <th class="px-3.5 py-3 text-start">N° Cuotas</th>
                 <th class="px-3.5 py-3 text-start">Estado</th>
                 <th class="px-3.5 py-3 text-start">Acciones</th>
               </tr></thead>
@@ -41,7 +41,7 @@
                   <tr class="text-default-800 font-normal hover:bg-default-50">
                     <td class="px-3.5 py-2.5 text-sm font-bold text-default-900">{{ item.titulo }}</td>
                     <td class="px-3.5 py-2.5 text-sm font-medium text-green-600">{{ item.costo || '0' }}</td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-600">{{ item.descuento || '0' }}</td>
+                    <td class="px-3.5 py-2.5 text-sm text-default-600">{{ item.nro_cuotas || '1' }}</td>
                     <td class="px-3.5 py-2.5 text-sm">
                       @if (item.estado == 1) { <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Activo</span> }
                       @else { <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">Inactivo</span> }
