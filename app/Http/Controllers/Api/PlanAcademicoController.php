@@ -18,6 +18,7 @@ use App\Http\Requests\PlanesAcademicos\UpdatePlanAcademicoRequest;
 use App\Shared\Kernel\DTOs\PaginationDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PlanAcademicoController extends Controller
 {
@@ -115,6 +116,19 @@ class PlanAcademicoController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        // Verificar si el plan tiene inscripciones asociadas
+        $totalInscripciones = DB::table('t_inscripcion')
+            ->where('id_plan', $id)
+            ->count();
+
+        if ($totalInscripciones > 0) {
+            return response()->json([
+                'message' => "Este plan tiene {$totalInscripciones} inscripción(es) registrada(s). No se puede eliminar para proteger el historial de datos. Puedes marcarlo como Inactivo.",
+                'total_inscripciones' => $totalInscripciones,
+                'sugerencia' => 'Cambia el estado del plan a Inactivo en lugar de eliminarlo.'
+            ], 422);
+        }
+
         $this->deleteHandler->handle(new DeletePlanAcademicoCommand($id));
 
         return response()->json(null, 204);
