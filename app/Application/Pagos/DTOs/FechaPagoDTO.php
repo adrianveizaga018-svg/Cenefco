@@ -15,6 +15,7 @@ final readonly class FechaPagoDTO
         public int     $estado,
         public ?string $tipo_tramite,
         public ?string $plan_titulo,
+        public ?int    $dias_desde_inscripcion = null,
     ) {}
 
     public static function fromModel(object $model): self
@@ -30,6 +31,7 @@ final readonly class FechaPagoDTO
             estado:       (int)    $model->estado,
             tipo_tramite:          $model->tipo_tramite ?? null,
             plan_titulo:           $model->plan_titulo ?? null,
+            dias_desde_inscripcion: isset($model->dias_desde_inscripcion) ? (int) $model->dias_desde_inscripcion : null,
         );
     }
 }
