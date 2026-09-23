@@ -29,6 +29,7 @@ final readonly class InscripcionDTO
         public float $total_pagado,
         public ?int    $id_vendedor,
         public ?string $canal_venta,
+        public ?string $vendedor_nombre = null,
         public ?array  $documentos,
         public ?float  $curso_costo_monto,
         public bool    $es_participante,

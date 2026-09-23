@@ -23,7 +23,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
         private readonly CompromisoCobroRepositoryInterface  $compromisoCobroRepository,
     ) {}
 
-    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idUs, ?int $idImp, ?int $programaId, ?string $periodo, ?string $gestion, ?array $idImpPermitidos = null): array
+    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idUs, ?int $idImp, ?int $programaId, ?string $periodo, ?string $gestion, ?array $idImpPermitidos = null, array $extraFilters = []): array
     {
         $q = DB::table('t_inscripcion as ins')
             ->leftJoin('t_usuario as u', function ($j) {
@@ -38,6 +38,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
                 $j->on('imp.id_mat', '=', 'm.id_mat')
                   ->whereRaw('m.id_us_reg = (SELECT MIN(m2.id_us_reg) FROM t_materia m2 WHERE m2.id_mat = m.id_mat)');
             })
+            ->leftJoin('t_usuario as ven', 'ins.id_vendedor', '=', 'ven.id_us')
             ->leftJoin('t_usuario as doc', function ($j) {
                 $j->on('imp.id_us', '=', 'doc.id_us')
                   ->whereRaw('doc.id_us_reg = (SELECT MIN(d2.id_us_reg) FROM t_usuario d2 WHERE d2.id_us = doc.id_us)');
@@ -45,7 +46,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
             ->select([
                 'ins.id_ins', 'ins.id_us', 'ins.id_imp', 'ins.fecha_ins',
                 'ins.periodo', 'ins.gestion', 'ins.observacion_ins', 'ins.estado',
-                'ins.canal_venta', 'ins.id_vendedor',
+                'ins.canal_venta', 'ins.id_vendedor', DB::raw("TRIM(CONCAT(COALESCE(ven.nombre,''), ' ', COALESCE(ven.appaterno,''))) as vendedor_nombre"),
                 DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
                 'u.ci as estudiante_ci',
                 'u.email as estudiante_email',
@@ -117,6 +118,21 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
             $q->where('ins.periodo', $periodo);
         }
 
+        
+        if (!empty($extraFilters['id_vendedor'])) {
+            $q->where('ins.id_vendedor', $extraFilters['id_vendedor']);
+        }
+        if (!empty($extraFilters['canal_venta'])) {
+            $q->where('ins.canal_venta', $extraFilters['canal_venta']);
+        }
+        if (isset($extraFilters['modo_pago'])) {
+            if ($extraFilters['modo_pago'] === 'contado') {
+                $q->whereNull('ins.id_plan');
+            } elseif ($extraFilters['modo_pago'] === 'cuotas') {
+                $q->whereNotNull('ins.id_plan');
+            }
+        }
+    
         if ($gestion !== null) {
             $q->where('ins.gestion', $gestion);
         }

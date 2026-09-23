@@ -10,7 +10,7 @@ use App\Shared\Kernel\DTOs\PaginationDTO;
 interface InscripcionRepositoryInterface
 {
     
-    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idUs, ?int $idImp, ?int $programaId, ?string $periodo, ?string $gestion, ?array $idImpPermitidos = null): array;
+    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idUs, ?int $idImp, ?int $programaId, ?string $periodo, ?string $gestion, ?array $idImpPermitidos = null, array $extraFilters = []): array;
 
     public function findById(int $id): InscripcionDTO;
 

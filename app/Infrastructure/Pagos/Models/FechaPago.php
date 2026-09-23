@@ -13,7 +13,7 @@ class FechaPago extends Model
     protected $fillable = [
         'id_us_reg', 'id_plan', 'nro_pago', 'monto_a_pagar',
         'fecha_inicio', 'fecha_fin', 'obligatorio',
-        'tipo_tramite', 'estado', 'fecha_reg',
+        'tipo_tramite', 'estado', 'fecha_reg', 'dias_desde_inscripcion',
     ];
 
     protected $casts = [

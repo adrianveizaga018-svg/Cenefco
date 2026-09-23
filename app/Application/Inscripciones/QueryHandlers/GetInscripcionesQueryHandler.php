@@ -22,6 +22,7 @@ class GetInscripcionesQueryHandler
             $query->periodo,
             $query->gestion,
             $query->idImpPermitidos,
+            $query->extraFilters,
         );
     }
 }

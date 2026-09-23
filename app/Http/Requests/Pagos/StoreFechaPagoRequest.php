@@ -15,7 +15,7 @@ class StoreFechaPagoRequest extends FormRequest
             'nro_pago'      => ['nullable', 'string', 'max:20'],
             'monto_a_pagar' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'fecha_inicio'  => ['nullable', 'date'],
-            'fecha_fin'     => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_fin'     => ['nullable', 'date'],
             'dias_desde_inscripcion' => ['nullable', 'integer', 'min:0'],
             'obligatorio'   => ['nullable', 'boolean'],
             'tipo_tramite'  => ['nullable', 'string', 'max:100'],

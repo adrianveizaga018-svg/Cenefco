@@ -15,5 +15,6 @@ final readonly class GetInscripcionesQuery
         public ?string $periodo = null,
         public ?string $gestion = null,
         public ?array $idImpPermitidos = null,
+        public array $extraFilters = [],
     ) {}
 }
