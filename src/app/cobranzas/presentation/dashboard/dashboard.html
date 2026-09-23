@@ -1,6 +1,169 @@
 <main>
   <app-page-title title="Dashboard de Cobranzas" subtitle="Finanzas" />
   
+  
+  @if (metrics()) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      
+      <!-- Contado vs Cuotas -->
+      <div class="card p-6 border-t-4 border-t-primary">
+        <h4 class="text-sm font-medium text-default-500 mb-1">Inscripciones (Modo de Pago)</h4>
+        <div class="mt-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-default-600 flex items-center gap-2">
+              <div class="size-2 rounded-full bg-green-500"></div> Al Contado
+            </span>
+            <span class="font-bold text-default-800">{{ metrics().modalidades.al_contado }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-default-600 flex items-center gap-2">
+              <div class="size-2 rounded-full bg-blue-500"></div> En Cuotas
+            </span>
+            <span class="font-bold text-default-800">{{ metrics().modalidades.en_cuotas }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Proximos a vencer -->
+      <div class="card p-6 border-t-4 border-t-warning">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="text-sm font-medium text-default-500 mb-1">Vencen pronto (5 dias)</h4>
+            <h2 class="text-3xl font-bold text-default-900">{{ metrics().alertas.proximos_vencer.length }}</h2>
+          </div>
+          <div class="p-3 bg-warning/10 text-warning rounded-lg">
+            <ng-icon name="lucideBell" class="size-6"></ng-icon>
+          </div>
+        </div>
+        <p class="text-xs text-default-500 mt-4">Requieren recordatorio</p>
+      </div>
+
+      <!-- Vencidos -->
+      <div class="card p-6 border-t-4 border-t-danger">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="text-sm font-medium text-default-500 mb-1">Cuotas Vencidas</h4>
+            <h2 class="text-3xl font-bold text-default-900">{{ metrics().alertas.vencidos.length }}</h2>
+          </div>
+          <div class="p-3 bg-danger/10 text-danger rounded-lg">
+            <ng-icon name="lucideAlertTriangle" class="size-6"></ng-icon>
+          </div>
+        </div>
+        <p class="text-xs text-default-500 mt-4">Deuda pendiente</p>
+      </div>
+
+    </div>
+
+    @if (metrics().alertas.proximos_vencer.length > 0 || metrics().alertas.vencidos.length > 0) {
+      <div class="card mb-6">
+        <div class="card-header border-b border-default-200">
+          <h4 class="card-title">Panel de Alertas y Seguimiento</h4>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Tabla Vencen Pronto -->
+            @if (metrics().alertas.proximos_vencer.length > 0) {
+              <div>
+                <h5 class="text-sm font-bold text-warning-600 mb-3 flex items-center gap-2">
+                  <ng-icon name="lucideBellRing"></ng-icon> Vencen en proximos 5 dias
+                </h5>
+                <div class="overflow-hidden border border-default-200 rounded-lg">
+                  <table class="w-full text-xs text-left">
+                    <thead class="bg-default-50 text-default-600 border-b border-default-200">
+                      <tr>
+                        <th class="px-3 py-2 font-medium">Estudiante</th>
+                        <th class="px-3 py-2 font-medium">Cuota</th>
+                        <th class="px-3 py-2 font-medium">Vence</th>
+                        <th class="px-3 py-2 font-medium">Contactar</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default-100">
+                      @for (a of metrics().alertas.proximos_vencer; track a.id) {
+                        <tr class="hover:bg-default-50">
+                          <td class="px-3 py-2">
+                            <p class="font-medium text-default-800">{{ a.estudiante_nombre }}</p>
+                            <p class="text-[10px] text-default-500">CI: {{ a.ci }}</p>
+                          </td>
+                          <td class="px-3 py-2">
+                            <p class="font-medium">Bs. {{ a.monto }}</p>
+                            <p class="text-[10px] text-default-500">{{ a.descripcion }}</p>
+                          </td>
+                          <td class="px-3 py-2">
+                            <span class="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-md text-[10px] font-medium bg-warning/10 text-warning-700">
+                              {{ a.fecha_vencimiento }}
+                            </span>
+                          </td>
+                          <td class="px-3 py-2">
+                            @if (a.celular) {
+                              <a [href]="'https://wa.me/' + a.celular" target="_blank" class="text-success hover:text-success-600" title="WhatsApp">
+                                <ng-icon name="lucideMessageCircle" class="size-4"></ng-icon>
+                              </a>
+                            } @else {
+                              <span class="text-default-400">-</span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
+            <!-- Tabla Vencidos -->
+            @if (metrics().alertas.vencidos.length > 0) {
+              <div>
+                <h5 class="text-sm font-bold text-danger-600 mb-3 flex items-center gap-2">
+                  <ng-icon name="lucideAlertOctagon"></ng-icon> Cuotas Vencidas
+                </h5>
+                <div class="overflow-hidden border border-default-200 rounded-lg">
+                  <table class="w-full text-xs text-left">
+                    <thead class="bg-default-50 text-default-600 border-b border-default-200">
+                      <tr>
+                        <th class="px-3 py-2 font-medium">Estudiante</th>
+                        <th class="px-3 py-2 font-medium">Cuota</th>
+                        <th class="px-3 py-2 font-medium">Retraso</th>
+                        <th class="px-3 py-2 font-medium">Contactar</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-default-100">
+                      @for (a of metrics().alertas.vencidos; track a.id) {
+                        <tr class="hover:bg-default-50">
+                          <td class="px-3 py-2">
+                            <p class="font-medium text-default-800">{{ a.estudiante_nombre }}</p>
+                            <p class="text-[10px] text-default-500">CI: {{ a.ci }}</p>
+                          </td>
+                          <td class="px-3 py-2">
+                            <p class="font-medium text-danger">Bs. {{ a.monto }}</p>
+                            <p class="text-[10px] text-default-500">{{ a.descripcion }}</p>
+                          </td>
+                          <td class="px-3 py-2">
+                            <span class="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-md text-[10px] font-medium bg-danger/10 text-danger-700">
+                              Hace {{ a.dias_retraso }} dias
+                            </span>
+                          </td>
+                          <td class="px-3 py-2">
+                            @if (a.celular) {
+                              <a [href]="'https://wa.me/' + a.celular" target="_blank" class="text-success hover:text-success-600" title="WhatsApp">
+                                <ng-icon name="lucideMessageCircle" class="size-4"></ng-icon>
+                              </a>
+                            } @else {
+                              <span class="text-default-400">-</span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  }
+
   <div class="card mb-6">
     <div class="p-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">

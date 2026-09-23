@@ -6,6 +6,10 @@ import { Observable } from 'rxjs';
 export class CobranzaService {
   private http = inject(HttpClient);
 
+  getMetrics(): Observable<any> {
+    return this.http.get('/api/v1/cobranzas/metrics');
+  }
+
   getDashboard(params: any): Observable<any> {
     let p = new HttpParams();
     if (params.page) p = p.set('page', params.page);

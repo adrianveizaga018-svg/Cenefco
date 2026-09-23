@@ -16,6 +16,7 @@ export class Dashboard implements OnInit {
   private titleService = inject(Title);
 
   cuotas = signal<any[]>([]);
+  metrics = signal<any>(null);
   cargando = signal(false);
   totalRegistros = signal(0);
   paginaActual = signal(1);
@@ -26,6 +27,15 @@ export class Dashboard implements OnInit {
   ngOnInit() {
     this.titleService.setTitle('Dashboard de Cobranzas - CENEFCO');
     this.cargarDashboard();
+    this.cargarMetrics();
+  }
+
+  
+  cargarMetrics() {
+    this.service.getMetrics().subscribe({
+      next: (res) => this.metrics.set(res),
+      error: (err) => console.error(err)
+    });
   }
 
   cargarDashboard(page = 1) {
