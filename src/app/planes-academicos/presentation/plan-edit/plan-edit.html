@@ -1,216 +1,208 @@
 <main>
   <app-page-title title="Editar Plan de Pago" subtitle="Planes de Pago" />
-  <div class="max-w-2xl">
-    @if (loading()) {
-      <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
-        <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando...
-      </div>
-    } @else {
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
+      <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Cargando datos del plan...
+    </div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="max-w-2xl space-y-6">
+
+    <!-- Card 1: Datos basicos -->
     <div class="card">
       <div class="card-header">
         <h4 class="card-title">Datos del Plan</h4>
-        <p class="text-sm text-default-500 mt-1">Los planes se vinculan a programas desde la pantalla de edición del programa.</p>
-      </div>
-      <div class="p-6">
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
-
-          <!-- Título -->
-          <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">
-              Nombre del Plan <span class="text-danger">*</span>
-            </label>
-            <input type="text" formControlName="titulo" class="form-input w-full"
-                   placeholder="Ej: Pago al Contado, 3 Cuotas, Plan Becado...">
-            @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
-              <p class="text-danger text-xs mt-1">El nombre del plan es requerido</p>
-            }
-          </div>
-
-          <!-- Costo y Cuotas -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">
-                Costo Total (Bs.) <span class="text-danger">*</span>
-              </label>
-              <div class="relative">
-                <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
-                <input type="text" formControlName="costo" class="form-input w-full pl-10"
-                       placeholder="Ej: 1500">
-              </div>
-              @if (form.get('costo')?.invalid && form.get('costo')?.touched) {
-                <p class="text-danger text-xs mt-1">Ingresa un monto válido (Ej: 1500.00)</p>
-              }
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">
-                Nº de Cuotas <span class="text-danger">*</span>
-              </label>
-              <input type="number" formControlName="nro_cuotas" class="form-input w-full"
-                     placeholder="Ej: 3" min="1">
-              <p class="text-xs text-default-400 mt-1">Usa 1 para pago al contado</p>
-            </div>
-          </div>
-
-          <!-- Costo por cuota calculado -->
-          @if (costoPorCuota()) {
-            <div class="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-              <span class="text-sm text-green-700 font-medium">Costo por cuota:</span>
-              <span class="text-lg font-bold text-green-700">{{ costoPorCuota() }}</span>
-            </div>
-          }
-
-          <!-- Descuento y Estado -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">Descuento (%)</label>
-              <input type="text" formControlName="descuento" class="form-input w-full" placeholder="Ej: 10">
-              @if (form.get('descuento')?.invalid && form.get('descuento')?.touched) {
-                <p class="text-danger text-xs mt-1">Valor entre 0 y 100</p>
-              }
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
-              <select formControlName="estado" class="form-input w-full">
-                <option [value]="1">Activo</option>
-                <option [value]="0">Inactivo</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- QR de Pago -->
-          <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">QR de Pago (Opcional)</label>
-            <p class="text-xs text-default-400 mb-2">Sube la imagen QR de este plan para mostrársela al cliente en el momento de pago.</p>
-            @if (qrPreview()) {
-              <div class="mb-3 flex flex-col items-start gap-2">
-                <img [src]="qrPreview()" alt="QR de pago" class="w-48 h-48 object-contain border rounded-lg p-2 bg-white shadow-sm">
-                <button type="button" class="text-xs text-danger font-medium hover:underline" (click)="quitarQr()">✕ Quitar QR</button>
-              </div>
-            } @else {
-              <label class="flex items-center justify-center w-full h-24 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:bg-default-50 transition">
-                <div class="flex flex-col items-center gap-1">
-                  <ng-icon name="lucideQrCode" class="text-default-400 size-6" />
-                  <span class="text-xs text-default-400">Haz clic para subir imagen QR</span>
-                </div>
-                <input type="file" class="hidden" accept="image/*" (change)="onQrChange($event)">
-              </label>
-            }
-          </div>
-
-          <!-- Botones -->
-          <div class="flex items-center gap-3 pt-2">
-            <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
-              @if (submitting()) {
-                <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
-              } @else {
-                Guardar Cambios
-              }
-            </button>
-            <a routerLink="/cenefco/planes-academicos" class="btn bg-default-200 text-default-700">Cancelar</a>
-          </div>
-
-        </form>
-      </div>
-    </div>
-
-    <!-- Seccion de Cuotas -->
-    @if (nroCuotas() > 1) {
-    <div class="card mt-6">
-      <div class="card-header">
-        <h4 class="card-title">Cuotas del Plan</h4>
-        <p class="text-sm text-default-500 mt-1">Configura el calendario de cobros para este plan.</p>
+        <p class="text-sm text-default-500 mt-1">Los planes se vinculan a programas desde la pantalla de edicion del programa.</p>
       </div>
       <div class="p-6 space-y-5">
 
-        <!-- Modo de fechas -->
-        <div class="flex items-center gap-6 p-4 bg-default-50 rounded-lg border border-default-200">
-          <div class="text-sm font-medium text-default-700">Modo de fechas:</div>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" [checked]="modoPlan() === 'fijo'" (change)="cambiarModo('fijo')" class="accent-primary">
-            <span class="text-sm">Fechas fijas (el día específico que elijas)</span>
+        <!-- Nombre -->
+        <div>
+          <label class="block text-sm font-medium text-default-700 mb-1">
+            Nombre del Plan <span class="text-danger">*</span>
           </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" [checked]="modoPlan() === 'relativo'" (change)="cambiarModo('relativo')" class="accent-primary">
-            <span class="text-sm">Relativo a inscripción (N días después de inscribirse)</span>
-          </label>
+          <input type="text" formControlName="titulo" class="form-input w-full"
+                 placeholder="Ej: Pago al Contado, 3 Cuotas, Plan Becado...">
+          @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+            <p class="text-danger text-xs mt-1">El nombre del plan es requerido</p>
+          }
         </div>
 
-        <!-- Boton generar automaticamente -->
-        <div class="flex items-center gap-3">
-          <button type="button" class="btn bg-secondary text-white text-sm" (click)="generarCuotasAuto()" [disabled]="guardandoCuotas()">
-            <ng-icon name="lucideRefreshCw" class="size-4 me-1" />
-            Distribuir automáticamente
-          </button>
-          <span class="text-xs text-default-400">Crea {{ nroCuotas() }} cuotas iguales partiendo desde hoy</span>
-        </div>
-
-        <!-- Tabla de cuotas -->
-        @if (cargandoCuotas()) {
-          <div class="text-center text-default-400 py-6 text-sm">Cargando cuotas...</div>
-        } @else if (cuotas().length === 0) {
-          <div class="text-center text-default-400 py-8 border-2 border-dashed border-default-200 rounded-lg">
-            <p class="text-sm">No hay cuotas configuradas.</p>
-            <p class="text-xs mt-1">Usa el botón "Distribuir automáticamente" o agrega una cuota manualmente.</p>
+        <!-- Costo y cuotas -->
+        <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full">
+              <option [value]="1">Activo</option>
+              <option [value]="0">Inactivo</option>
+            </select>
           </div>
-        } @else {
-          <div class="overflow-x-auto rounded-lg border border-default-200">
+
+        <!-- QR -->
+        <div>
+          <label class="block text-sm font-medium text-default-700 mb-1">QR de Pago (Opcional)</label>
+          <p class="text-xs text-default-400 mb-2">Sube la imagen QR de este plan para mostrarla al cliente en el momento de pago.</p>
+          @if (qrPreview()) {
+            <div class="mb-3 flex flex-col items-start gap-2">
+              <img [src]="qrPreview()!" alt="QR" class="w-48 h-48 object-contain border rounded-lg p-2 bg-white shadow-sm">
+              <button type="button" class="text-xs text-danger font-medium hover:underline" (click)="quitarQr()">x Quitar QR</button>
+            </div>
+          } @else {
+            <label class="flex items-center justify-center w-full h-24 border-2 border-dashed border-default-300 rounded-lg cursor-pointer hover:bg-default-50 transition">
+              <div class="flex flex-col items-center gap-1">
+                <ng-icon name="lucideQrCode" class="text-default-400 size-6" />
+                <span class="text-xs text-default-400">Haz clic para subir imagen QR</span>
+              </div>
+              <input type="file" class="hidden" accept="image/*" (change)="onQrChange($event)">
+            </label>
+          }
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Card 2: Configuracion de cuotas (solo si nroCuotas > 1) -->
+    @if (nroCuotasNum() > 1) {
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title">Calendario de Cobros</h4>
+          <p class="text-sm text-default-500 mt-1">Define cuando y cuanto se paga en cada cuota.</p>
+        </div>
+        <div class="p-6 space-y-5">
+
+          <!-- Tipo de fecha -->
+          <div>
+            <p class="text-sm font-medium text-default-700 mb-3">Las fechas de cobro son...</p>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition"
+                     [class.border-primary]="modoCuotas() === 'fecha'"
+                     [class.bg-primary/5]="modoCuotas() === 'fecha'"
+                     [class.border-default-200]="modoCuotas() !== 'fecha'"
+                     (click)="modoCuotas.set('fecha')">
+                <input type="radio" [checked]="modoCuotas() === 'fecha'" class="mt-0.5 accent-primary">
+                <div>
+                  <p class="font-medium text-default-800 text-sm">Fechas fijas</p>
+                  <p class="text-xs text-default-500 mt-0.5">Ej: siempre el 15 de cada mes</p>
+                </div>
+              </label>
+              <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition"
+                     [class.border-primary]="modoCuotas() === 'dias'"
+                     [class.bg-primary/5]="modoCuotas() === 'dias'"
+                     [class.border-default-200]="modoCuotas() !== 'dias'"
+                     (click)="modoCuotas.set('dias')">
+                <input type="radio" [checked]="modoCuotas() === 'dias'" class="mt-0.5 accent-primary">
+                <div>
+                  <p class="font-medium text-default-800 text-sm">Desde que se inscribe</p>
+                  <p class="text-xs text-default-500 mt-0.5">Ej: a los 30 dias de inscribirse</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Boton distribuir -->
+          <div class="flex items-center gap-3">
+            <button type="button" class="btn border border-default-300 text-sm text-default-700"
+                    (click)="distribuirAutomaticamente()">
+              <ng-icon name="lucideRefreshCw" class="size-4 me-1" />
+              Distribuir en partes iguales
+            </button>
+            <span class="text-xs text-default-400">Calcula los montos automaticamente</span>
+          </div>
+
+          <!-- Tabla de cuotas -->
+          <div class="overflow-x-auto rounded-xl border border-default-200">
             <table class="w-full text-sm">
               <thead class="bg-default-50 text-default-600">
                 <tr>
                   <th class="px-4 py-3 text-left font-medium w-12">#</th>
-                  <th class="px-4 py-3 text-left font-medium">Descripción</th>
-                  <th class="px-4 py-3 text-left font-medium">Monto (Bs.)</th>
-                  @if (modoPlan() === 'fijo') {
-                    <th class="px-4 py-3 text-left font-medium">Fecha límite</th>
+                  <th class="px-4 py-3 text-left font-medium">Nombre / Descripcion</th>
+                  <th class="px-4 py-3 text-left font-medium w-36">Monto (Bs.)</th>
+                  @if (modoCuotas() === 'fecha') {
+                    <th class="px-4 py-3 text-left font-medium">Fecha limite de pago</th>
                   } @else {
-                    <th class="px-4 py-3 text-left font-medium">Días desde inscripción</th>
+                    <th class="px-4 py-3 text-left font-medium">Dias despues de inscribirse</th>
                   }
-                  <th class="px-4 py-3 text-center font-medium w-20">Acción</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-default-100">
-                @for (c of cuotas(); track c.id_fechapago) {
+                @for (c of cuotas(); track c.nro; let i = $index) {
                   <tr class="hover:bg-default-50">
-                    <td class="px-4 py-3 text-default-500">{{ c.nro_pago }}</td>
+                    <td class="px-4 py-3 text-default-400 font-bold">{{ c.nro }}</td>
                     <td class="px-4 py-3">
-                      <input type="text" [(ngModel)]="c.tipo_tramite" (blur)="guardarCuota(c)"
-                             class="form-input w-full text-sm" placeholder="Ej: Matrícula, 1ra cuota...">
+                      <input type="text" [(ngModel)]="cuotas()[i].descripcion"
+                             (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                             class="form-input w-full text-sm" placeholder="Ej: Matricula, 1ra cuota...">
                     </td>
                     <td class="px-4 py-3">
-                      <input type="number" [(ngModel)]="c.monto_a_pagar" (blur)="guardarCuota(c)"
-                             class="form-input w-24 text-sm" min="0" step="0.01">
+                      <div class="relative">
+                        <span class="absolute left-2 top-2.5 text-default-400 text-xs">Bs.</span>
+                        <input type="number" [(ngModel)]="cuotas()[i].monto"
+                               (ngModelChange)="onMontoChange(i)" [ngModelOptions]="{standalone: true}"
+                               class="form-input w-full text-sm pl-8" min="0" step="0.01">
+                      </div>
                     </td>
-                    @if (modoPlan() === 'fijo') {
+                    @if (modoCuotas() === 'fecha') {
                       <td class="px-4 py-3">
-                        <input type="date" [(ngModel)]="c.fecha_fin" (change)="guardarCuota(c)"
+                        <input type="date" [(ngModel)]="cuotas()[i].fecha_vencimiento"
+                               (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
                                class="form-input text-sm">
                       </td>
                     } @else {
                       <td class="px-4 py-3">
-                        <input type="number" [(ngModel)]="c.dias_desde_inscripcion" (blur)="guardarCuota(c)"
-                               class="form-input w-24 text-sm" min="0" placeholder="0">
+                        <div class="flex items-center gap-2">
+                          <input type="number" [(ngModel)]="cuotas()[i].dias_desde_inscripcion"
+                                 (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                                 class="form-input w-20 text-sm" min="0" placeholder="30">
+                          <span class="text-xs text-default-500 whitespace-nowrap">dias</span>
+                        </div>
                       </td>
                     }
-                    <td class="px-4 py-3 text-center">
-                      <button type="button" class="text-danger hover:text-danger/80" (click)="eliminarCuota(c)" title="Eliminar">
-                        <ng-icon name="lucideTrash2" class="size-4" />
-                      </button>
-                    </td>
                   </tr>
                 }
               </tbody>
+              <tfoot class="bg-default-50 border-t border-default-200">
+                <tr>
+                  <td colspan="2" class="px-4 py-2 text-right text-sm font-medium text-default-600">Total:</td>
+                  <td class="px-4 py-2 text-sm font-bold text-primary">
+                    Bs. {{ totalCuotas().toFixed(2) }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-        }
 
-        <!-- Agregar cuota manual -->
-        <button type="button" class="btn border border-default-300 text-default-700 text-sm" (click)="agregarCuota()">
-          <ng-icon name="lucidePlus" class="size-4 me-1" /> Agregar cuota
-        </button>
+          @if (costoNum() > 0 && totalCuotas().toFixed(2) !== costoNum().toFixed(2)) {
+            <div class="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2 text-sm text-warning-700">
+              <ng-icon name="lucideAlertTriangle" class="size-4 text-warning shrink-0" />
+              <span>
+                La suma de las cuotas (Bs. {{ totalCuotas().toFixed(2) }}) no coincide con el precio total del plan (Bs. {{ costoNum().toFixed(2) }}).
+                <strong>
+                  @if (totalCuotas() < costoNum()) {
+                    Faltan Bs. {{ (costoNum() - totalCuotas()).toFixed(2) }} por asignar.
+                  } @else {
+                    Hay un exceso de Bs. {{ (totalCuotas() - costoNum()).toFixed(2) }}.
+                  }
+                </strong>
+              </span>
+            </div>
+          }
 
+        </div>
       </div>
+    }
+
+    <!-- Botones -->
+    <div class="flex items-center gap-3 pb-6">
+      <button type="submit" class="btn bg-primary text-white" [disabled]="submitting()">
+        @if (submitting()) {
+          <div class="size-4 me-2 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Guardando...
+        } @else {
+          Guardar Cambios
+        }
+      </button>
+      <a routerLink="/cenefco/planes-academicos" class="btn bg-default-200 text-default-700">Cancelar</a>
     </div>
-    }
-    }
-  </div>
+
+  </form>
+  }
 </main>

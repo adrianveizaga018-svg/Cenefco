@@ -40,8 +40,7 @@ export class PlanCreate {
     titulo:     ['', [Validators.required, Validators.maxLength(200)]],
     costo:      ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
     nro_cuotas: ['1', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]],
-    descuento:  ['0', [Validators.pattern(/^(100(\.0{1,2})?|[0-9]{1,2}(\.\d{1,2})?)$/)]],
-    estado:     [1],
+        estado:     [1],
   });
 
   nroCuotasNum = signal<number>(1);
@@ -168,8 +167,7 @@ export class PlanCreate {
     fd.append('titulo', formVals.titulo ?? '');
     fd.append('costo', String(formVals.costo ?? '0'));
     fd.append('nro_cuotas', String(formVals.nro_cuotas ?? '1'));
-    fd.append('descuento', String(formVals.descuento ?? '0'));
-    fd.append('estado', String(formVals.estado ?? 1));
+        fd.append('estado', String(formVals.estado ?? 1));
     fd.append('modo_fechas', this.modoCuotas() === 'fecha' ? 'fijo' : 'relativo');
     fd.append('id_plan', String(Math.floor(Date.now() / 1000)));
     if (this.qrFile) fd.append('qr_image', this.qrFile);
