@@ -66,6 +66,24 @@ export class Dashboard implements OnInit {
     if (newPage > 0) this.cargarDashboard(newPage);
   }
 
+  
+  getWhatsAppUrl(alerta: any, tipo: 'vence_pronto' | 'vencido'): string {
+    if (!alerta.celular) return '';
+    
+    // Limpiar el número (quitar espacios o caracteres raros)
+    let cel = alerta.celular.replace(/\D/g, '');
+    if (!cel.startsWith('591')) cel = '591' + cel; // Asumimos prefijo Bolivia
+
+    let mensaje = '';
+    if (tipo === 'vence_pronto') {
+      mensaje = `Hola ${alerta.estudiante_nombre}, te saludamos de CENEFCO. Te recordamos que tu cuota de Bs. ${alerta.monto} por "${alerta.descripcion}" vence el ${alerta.fecha_vencimiento}.`;
+    } else {
+      mensaje = `Hola ${alerta.estudiante_nombre}, te saludamos de CENEFCO. Tu cuota de Bs. ${alerta.monto} por "${alerta.descripcion}" venció hace ${alerta.dias_retraso} días. Por favor, regulariza tu pago lo antes posible.`;
+    }
+
+    return `https://wa.me/${cel}?text=${encodeURIComponent(mensaje)}`;
+  }
+
   isVencida(fecha: string): boolean {
     if (!fecha) return false;
     const hoy = new Date();

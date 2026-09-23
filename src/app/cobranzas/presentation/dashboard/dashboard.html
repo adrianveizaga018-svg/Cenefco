@@ -95,7 +95,7 @@
                           </td>
                           <td class="px-3 py-2">
                             @if (a.celular) {
-                              <a [href]="'https://wa.me/' + a.celular" target="_blank" class="text-success hover:text-success-600" title="WhatsApp">
+                              <a [href]="getWhatsAppUrl(a, 'vence_pronto')" target="_blank" class="text-success hover:text-success-600" title="Enviar Recordatorio por WhatsApp">
                                 <ng-icon name="lucideMessageCircle" class="size-4"></ng-icon>
                               </a>
                             } @else {
@@ -144,7 +144,7 @@
                           </td>
                           <td class="px-3 py-2">
                             @if (a.celular) {
-                              <a [href]="'https://wa.me/' + a.celular" target="_blank" class="text-success hover:text-success-600" title="WhatsApp">
+                              <a [href]="getWhatsAppUrl(a, 'vencido')" target="_blank" class="text-success hover:text-success-600" title="Enviar Cobro por WhatsApp">
                                 <ng-icon name="lucideMessageCircle" class="size-4"></ng-icon>
                               </a>
                             } @else {
