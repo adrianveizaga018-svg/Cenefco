@@ -30,7 +30,7 @@ export class PlanesAcademicos {
   onPageChange(p: number): void { this.pageIndex.set(p); }
   delete(id: number): void {
     Swal.fire({ title: '¿Eliminar plan?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' }).then(r => {
-      if (r.isConfirmed) { this.service.delete(id).subscribe({ next: () => { this.toast.success('Eliminado', 'Plan eliminado'); this.refresh.update(n => n + 1); }, error: () => this.toast.error('Error', 'No se pudo eliminar') }); }
+      if (r.isConfirmed) { this.service.delete(id).subscribe({ next: () => { this.toast.success('Eliminado', 'Plan eliminado'); this.refresh.update(n => n + 1); }, error: (err) => this.toast.error('Error', err.error?.message || 'No se pudo eliminar') }); }
     });
   }
 }
