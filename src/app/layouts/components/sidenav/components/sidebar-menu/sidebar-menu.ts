@@ -110,6 +110,8 @@ export class SidebarMenu implements OnInit {
       permission: 'inscripciones.crear',
     },
     { type: 'item', label: 'Inscripciones',              icon: 'lucideClipboardCheck', color: 'text-teal-600',    link: '/cenefco/inscripciones', permission: 'inscripciones.ver' },
+    { type: 'item', label: 'Pago de Cuotas',             icon: 'lucideReceiptText',    color: 'text-sky-600',     link: '/caja/pago-cuota', permission: 'inscripciones.ver' },
+    { type: 'item', label: 'Dashboard Cobranzas',        icon: 'lucideTrendingUp',     color: 'text-emerald-600', link: '/cobranzas/dashboard', permission: 'pagos.ver' },
     { type: 'item', label: 'Directorio de Archivos',     icon: 'lucideFolderOpen',     color: 'text-amber-600',   link: '/cenefco/directorio-archivos', permission: 'directorio-archivos.ver' },
     {
       type: 'accordion',
