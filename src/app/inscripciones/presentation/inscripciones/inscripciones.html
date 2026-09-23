@@ -44,6 +44,38 @@
         </a>
       </div>
 
+      
+      <!-- FILTROS AVANZADOS -->
+      <div class="px-6 py-4 border-b border-default-200 bg-default-50 flex flex-wrap gap-4 items-end">
+        <div class="w-full sm:w-auto">
+          <label class="block text-xs font-medium text-default-600 mb-1">Vendedor</label>
+          <select class="form-input form-input-sm text-sm" (change)="onVendedorChange($event)">
+            <option value="">Todos los vendedores</option>
+            @for (v of vendedores(); track v.id_us) {
+              <option [value]="v.id_us">{{ v.nombre }} {{ v.appaterno }}</option>
+            }
+          </select>
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="block text-xs font-medium text-default-600 mb-1">Modalidad de Pago</label>
+          <select class="form-input form-input-sm text-sm" (change)="onModoPagoChange($event)">
+            <option value="">Todas</option>
+            <option value="contado">Al Contado</option>
+            <option value="cuotas">En Cuotas</option>
+          </select>
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="block text-xs font-medium text-default-600 mb-1">Canal de Venta</label>
+          <select class="form-input form-input-sm text-sm" (change)="onCanalChange($event)">
+            <option value="">Todos</option>
+            <option value="admin">Administración</option>
+            <option value="portal">Portal Web</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="referido">Referido</option>
+          </select>
+        </div>
+      </div>
+
       <div class="flex flex-col">
         <div class="overflow-x-auto">
           <div class="min-w-full inline-block align-middle">

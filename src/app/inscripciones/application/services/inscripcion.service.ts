@@ -24,6 +24,9 @@ export class InscripcionService {
     if (params.periodo)             p = p.set('periodo',       params.periodo);
     if (params.gestion)            p = p.set('gestion',       params.gestion);
     if (params.conInactivos)       p = p.set('conInactivos', 'true');
+    if (params.id_vendedor != null) p = p.set('id_vendedor', params.id_vendedor);
+    if (params.canal_venta)         p = p.set('canal_venta', params.canal_venta);
+    if (params.modo_pago)           p = p.set('modo_pago',   params.modo_pago);
     return this.http.get<InscripcionListResponse>(this.baseUrl, { params: p });
   }
 

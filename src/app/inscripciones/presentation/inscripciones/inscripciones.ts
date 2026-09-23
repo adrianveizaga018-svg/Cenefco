@@ -26,6 +26,9 @@ const L: S = { type: 'loading' };
   templateUrl: './inscripciones.html',
 })
 export class Inscripciones {
+  onVendedorChange(e: Event) { const val = (e.target as HTMLSelectElement).value; this.idVendedor.set(val ? Number(val) : null); this.pageIndex.set(1); }
+  onCanalChange(e: Event)    { this.canalVenta.set((e.target as HTMLSelectElement).value); this.pageIndex.set(1); }
+  onModoPagoChange(e: Event) { this.modoPago.set((e.target as HTMLSelectElement).value); this.pageIndex.set(1); }
   private service         = inject(InscripcionService);
   private toast           = inject(ToastService);
   private router          = inject(Router);
@@ -37,6 +40,10 @@ export class Inscripciones {
   pageIndex       = signal(1);
   pageSize        = signal(15);
   programaId      = signal<number | null>(null);
+  idVendedor      = signal<number | null>(null);
+  canalVenta      = signal<string>('');
+  modoPago        = signal<string>('');
+  vendedores      = signal<any[]>([]);
   private refresh = signal(0);
 
   modelos  = signal<ModeloOption[]>([]);
@@ -52,6 +59,9 @@ export class Inscripciones {
       params: { pageSize: '100', conInactivos: 'false' }
     }).subscribe({ next: r => this.modelos.set(r.data) });
 
+    this.http.get<{ data: any[] }>('/api/v1/usuarios', { params: { pageSize: '200', conInactivos: 'false' } })
+      .subscribe({ next: r => this.vendedores.set(r.data) });
+
     this.settingsService.getCobroEstadoSettings().subscribe({
       next: settings => this.cobroEstadoSettings.set(settings),
       error: () => this.cobroEstadoSettings.set(null),
@@ -65,6 +75,9 @@ export class Inscripciones {
     refresh:      this.refresh(),
     conInactivos: true,
     programa_id: this.programaId() ?? undefined,
+    id_vendedor: this.idVendedor() ?? undefined,
+    canal_venta: this.canalVenta() || undefined,
+    modo_pago:   this.modoPago() || undefined,
   }));
 
   private state = toSignal(

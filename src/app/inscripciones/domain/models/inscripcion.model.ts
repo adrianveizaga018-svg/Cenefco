@@ -25,6 +25,7 @@ export interface Inscripcion {
   total_pagado:      number;
   id_vendedor:       number | null;
   canal_venta:       string | null;
+  vendedor_nombre:   string | null;
   imp_periodo:       string | null;
   documentos?:       Record<string, string> | null;
   campos_extra?:     Record<string, string> | null;
@@ -183,7 +184,7 @@ export interface InscripcionListResponse { data: Inscripcion[]; total: number; }
 export interface InscripcionListParams   {
   query?: string; pageIndex?: number; pageSize?: number;
   refresh?: number; id_us?: number; id_imp?: number; programa_id?: number;
-  periodo?: string; gestion?: string; conInactivos?: boolean;
+  periodo?: string; gestion?: string; conInactivos?: boolean; id_vendedor?: number; canal_venta?: string; modo_pago?: string;
 }
 export interface CreateInscripcionPayload {
   id_ins:           number;
