@@ -23,7 +23,33 @@
           }
         </div>
 
-        <!-- Costo y cuotas -->
+        <!-- Precio y Cuotas -->
+
+        <!-- Precio y Cuotas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">
+              Precio Total (Bs.) <span class="text-danger">*</span>
+            </label>
+            <input type="number" formControlName="costo" class="form-input w-full"
+                   placeholder="Ej: 3500">
+            @if (form.get('costo')?.invalid && form.get('costo')?.touched) {
+              <p class="text-danger text-xs mt-1">Ingresa el precio total (minimo 1)</p>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-default-700 mb-1">
+              Número de Pagos (Cuotas) <span class="text-danger">*</span>
+            </label>
+            <input type="number" formControlName="nro_cuotas" class="form-input w-full"
+                   placeholder="1 = Al contado, 2+ = En cuotas" min="1" max="60">
+            <p class="text-xs text-default-500 mt-1">1 significa "Pago unico". Mas de 1 abrira el calendario de cuotas.</p>
+            @if (form.get('nro_cuotas')?.invalid && form.get('nro_cuotas')?.touched) {
+              <p class="text-danger text-xs mt-1">El numero de cuotas debe ser mayor a 0</p>
+            }
+          </div>
+        </div>
+
         <div>
             <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
             <select formControlName="estado" class="form-input w-full">
