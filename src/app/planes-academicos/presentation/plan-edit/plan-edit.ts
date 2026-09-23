@@ -49,7 +49,7 @@ export class PlanEdit {
     titulo:     ['', [Validators.required, Validators.maxLength(200)]],
     costo:      ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
     nro_cuotas: ['1', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]],
-        estado:     [1],
+        estado:     ['1'],
   });
 
   nroCuotasNum = signal<number>(1);
@@ -74,7 +74,7 @@ export class PlanEdit {
           titulo: d.titulo,
           costo: d.costo,
           nro_cuotas: String(d.nro_cuotas || 1),
-          estado: d.estado
+          estado: String(d.estado ?? 1)
         });
         if (d.qr_image_url) this.qrPreview.set(d.qr_image_url);
         this.totalInscripciones.set(d.total_inscripciones ?? 0);
@@ -99,6 +99,11 @@ export class PlanEdit {
             this.cuotas.set(locales);
             this.loading.set(false);
             this.cargandoDesdeBD = false; // ya cargó, ahora sí puede recalcular
+            
+            // Si el plan dice tener cuotas pero la BD devolvió 0 (ej. error previo al guardar), generarlas
+            if (locales.length === 0 && this.nroCuotasNum() > 1) {
+              this.recalcularCuotas();
+            }
           },
           error: () => { this.loading.set(false); this.cargandoDesdeBD = false; }
         });
@@ -223,7 +228,7 @@ export class PlanEdit {
     fd.append('titulo', formVals.titulo ?? '');
     fd.append('costo', String(formVals.costo ?? '0'));
     fd.append('nro_cuotas', String(formVals.nro_cuotas ?? '1'));
-    fd.append('estado', String(formVals.estado ?? 1));
+    fd.append('estado', String(Number(formVals.estado ?? 1)));
     fd.append('modo_fechas', this.modoCuotas() === 'fecha' ? 'fijo' : 'relativo');
     if (this.qrFile) fd.append('qr_image', this.qrFile);
     else if (this.qrPreview() === null) fd.append('remove_qr', '1');
@@ -243,7 +248,7 @@ export class PlanEdit {
             nro_pago: String(q.nro),
             tipo_tramite: q.descripcion,
             monto_a_pagar: q.monto,
-            fecha_fin: this.modoCuotas() === 'fecha' ? q.fecha_vencimiento : null,
+            fecha_fin: this.modoCuotas() === 'fecha' ? (q.fecha_vencimiento || null) : null,
             dias_desde_inscripcion: this.modoCuotas() === 'dias' ? q.dias_desde_inscripcion : null,
             obligatorio: 1,
           };
