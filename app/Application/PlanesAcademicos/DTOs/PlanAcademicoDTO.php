@@ -20,6 +20,7 @@ final readonly class PlanAcademicoDTO
         public ?int $id_catplan,
         public int $estado,
         public ?string $qr_image_url = null,
+        public int $total_inscripciones = 0,
     ) {}
 
     public static function fromModel(object $model): self
@@ -40,6 +41,7 @@ final readonly class PlanAcademicoDTO
             id_catplan:        isset($model->id_catplan) ? (int) $model->id_catplan : null,
             estado:            (int) $model->estado,
             qr_image_url:      isset($model->qr_image_url) ? url('storage/' . $model->qr_image_url) : null,
+            total_inscripciones: isset($model->total_inscripciones) ? (int) $model->total_inscripciones : 0,
         );
     }
 }

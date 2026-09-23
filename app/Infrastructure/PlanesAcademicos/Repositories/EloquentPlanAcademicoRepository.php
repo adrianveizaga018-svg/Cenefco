@@ -40,6 +40,7 @@ class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterfac
         }
 
         $total = $q->count();
+        $q->withCount(['inscripciones as total_inscripciones']);
         $data  = $q->orderBy('titulo')
             ->offset(($pagination->pageIndex - 1) * $pagination->pageSize)
             ->limit($pagination->pageSize)

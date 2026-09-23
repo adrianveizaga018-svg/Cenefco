@@ -30,4 +30,9 @@ class PlanAcademico extends Model
         'fecha_reg',
         'qr_image_url',
     ];
+
+    public function inscripciones()
+    {
+        return $this->hasMany(\App\Infrastructure\Inscripciones\Models\Inscripcion::class, 'id_plan', 'id_plan');
+    }
 }
