@@ -54,7 +54,15 @@ class EloquentFechaPagoRepository implements FechaPagoRepositoryInterface
 
     public function create(array $data): mixed
     {
-        return FechaPago::create($data);
+        $model = new FechaPago($data);
+        if (empty($data['id_fechapago'])) {
+            $maxId = FechaPago::max('id_fechapago') ?? 0;
+            $model->id_fechapago = $maxId + 1;
+        } else {
+            $model->id_fechapago = $data['id_fechapago'];
+        }
+        $model->save();
+        return $model;
     }
 
     public function update(int $id, array $data): mixed
