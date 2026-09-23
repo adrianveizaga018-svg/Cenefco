@@ -87,7 +87,9 @@ class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterfac
             throw new PlanAcademicoNotFoundException($id);
         }
 
-        $plan->update(['estado' => 0]);
+        // Hard delete: Eliminar las cuotas primero y luego el plan
+        \DB::table('t_fechapago')->where('id_plan', $id)->delete();
+        $plan->delete();
     }
 
     public function siguienteIdDisponible(): int
