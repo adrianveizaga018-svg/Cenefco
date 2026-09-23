@@ -103,9 +103,46 @@ export class PlanCreate {
     this.cuotas.set(this.cuotas().map(q => ({ ...q, monto })));
   }
 
+  
   forzarActualizacion() {
     this.cuotas.set([...this.cuotas()]);
   }
+
+  onMontoChange(index: number) {
+    const total = this.costoNum();
+    const cuotas = [...this.cuotas()];
+    const n = cuotas.length;
+
+    // Solo auto-balancear si no es la ultima cuota
+    if (index < n - 1 && total > 0) {
+      let sumaFija = 0;
+      for (let i = 0; i <= index; i++) {
+        sumaFija += (cuotas[i].monto || 0);
+      }
+
+      let resto = total - sumaFija;
+      if (resto < 0) resto = 0;
+
+      const quedan = n - 1 - index;
+      const montoRepartido = parseFloat((resto / quedan).toFixed(2));
+
+      for (let i = index + 1; i < n; i++) {
+        cuotas[i].monto = montoRepartido;
+      }
+
+      // Ajustar centavos en la ultima cuota para cuadre perfecto
+      let sumaNueva = 0;
+      for (let i = 0; i < n - 1; i++) {
+        sumaNueva += (cuotas[i].monto || 0);
+      }
+      
+      let ultima = total - sumaNueva;
+      cuotas[n - 1].monto = parseFloat((ultima > 0 ? ultima : 0).toFixed(2));
+    }
+
+    this.cuotas.set(cuotas);
+  }
+
 
   distribuirAutomaticamente() {
     this.recalcularCuotas();
