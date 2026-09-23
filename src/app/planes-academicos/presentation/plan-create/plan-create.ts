@@ -79,14 +79,24 @@ export class PlanCreate {
     const hoy = new Date();
 
     const nuevas: CuotaLocal[] = [];
+    let sumaParcial = 0;
+    
     for (let i = 0; i < n; i++) {
       const existente = this.cuotas()[i];
       const fecha = new Date(hoy);
       fecha.setMonth(fecha.getMonth() + i);
+      
+      let cuotaMonto = monto;
+      if (i === n - 1 && c > 0) {
+        cuotaMonto = parseFloat((c - sumaParcial).toFixed(2));
+      } else {
+        sumaParcial += monto;
+      }
+
       nuevas.push({
         nro: i + 1,
         descripcion: existente?.descripcion ?? (nombres[i] ?? ('Cuota ' + (i + 1))),
-        monto: monto,
+        monto: cuotaMonto,
         fecha_vencimiento: existente?.fecha_vencimiento ?? fecha.toISOString().split('T')[0],
         dias_desde_inscripcion: existente?.dias_desde_inscripcion ?? (i * 30),
       });
