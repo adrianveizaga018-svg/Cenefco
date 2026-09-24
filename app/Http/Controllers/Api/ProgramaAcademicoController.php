@@ -89,6 +89,23 @@ class ProgramaAcademicoController extends Controller
             estado_web:               $request->input('estado_web', 'borrador'),
         ));
 
+        // Auto-crear Versión 1 al crear un programa nuevo
+        $idImp = ((int) (DB::table('t_imparte')->orderByDesc('id_imp')->value('id_imp') ?? 0)) + 1;
+        $mes = (int) now()->month;
+        DB::table('t_imparte')->insert([
+            'id_imp'               => $idImp,
+            'id_us_reg'            => auth()->id() ?? 1,
+            'id_mat'               => $dto->id_programa,
+            'nombre'               => 'Versión 1',
+            'periodo'              => $mes <= 6 ? 'I' : 'II',
+            'gestion'              => now()->year,
+            'imparte_fecha_inicio' => $request->input('inicio_actividades') ?: null,
+            'imparte_fecha_fin'    => $request->input('finalizacion_actividades') ?: null,
+            'estado'               => 1,
+            'version'              => '1',
+            'fecha_reg'            => now(),
+        ]);
+
         return response()->json($dto, 201);
     }
 
