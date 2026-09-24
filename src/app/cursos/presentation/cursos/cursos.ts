@@ -2100,7 +2100,7 @@ export class Cursos {
 
   desactivarCurso(curso: any): void {
     const estaActivo = curso.estado_web === 'publicado';
-    const nuevoEstado = estaActivo ? 'inactivo' : 'publicado';
+    const nuevoEstado = estaActivo ? 'borrador' : 'publicado';
     const titulo = estaActivo ? '¿Desactivar curso?' : '¿Activar curso?';
     const texto = estaActivo
       ? 'El curso ya no será visible para los estudiantes en la web.'
