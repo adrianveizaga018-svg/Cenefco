@@ -40,7 +40,7 @@ class StoreCursoRequest extends FormRequest
             'categoria_web_id'         => ['nullable', 'integer'],
             'formulario_id'              => ['nullable', 'integer', 'exists:web_formulario,id'],
             'area_id'                  => ['nullable', 'integer', 'exists:web_area,id'],
-            'estado_web'               => ['nullable', 'in:borrador,publicado'],
+            'estado_web'               => ['nullable', 'in:borrador,publicado,inactivo'],
             'destacado'                => ['nullable', 'boolean'],
             'orden'                    => ['nullable', 'integer'],
             'meta_titulo'              => ['nullable', 'string', 'max:300'],
