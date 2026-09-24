@@ -2100,11 +2100,12 @@ export class Cursos {
 
   desactivarCurso(curso: any): void {
     const estaActivo = curso.estado_web === 'publicado';
-    const nuevoEstado = estaActivo ? 'borrador' : 'publicado';
+    const esBorrador = curso.estado_web === 'borrador';
+    const nuevoEstado = estaActivo ? 'inactivo' : 'publicado';
     const titulo = estaActivo ? '¿Desactivar curso?' : '¿Activar curso?';
     const texto = estaActivo
-      ? 'El curso ya no será visible para los estudiantes en la web.'
-      : 'El curso volverá a ser visible para todos.';
+      ? 'El curso pasará a estado Inactivo y ya no será visible en la web.'
+      : 'El curso se publicará y será visible para todos en la web.';
 
     Swal.fire({
       title: titulo,

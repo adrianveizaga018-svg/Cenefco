@@ -1,4 +1,4 @@
-﻿<main>
+<main>
   <app-page-title title="Versiones / Imparticiones" subtitle="Siguientes cohortes de un programa ya creado" />
   <div class="grid grid-cols-1 gap-5 mb-5">
     <div class="card border border-sky-200 bg-sky-50/60">
@@ -56,10 +56,12 @@
                     <td class="px-3.5 py-2.5 text-sm">
                       @if (item.estado_web === 'publicado') {
                         <span class="badge bg-success/10 text-success text-xs px-2 py-0.5 rounded-full">Publicado</span>
+                      } @else if (item.estado_web === 'inactivo') {
+                        <span class="badge bg-danger/10 text-danger text-xs px-2 py-0.5 rounded-full">Inactivo</span>
                       } @else if (item.estado_web === 'borrador') {
                         <span class="badge bg-warning/10 text-warning text-xs px-2 py-0.5 rounded-full">Borrador</span>
                       } @else {
-                        <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">{{ item.estado_web || 'Sin estado web' }}</span>
+                        <span class="badge bg-default-200 text-default-600 text-xs px-2 py-0.5 rounded-full">{{ item.estado_web || 'Borrador' }}</span>
                       }
                     </td>
                     <td class="px-3.5 py-2.5"><div class="flex items-center gap-1.5">

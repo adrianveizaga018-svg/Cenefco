@@ -1,4 +1,4 @@
-﻿import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -1303,12 +1303,12 @@ export class CursoEdit implements OnInit {
 
   toggleEstado(): void {
     const estadoActual  = this.form.get('estado_web')!.value as string;
-    const nuevoEstado   = estadoActual === 'publicado' ? 'borrador' : 'publicado';
-    const accion        = nuevoEstado === 'publicado' ? 'publicar' : 'cerrar';
-    const titulo        = nuevoEstado === 'publicado' ? '¿Publicar curso?' : '¿Cerrar curso?';
+    const nuevoEstado   = estadoActual === 'publicado' ? 'inactivo' : 'publicado';
+    const accion        = nuevoEstado === 'publicado' ? 'publicar' : 'desactivar';
+    const titulo        = nuevoEstado === 'publicado' ? '¿Publicar curso?' : '¿Desactivar curso?';
     const texto         = nuevoEstado === 'publicado'
-      ? 'El curso será visible en el portal y en el chatbot de WhatsApp.'
-      : 'El curso dejará de aparecer en el portal y en el chatbot de WhatsApp.';
+      ? 'El curso se publicará y será visible para todos en la web.'
+      : 'El curso pasará a estado Inactivo y ya no será visible en la web.';
 
     Swal.fire({
       title: titulo,

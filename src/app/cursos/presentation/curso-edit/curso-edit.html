@@ -1,4 +1,4 @@
-﻿<main>
+<main>
   <app-page-title title="Editar Curso" subtitle="Gestión de Cursos" />
 
   @if (loadingCurso()) {
@@ -533,14 +533,16 @@
               <div class="flex items-center justify-between gap-3 p-3 rounded-xl"
                    [class]="form.get('estado_web')?.value === 'publicado'
                      ? 'bg-success/10 border border-success/30'
-                     : 'bg-default-100 border border-default-200'">
+                     : form.get('estado_web')?.value === 'inactivo'
+                       ? 'bg-danger/10 border border-danger/30'
+                       : 'bg-default-100 border border-default-200'">
                 <div class="flex items-center gap-2">
                   <div class="size-2 rounded-full"
-                       [class]="form.get('estado_web')?.value === 'publicado' ? 'bg-success' : 'bg-default-400'">
+                       [class]="form.get('estado_web')?.value === 'publicado' ? 'bg-success' : form.get('estado_web')?.value === 'inactivo' ? 'bg-danger' : 'bg-default-400'">
                   </div>
                   <span class="text-sm font-medium"
-                        [class]="form.get('estado_web')?.value === 'publicado' ? 'text-success' : 'text-default-500'">
-                    {{ form.get('estado_web')?.value === 'publicado' ? 'Publicado' : 'Borrador' }}
+                        [class]="form.get('estado_web')?.value === 'publicado' ? 'text-success' : form.get('estado_web')?.value === 'inactivo' ? 'text-danger' : 'text-default-500'">
+                    {{ form.get('estado_web')?.value === 'publicado' ? 'Publicado' : form.get('estado_web')?.value === 'inactivo' ? 'Inactivo' : 'Borrador' }}
                   </span>
                 </div>
                 <button
@@ -555,7 +557,7 @@
                     <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
                   } @else if (form.get('estado_web')?.value === 'publicado') {
                     <ng-icon name="lucideCircleStop" class="size-3.5" />
-                    Cerrar curso
+                    Desactivar curso
                   } @else {
                     <ng-icon name="lucideCirclePlay" class="size-3.5" />
                     Publicar curso
@@ -566,6 +568,8 @@
               <p class="text-xs text-default-400 -mt-1">
                 @if (form.get('estado_web')?.value === 'publicado') {
                   Visible en el portal web y en el chatbot de WhatsApp.
+                } @else if (form.get('estado_web')?.value === 'inactivo') {
+                  Oculto en la web (curso finalizado).
                 } @else {
                   No visible en el portal ni en el chatbot de WhatsApp.
                 }
@@ -576,6 +580,7 @@
                 <select class="form-input" formControlName="estado_web">
                   <option value="borrador">Borrador</option>
                   <option value="publicado">Publicado</option>
+                  <option value="inactivo">Inactivo</option>
                 </select>
               </div>
 
