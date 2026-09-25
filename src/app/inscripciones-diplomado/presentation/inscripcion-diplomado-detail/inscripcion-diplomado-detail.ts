@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { forkJoin } from 'rxjs';
 import { InscripcionDiplomadoService } from '../../application/services/inscripcion-diplomado.service';
@@ -10,6 +10,7 @@ import { CiudadService } from '../../../ciudades/application/services/ciudad.ser
 import { Ciudad } from '../../../ciudades/domain/models/ciudad.model';
 import { ExpedidoService } from '../../../expedido/application/services/expedido.service';
 import { Expedido } from '../../../expedido/domain/models/expedido.model';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { FileUploadService } from '../../../common/application/services/file-upload.service';
@@ -33,15 +34,15 @@ const ESTADOS = [
   templateUrl: './inscripcion-diplomado-detail.html',
 })
 export class InscripcionDiplomadoDetail implements OnInit {
-  private service       = inject(InscripcionDiplomadoService);
-  private ciudadService  = inject(CiudadService);
+  private service         = inject(InscripcionDiplomadoService);
+  private ciudadService   = inject(CiudadService);
   private expedidoService = inject(ExpedidoService);
-  private http          = inject(HttpClient);
-  private toast         = inject(ToastService);
-  private route         = inject(ActivatedRoute);
-  private router        = inject(Router);
-  private fb            = inject(FormBuilder);
-  private fileUpload    = inject(FileUploadService);
+  private academicoSvc    = inject(AcademicoService);
+  private toast           = inject(ToastService);
+  private route           = inject(ActivatedRoute);
+  private router          = inject(Router);
+  private fb              = inject(FormBuilder);
+  private fileUpload      = inject(FileUploadService);
 
   readonly estados = ESTADOS;
 
@@ -86,7 +87,7 @@ export class InscripcionDiplomadoDetail implements OnInit {
     forkJoin({
       ciudades:   this.ciudadService.getAll({ pageSize: 200 }),
       expedidos:  this.expedidoService.getAll({ pageSize: 100 }),
-      mediosPago: this.http.get<{ data: MedioPago[] }>('/api/v1/medios-pago', { params: { pageSize: '100' } }),
+      mediosPago: this.academicoSvc.getMediosPago({ pageSize: 100 }),
       inscripcion: this.service.getById(id),
     }).subscribe({
       next: ({ ciudades, expedidos, mediosPago, inscripcion: data }) => {

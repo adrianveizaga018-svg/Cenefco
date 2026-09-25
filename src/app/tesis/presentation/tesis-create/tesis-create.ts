@@ -1,9 +1,10 @@
-import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TesisService } from '../../application/services/tesis.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -19,8 +20,7 @@ export class TesisCreate {
   private toast   = inject(ToastService);
   private router  = inject(Router);
   private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
-  private cdr     = inject(ChangeDetectorRef);
+  private fileUpload = inject(FileUploadService);
 
   submitting    = signal(false);
   uploadingFile = signal(false);
@@ -39,17 +39,10 @@ export class TesisCreate {
   });
 
   onArchivoSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file  = input.files?.[0];
-    if (!file) return;
-
-    this.uploadingFile.set(true);
-    const fd = new FormData();
-    fd.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/file', fd).subscribe({
-      next: (res) => { this.form.patchValue({ archivo: res.url }); this.uploadingFile.set(false); this.cdr.detectChanges(); },
-      error: (err: HttpErrorResponse) => { this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir el archivo')); this.uploadingFile.set(false); input.value = ''; this.cdr.detectChanges(); },
+    this.fileUpload.handleFileSelect(event, {
+      uploading:   this.uploadingFile,
+      fallbackMsg: 'No se pudo subir el archivo',
+      onSuccess:   (url) => this.form.patchValue({ archivo: url }),
     });
   }
 

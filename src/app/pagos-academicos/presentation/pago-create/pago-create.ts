@@ -1,9 +1,12 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { PagoAcademicoService } from '../../application/services/pago-academico.service';
+import { FechaPagoService } from '../../../fechas-pago/application/services/fecha-pago.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
+import { InscripcionService } from '../../../inscripciones/application/services/inscripcion.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -19,12 +22,14 @@ interface FechaPagoOption { id_fechapago: number; nro_pago: string | null; monto
   templateUrl: './pago-create.html',
 })
 export class PagoCreate implements OnInit {
-  private service = inject(PagoAcademicoService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
+  private service       = inject(PagoAcademicoService);
+  private fechaPagoSvc  = inject(FechaPagoService);
+  private academicoSvc  = inject(AcademicoService);
+  private inscripcionSvc = inject(InscripcionService);
+  private toast         = inject(ToastService);
+  private router        = inject(Router);
+  private route         = inject(ActivatedRoute);
+  private fb            = inject(FormBuilder);
 
   submitting       = signal(false);
   usuarios         = signal<UsuarioOption[]>([]);
@@ -54,9 +59,7 @@ export class PagoCreate implements OnInit {
     const qIdIns = qp.get('id_ins') ? Number(qp.get('id_ins')) : null;
     this.preselectedInsId = qIdIns;
 
-    this.http.get<{ data: UsuarioOption[] }>('/api/v1/usuarios-academicos', {
-      params: { pageSize: '300', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({
+    this.academicoSvc.getUsuariosAcademicos({ pageSize: 300, pageIndex: 1, conInactivos: true }).subscribe({
       next: r => {
         this.usuarios.set(r.data);
         if (qIdUs) {
@@ -66,9 +69,7 @@ export class PagoCreate implements OnInit {
       }
     });
 
-    this.http.get<{ data: FechaPagoOption[] }>('/api/v1/fechas-pago', {
-      params: { pageSize: '200', pageIndex: '1' }
-    }).subscribe({
+    this.fechaPagoSvc.getAll({ pageSize: 200, pageIndex: 1 }).subscribe({
       next: r => {
         this.todasFechasPago.set(r.data);
         if (!qIdIns) this.fechasPago.set(r.data);
@@ -77,9 +78,7 @@ export class PagoCreate implements OnInit {
   }
 
   private cargarInscripciones(idUs: number): void {
-    this.http.get<{ data: InscripcionOpt[] }>('/api/v1/inscripciones', {
-      params: { id_us: idUs.toString(), pageSize: '50', conInactivos: 'true' }
-    }).subscribe({
+    this.inscripcionSvc.getAll({ id_us: idUs, pageSize: 50, conInactivos: true }).subscribe({
       next: r => {
         this.inscripciones.set(r.data);
         if (this.preselectedInsId) {
@@ -92,7 +91,7 @@ export class PagoCreate implements OnInit {
 
   private cargarCuotasPendientes(idIns: number): void {
     this.cargandoCuotas.set(true);
-    this.http.get<InscripcionDetalle>(`/api/v1/inscripciones/${idIns}`).subscribe({
+    this.inscripcionSvc.getDetalle(idIns).subscribe({
       next: detalle => {
         const pagadas = new Set(
           detalle.pagos

@@ -223,6 +223,67 @@
                      <p class="text-sm text-amber-600 p-2 bg-amber-50 rounded">Esta versión no tiene planes de pago. Configúralos al crear o editar la versión.</p>
                   }
                 </div>
+
+                <!-- Preview de cuotas del plan seleccionado -->
+                @if (planSeleccionado() && cuotasPlan().length > 0) {
+                  <div class="mt-4 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
+                    <div class="px-4 py-2.5 bg-primary/10 flex items-center justify-between">
+                      <span class="text-sm font-semibold text-primary">
+                        Calendario de pagos — {{ planSeleccionado()!.titulo }}
+                      </span>
+                      @if (cargandoCuotas()) {
+                        <div class="size-4 animate-spin text-primary"><ng-icon name="lucideLoader" /></div>
+                      }
+                    </div>
+                    <table class="w-full text-xs">
+                      <thead class="bg-white/60 text-default-500">
+                        <tr>
+                          <th class="px-3 py-2 text-left font-medium">#</th>
+                          <th class="px-3 py-2 text-left font-medium">Cuota</th>
+                          <th class="px-3 py-2 text-right font-medium">Monto</th>
+                          <th class="px-3 py-2 text-right font-medium">
+                            @if (modoCuotas() === 'dias') { Días desde inscripción }
+                            @else { Fecha límite }
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-primary/10">
+                        @for (cuota of cuotasPlan(); track cuota.id_fechapago; let i = $index) {
+                          <tr [class.bg-primary/10]="cuotaSugerida()?.id_fechapago === cuota.id_fechapago"
+                              [class.font-semibold]="cuotaSugerida()?.id_fechapago === cuota.id_fechapago">
+                            <td class="px-3 py-2 text-default-500">{{ i + 1 }}</td>
+                            <td class="px-3 py-2 text-default-800">
+                              {{ cuota.tipo_tramite || cuota.nro_pago }}
+                              @if (cuotaSugerida()?.id_fechapago === cuota.id_fechapago) {
+                                <span class="ml-1.5 text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-full">SIGUIENTE</span>
+                              }
+                            </td>
+                            <td class="px-3 py-2 text-right text-primary font-bold">Bs. {{ cuota.monto_a_pagar | number:'1.2-2' }}</td>
+                            <td class="px-3 py-2 text-right text-default-500">
+                              @if (cuota.dias_desde_inscripcion != null) {
+                                Día {{ cuota.dias_desde_inscripcion }}
+                              } @else if (cuota.fecha_fin) {
+                                {{ cuota.fecha_fin | date:'dd/MM/yyyy' }}
+                              } @else { — }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                      <tfoot class="bg-white/60 border-t border-primary/20">
+                        <tr>
+                          <td colspan="2" class="px-3 py-2 text-right text-default-600 font-medium text-xs">Total</td>
+                          <td class="px-3 py-2 text-right font-bold text-primary">Bs. {{ planSeleccionado()!.costo }}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                } @else if (cargandoCuotas()) {
+                  <div class="mt-3 text-xs text-default-400 flex items-center gap-1.5 px-2">
+                    <div class="size-3 animate-spin"><ng-icon name="lucideLoader" /></div>
+                    Cargando calendario de pagos...
+                  </div>
+                }
               }
             } @else {
               <div class="flex items-center justify-center h-full text-default-400 text-sm">
@@ -274,11 +335,28 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <!-- Monto -->
           <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado (Bs.) *</label>
+            <label class="block text-sm font-medium text-default-700 mb-1">
+              Monto Pagado (Bs.) *
+              @if (cuotaSugerida()) {
+                <span class="ml-2 text-xs font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {{ cuotaSugerida()?.tipo_tramite || cuotaSugerida()?.nro_pago || 'Cuota' }}
+                  @if (cuotaSugerida()?.dias_desde_inscripcion != null) {
+                    — a {{ cuotaSugerida()?.dias_desde_inscripcion }} días de inscribirse
+                  } @else if (cuotaSugerida()?.fecha_fin) {
+                    — vence {{ cuotaSugerida()?.fecha_fin | date:'dd/MM/yyyy' }}
+                  }
+                </span>
+              }
+            </label>
             <div class="relative">
               <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
-              <input type="number" formControlName="monto_pagado" class="w-full pl-10 pr-3 py-2 border border-default-200 rounded-lg text-lg font-bold text-green-700 bg-default-50 pointer-events-none select-none" tabindex="-1">
+              <input type="number" formControlName="monto_pagado"
+                class="w-full pl-10 pr-3 py-2 border border-default-200 rounded-lg text-lg font-bold text-green-700"
+                placeholder="0.00" min="0" step="0.01">
             </div>
+            @if (cargandoCuotas()) {
+              <p class="text-xs text-default-400 mt-1">Cargando cuotas del plan…</p>
+            }
             @if (formPago.get('monto_pagado')?.touched && formPago.get('monto_pagado')?.invalid) {
               <p class="text-xs text-red-500 mt-1">El monto es requerido y mayor a 0.</p>
             }
@@ -442,14 +520,21 @@
       <!-- Comprobante imprimible -->
       <div class="max-w-2xl mx-auto border-2 border-default-200 p-8 rounded-2xl bg-white text-left mt-8 print:border-none print:mt-0 print:p-4">
         
+        <!-- Encabezado con logo -->
         <div class="flex justify-between items-start mb-8 pb-4 border-b-2 border-default-100">
-          <div>
-            <h1 class="text-2xl font-black text-default-900 tracking-tight">CENEFCO</h1>
-            <p class="text-sm text-default-500 font-medium">Comprobante de Inscripción</p>
+          <div class="flex items-center gap-4">
+            @if (siteLogo()) {
+              <img [src]="siteLogo()!" alt="Logo" class="h-14 w-auto object-contain">
+            }
+            <div>
+              <h1 class="text-2xl font-black text-default-900 tracking-tight">{{ siteNombre() }}</h1>
+              <p class="text-sm text-default-500 font-medium">Comprobante de Inscripción Presencial</p>
+            </div>
           </div>
           <div class="text-right">
-            <p class="text-sm font-bold text-default-700">Nro. Registro: #{{ resultado()?.id_ins }}</p>
+            <p class="text-sm font-bold text-default-700">Nro. Registro: <span class="text-primary">#{{ resultado()?.id_ins }}</span></p>
             <p class="text-xs text-default-500">Fecha: {{ formPago.value.fecha_deposito | date:'dd/MM/yyyy' }}</p>
+            <p class="text-xs text-default-500 mt-1">Hora: {{ resultado()?.hora || '' }}</p>
           </div>
         </div>
 
@@ -458,14 +543,22 @@
           <p class="font-bold text-lg text-default-800">{{ formEstudiante.value.nombre }} {{ formEstudiante.value.apellido_paterno }} {{ formEstudiante.value.apellido_materno }}</p>
           <p class="text-default-600">CI: {{ formEstudiante.value.ci }}</p>
           <p class="text-default-600">Celular: {{ formEstudiante.value.celular || 'No registrado' }}</p>
+          @if (formEstudiante.value.email) {
+            <p class="text-default-600">Email: {{ formEstudiante.value.email }}</p>
+          }
         </div>
 
         <div class="mb-8">
           <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Detalles del Programa</h3>
           <div class="bg-default-50 rounded-xl p-4 border border-default-100">
             <p class="font-bold text-default-900">{{ progSeleccionado()?.nombre_programa }}</p>
-            <p class="text-sm text-default-600 mt-1">{{ impSeleccionada()?.nombre_version || impSeleccionada()?.periodo || 'Versión' }}{{ impSeleccionada()?.gestion ? ' / ' + impSeleccionada()?.gestion : '' }}</p>
-            <p class="text-sm text-default-600 mt-1">Plan: {{ planSeleccionado()?.titulo || 'Plan Regular' }}</p>
+            <p class="text-sm text-default-600 mt-1">
+              {{ impSeleccionada()?.nombre_version || impSeleccionada()?.periodo || 'Versión' }}{{ impSeleccionada()?.gestion ? ' / ' + impSeleccionada()?.gestion : '' }}
+            </p>
+            <p class="text-sm text-default-600 mt-1">Plan: <strong>{{ planSeleccionado()?.titulo || 'Plan Regular' }}</strong></p>
+            @if (planSeleccionado() && planSeleccionado()!.nro_cuotas !== '1') {
+              <p class="text-sm text-default-500 mt-0.5">{{ planSeleccionado()?.nro_cuotas }} cuotas — Total: Bs. {{ planSeleccionado()?.costo }}</p>
+            }
           </div>
         </div>
 
@@ -473,14 +566,22 @@
           <h3 class="text-xs font-bold text-default-400 uppercase tracking-widest mb-2">Detalle del Pago</h3>
           <table class="w-full text-sm">
             <tbody>
+              @if (cuotaSugerida()) {
+                <tr class="border-b border-default-100">
+                  <td class="py-2 text-default-600">Cuota Pagada</td>
+                  <td class="py-2 font-medium text-right">{{ cuotaSugerida()?.tipo_tramite || cuotaSugerida()?.nro_pago }}</td>
+                </tr>
+              }
               <tr class="border-b border-default-100">
                 <td class="py-2 text-default-600">Método de Pago</td>
                 <td class="py-2 font-medium text-right capitalize">{{ formPago.value.metodo_pago }}</td>
               </tr>
-              <tr class="border-b border-default-100">
-                <td class="py-2 text-default-600">Nro. Comprobante</td>
-                <td class="py-2 font-medium text-right">{{ formPago.value.nro_boleta }}</td>
-              </tr>
+              @if (formPago.value.nro_boleta) {
+                <tr class="border-b border-default-100">
+                  <td class="py-2 text-default-600">Nro. Comprobante / Boleta</td>
+                  <td class="py-2 font-medium text-right">{{ formPago.value.nro_boleta }}</td>
+                </tr>
+              }
               <tr>
                 <td class="py-3 font-bold text-default-900">Monto Cancelado</td>
                 <td class="py-3 font-bold text-green-600 text-right text-lg">Bs. {{ (formPago.value.monto_pagado | number:'1.2-2') }}</td>
@@ -489,10 +590,27 @@
           </table>
         </div>
 
-        <div class="text-center pt-8 border-t-2 border-default-100 text-xs text-default-500">
-          <p>Este documento es un comprobante interno de caja.</p>
+        <!-- Cajero y firma -->
+        <div class="flex justify-between items-end pt-6 border-t-2 border-default-100">
+          <div class="text-xs text-default-500">
+            <p>Registrado por:</p>
+            <p class="font-semibold text-default-800 mt-1">
+              {{ authSvc.currentUser()?.nombre }} {{ authSvc.currentUser()?.apellido ?? '' }}
+            </p>
+            @if (authSvc.currentUser()?.rolNombre) {
+              <p class="text-default-400">{{ authSvc.currentUser()?.rolNombre }}</p>
+            }
+          </div>
+          <div class="text-center text-xs text-default-400">
+            <div class="w-40 border-t border-default-300 mb-1"></div>
+            <p>Firma del Cajero</p>
+          </div>
+        </div>
+
+        <div class="text-center mt-6 text-xs text-default-400">
+          <p>Este documento es un comprobante interno de caja — {{ siteNombre() }}</p>
           @if (resultado()?.es_nuevo) {
-            <p class="mt-2 font-bold text-default-700">Acceso al portal virtual: Usuario y contraseña es su Nro. de Carnet.</p>
+            <p class="mt-2 font-bold text-default-700">Acceso al portal virtual: usuario y contraseña = Nro. de Carnet de Identidad.</p>
           }
         </div>
       </div>

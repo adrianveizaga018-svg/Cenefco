@@ -2,9 +2,11 @@ import { Component, DestroyRef, inject, signal, OnInit, ChangeDetectorRef } from
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { ArticuloService } from '../../application/services/articulo.service';
+import { EtiquetaService } from '../../../etiquetas/application/services/etiqueta.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -19,14 +21,15 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
   templateUrl: './articulo-edit.html',
 })
 export class ArticuloEdit implements OnInit {
-  private service = inject(ArticuloService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private fb      = inject(FormBuilder);
-  private http       = inject(HttpClient);
-  private cdr        = inject(ChangeDetectorRef);
-  private destroyRef = inject(DestroyRef);
+  private service         = inject(ArticuloService);
+  private etiquetaService = inject(EtiquetaService);
+  private toast           = inject(ToastService);
+  private router          = inject(Router);
+  private route           = inject(ActivatedRoute);
+  private fb              = inject(FormBuilder);
+  private fileUpload      = inject(FileUploadService);
+  private cdr             = inject(ChangeDetectorRef);
+  private destroyRef      = inject(DestroyRef);
 
   submitting             = signal(false);
   loading                = signal(true);
@@ -57,8 +60,8 @@ export class ArticuloEdit implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: EtiquetaSimple[] }>('/api/v1/etiquetas', { params: { pageSize: '200' } })
-      .subscribe({ next: r => this.etiquetasDisponibles.set(r.data) });
+    this.etiquetaService.getAll({ pageSize: 200 })
+      .subscribe({ next: r => this.etiquetasDisponibles.set(r.data as any) });
 
     this.form.get('titulo')!.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -118,32 +121,15 @@ export class ArticuloEdit implements OnInit {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.imagePreview.set(reader.result as string);
-      this.cdr.detectChanges();
-    };
-    reader.readAsDataURL(file);
-
-    this.uploading.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: res => {
-        this.form.get('imagen_principal_url')!.setValue(res.url);
-        this.uploading.set(false);
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imagePreview,
+      uploading:   this.uploading,
+      onSuccess:   (url) => {
+        this.form.get('imagen_principal_url')!.setValue(url);
         this.toast.success('Imagen subida', 'La imagen fue cargada correctamente.');
-        this.cdr.detectChanges();
       },
-      error: (err: HttpErrorResponse) => {
-        this.uploading.set(false);
-        this.imagePreview.set(this.form.get('imagen_principal_url')!.value || null);
-        this.toast.error('Error al subir', extractErrorMessage(err, 'No se pudo subir la imagen.'));
-        this.cdr.detectChanges();
-      },
+      fallbackMsg: 'No se pudo subir la imagen.',
     });
-
     input.value = '';
   }
 

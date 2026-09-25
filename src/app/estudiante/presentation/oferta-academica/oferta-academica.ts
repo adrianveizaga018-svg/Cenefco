@@ -1,8 +1,8 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
+import { CursoService } from '../../../cursos/application/services/curso.service';
 import { Curso } from '../../../cursos/domain/models/curso.model';
 
 @Component({
@@ -13,7 +13,7 @@ import { Curso } from '../../../cursos/domain/models/curso.model';
   styles: ``
 })
 export class OfertaAcademicaComponent implements OnInit {
-  private http = inject(HttpClient);
+  private cursoService = inject(CursoService);
   
   cursos = signal<Curso[]>([]);
   loading = signal(true);
@@ -29,12 +29,12 @@ export class OfertaAcademicaComponent implements OnInit {
 
   cargarOferta() {
     this.loading.set(true);
-    this.http.get<{ data: Curso[] }>('/api/v1/public/cursos').subscribe({
+    this.cursoService.getAll({ pageSize: 200 }).subscribe({
       next: (res) => {
         this.cursos.set(res.data);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.error.set('No se pudo cargar el catálogo de cursos.');
         this.loading.set(false);
       }

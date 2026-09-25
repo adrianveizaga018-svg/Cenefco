@@ -362,12 +362,18 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" data-section="planes">
           <div class="card-header">
             <h6 class="card-title">Planes de Pago</h6>
           </div>
           <div class="card-body space-y-3">
             <p class="text-xs text-default-500 mb-2">Selecciona los planes de pago que estarán habilitados para este curso.</p>
+            @if (planesSeleccionados().length === 0 && todosLosPlanes().length > 0) {
+              <div class="flex items-start gap-2 p-3 bg-danger/10 border border-danger/30 rounded-lg text-sm text-danger">
+                <ng-icon name="lucideAlertTriangle" class="size-4 shrink-0 mt-0.5" />
+                <span><strong>Requerido:</strong> Debes seleccionar al menos un plan de pago para poder inscribir estudiantes en Caja.</span>
+              </div>
+            }
               <input type="text" class="form-input mb-4" placeholder="Buscar plan..." (input)="busquedaPlanes.set($any($event.target).value)">
             @for (plan of planesFiltrados(); track plan.id_plan) {
               <label class="flex items-center gap-3 p-3 border border-default-200 rounded-lg cursor-pointer hover:bg-default-50 transition-colors"

@@ -3,12 +3,13 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { SlicePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { Pagination } from '../../../common/components/pagination/pagination';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { InscripcionService } from '../../application/services/inscripcion.service';
+import { CartaModeloService } from '../../../cartas-modelo/application/services/carta-modelo.service';
+import { UsuarioService } from '../../../usuarios/application/services/usuario.service';
 import { Inscripcion, InscripcionListResponse } from '../../domain/models/inscripcion.model';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { SettingsService } from '../../../common/application/services/settings.service';
@@ -30,10 +31,11 @@ export class Inscripciones {
   onCanalChange(e: Event)    { this.canalVenta.set((e.target as HTMLSelectElement).value); this.pageIndex.set(1); }
   onModoPagoChange(e: Event) { this.modoPago.set((e.target as HTMLSelectElement).value); this.pageIndex.set(1); }
   private service         = inject(InscripcionService);
+  private cartaModeloSvc  = inject(CartaModeloService);
+  private usuarioSvc      = inject(UsuarioService);
   private toast           = inject(ToastService);
   private router          = inject(Router);
   private route           = inject(ActivatedRoute);
-  private http            = inject(HttpClient);
   private settingsService = inject(SettingsService);
 
   searchQuery     = signal('');
@@ -55,11 +57,10 @@ export class Inscripciones {
     const pid = this.route.snapshot.queryParamMap.get('programa_id');
     if (pid) this.programaId.set(Number(pid));
 
-    this.http.get<{ data: ModeloOption[] }>('/api/v1/cartas-modelo', {
-      params: { pageSize: '100', conInactivos: 'false' }
-    }).subscribe({ next: r => this.modelos.set(r.data) });
+    this.cartaModeloSvc.getAll({ pageSize: 100 })
+      .subscribe({ next: r => this.modelos.set(r.data) });
 
-    this.http.get<{ data: any[] }>('/api/v1/usuarios', { params: { pageSize: '200', conInactivos: 'false' } })
+    this.usuarioSvc.getAll({ pageSize: 200 })
       .subscribe({ next: r => this.vendedores.set(r.data) });
 
     this.settingsService.getCobroEstadoSettings().subscribe({

@@ -2,20 +2,21 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestimonioService } from '../../application/services/testimonio.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 
 @Component({ selector: 'app-testimonio-edit', imports: [ReactiveFormsModule, RouterLink, NgIcon, PageTitle], templateUrl: './testimonio-edit.html' })
 export class TestimonioEdit {
-  private service = inject(TestimonioService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
+  private service    = inject(TestimonioService);
+  private toast      = inject(ToastService);
+  private router     = inject(Router);
+  private route      = inject(ActivatedRoute);
+  private fb         = inject(FormBuilder);
+  private fileUpload = inject(FileUploadService);
 
   submitting    = signal(false);
   loading       = signal(true);
@@ -56,30 +57,11 @@ export class TestimonioEdit {
   }
 
   onFotoSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file  = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => this.fotoPreview.set(e.target?.result as string);
-    reader.readAsDataURL(file);
-
-    this.uploadingFoto.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: (res) => { this.form.patchValue({ foto_url: res.url }); this.uploadingFoto.set(false); },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir la foto'));
-        const prev = this.form.value.foto_url;
-        this.fotoPreview.set(prev
-          ? (prev.startsWith('http') || prev.startsWith('/storage') ? prev : `/storage/${prev}`)
-          : null
-        );
-        this.uploadingFoto.set(false);
-        input.value = '';
-      }
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.fotoPreview,
+      uploading:   this.uploadingFoto,
+      onSuccess:   (url) => this.form.patchValue({ foto_url: url }),
+      fallbackMsg: 'No se pudo subir la foto',
     });
   }
 

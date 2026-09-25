@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { SlicePipe } from '@angular/common';
@@ -7,6 +7,7 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ResenaService } from '../../application/services/resena.service';
 import { Resena } from '../../domain/models/resena.model';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 
@@ -17,12 +18,12 @@ import { extractErrorMessage } from '../../../utils/http-error';
   styles: ``
 })
 export class ResenaDetail implements OnInit {
-  private service = inject(ResenaService);
-  private toast   = inject(ToastService);
-  private fb      = inject(FormBuilder);
-  private route   = inject(ActivatedRoute);
-  private router  = inject(Router);
-  private http    = inject(HttpClient);
+  private service    = inject(ResenaService);
+  private toast      = inject(ToastService);
+  private fb         = inject(FormBuilder);
+  private route      = inject(ActivatedRoute);
+  private router     = inject(Router);
+  private fileUpload = inject(FileUploadService);
 
   loading    = signal(true);
   item       = signal<Resena | null>(null);
@@ -125,15 +126,11 @@ export class ResenaDetail implements OnInit {
   }
 
   onFotoSeleccionada(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.uploadingFoto.set(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    this.http.post<{ url: string }>('/api/v1/upload/image', fd).subscribe({
-      next: (res) => { this.fotoUrl.set(res.url); this.uploadingFoto.set(false); },
-      error: () => { this.toast.error('Error', 'No se pudo subir la foto'); this.uploadingFoto.set(false); input.value = ''; },
+    this.fileUpload.handleImageSelect(event, {
+      preview:     { set: (url: string | null) => this.fotoUrl.set(url ?? '') } as any,
+      uploading:   this.uploadingFoto,
+      onSuccess:   (url) => this.fotoUrl.set(url),
+      fallbackMsg: 'No se pudo subir la foto',
     });
   }
 }

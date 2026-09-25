@@ -1,11 +1,12 @@
-import { ChangeDetectorRef, Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { TriviaPreguntaService } from '../../application/services/trivia-pregunta.service';
 import { TriviaOpcion } from '../../domain/models/trivia-pregunta.model';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 import { TriviaCategoriaService } from '../../../trivia-categorias/application/services/trivia-categoria.service';
@@ -20,14 +21,13 @@ import { TriviaNivel } from '../../../trivia-niveles/domain/models/trivia-nivel.
   styles: ``
 })
 export class TriviaPreguntaCreate implements OnInit {
-  private fb              = inject(FormBuilder);
-  private service         = inject(TriviaPreguntaService);
+  private fb               = inject(FormBuilder);
+  private service          = inject(TriviaPreguntaService);
   private categoriaService = inject(TriviaCategoriaService);
   private nivelService     = inject(TriviaNivelService);
-  private toast           = inject(ToastService);
-  private router          = inject(Router);
-  private http            = inject(HttpClient);
-  private cdr             = inject(ChangeDetectorRef);
+  private toast            = inject(ToastService);
+  private router           = inject(Router);
+  private fileUpload       = inject(FileUploadService);
 
   submitting   = signal(false);
   uploadingImg = signal(false);
@@ -88,32 +88,11 @@ export class TriviaPreguntaCreate implements OnInit {
   }
 
   onImagenSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => { this.imgPreview.set(e.target?.result as string); this.cdr.detectChanges(); };
-    reader.readAsDataURL(file);
-
-    this.uploadingImg.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: (res) => {
-        this.form.patchValue({ imagen_url: res.url });
-        this.imgPreview.set(res.url);
-        this.uploadingImg.set(false);
-        this.cdr.detectChanges();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir la imagen'));
-        this.imgPreview.set(null);
-        this.uploadingImg.set(false);
-        input.value = '';
-        this.cdr.detectChanges();
-      }
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imgPreview,
+      uploading:   this.uploadingImg,
+      onSuccess:   (url) => { this.form.patchValue({ imagen_url: url }); this.imgPreview.set(url); },
+      fallbackMsg: 'No se pudo subir la imagen',
     });
   }
 

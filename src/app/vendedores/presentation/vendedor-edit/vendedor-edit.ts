@@ -1,12 +1,13 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { VendedorService } from '../../application/services/vendedor.service';
+import { UsuarioService } from '../../../usuarios/application/services/usuario.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
-import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 
 interface UsuarioOpt { id: number; nombre: string; apellido: string; }
@@ -17,13 +18,13 @@ interface UsuarioOpt { id: number; nombre: string; apellido: string; }
   templateUrl: './vendedor-edit.html',
 })
 export class VendedorEdit implements OnInit {
-  private service     = inject(VendedorService);
-  private toast       = inject(ToastService);
-  private router      = inject(Router);
-  private route       = inject(ActivatedRoute);
-  private fb          = inject(FormBuilder);
-  private http        = inject(HttpClient);
-  private fileUpload  = inject(FileUploadService);
+  private service       = inject(VendedorService);
+  private toast         = inject(ToastService);
+  private router        = inject(Router);
+  private route         = inject(ActivatedRoute);
+  private fb            = inject(FormBuilder);
+  private usuarioSvc    = inject(UsuarioService);
+  private fileUpload    = inject(FileUploadService);
 
   id = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -48,7 +49,7 @@ export class VendedorEdit implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: UsuarioOpt[] }>('/api/v1/usuarios', { params: { pageSize: '200' } })
+    this.usuarioSvc.getAll({ pageSize: 200 })
       .subscribe({ next: r => { this.usuarios.set(r.data); this.usuariosLoading.set(false); } });
 
     this.service.getById(this.id).subscribe({

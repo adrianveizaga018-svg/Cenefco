@@ -9,6 +9,7 @@ import { extractErrorMessage } from '../../../utils/http-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 
 interface CuotaLocal {
   id_fechapago?: number;
@@ -17,6 +18,13 @@ interface CuotaLocal {
   monto: number;
   fecha_vencimiento: string;
   dias_desde_inscripcion: number;
+}
+
+interface ImparticionVinculada {
+  id_imp: number;
+  imparte_fecha_inicio: string | null;
+  imparte_fecha_fin:    string | null;
+  nombre_programa:      string | null;
 }
 
 @Component({
@@ -30,16 +38,75 @@ export class PlanEdit {
   id = Number(this.route.snapshot.paramMap.get('id'));
   loading = signal(true);
   private cuotasOriginales: number[] = [];
-  private service  = inject(PlanAcademicoService);
-  private toast    = inject(ToastService);
-  private router   = inject(Router);
-  private fb       = inject(FormBuilder);
+  private service      = inject(PlanAcademicoService);
+  private academicoSvc = inject(AcademicoService);
+  private toast        = inject(ToastService);
+  private router       = inject(Router);
+  private fb           = inject(FormBuilder);
 
   submitting = signal(false);
   private cargandoDesdeBD = true;
-  totalInscripciones = signal(0); // bloquea recalculo mientras carga
+  totalInscripciones = signal(0);
   qrPreview = signal<string | null>(null);
   private qrFile: File | null = null;
+
+  // Imparticiones vinculadas al plan (para validación de fechas)
+  imparticionesVinculadas = signal<ImparticionVinculada[]>([]);
+
+  /** Fecha de fin más temprana entre todas las imparticiones vinculadas.
+   *  Es la "fecha límite dura" — ninguna cuota debería pasar de aquí. */
+  fechaFinCurso = computed<string | null>(() => {
+    const imps = this.imparticionesVinculadas();
+    const fechas = imps
+      .map(i => i.imparte_fecha_fin)
+      .filter((f): f is string => !!f)
+      .sort();
+    return fechas.length > 0 ? fechas[fechas.length - 1] : null; // la más tardía (última cohorte)
+  });
+
+  /** Duración mínima en días (fecha_inicio → fecha_fin) de la impartición más corta. */
+  duracionMinDias = computed<number | null>(() => {
+    const imps = this.imparticionesVinculadas();
+    const duraciones = imps
+      .filter(i => i.imparte_fecha_inicio && i.imparte_fecha_fin)
+      .map(i => {
+        const inicio = new Date(i.imparte_fecha_inicio!).getTime();
+        const fin    = new Date(i.imparte_fecha_fin!).getTime();
+        return Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+      })
+      .filter(d => d > 0)
+      .sort((a, b) => a - b);
+    return duraciones.length > 0 ? duraciones[0] : null;
+  });
+
+  /** Set de índices de cuotas con fecha posterior a la fecha de fin del curso. */
+  cuotasConFechaConflicto = computed<Set<number>>(() => {
+    const finCurso = this.fechaFinCurso();
+    if (!finCurso || this.modoCuotas() !== 'fecha') return new Set();
+    const conflictos = new Set<number>();
+    this.cuotas().forEach((c, i) => {
+      if (c.fecha_vencimiento && c.fecha_vencimiento > finCurso) {
+        conflictos.add(i);
+      }
+    });
+    return conflictos;
+  });
+
+  /** Índices de cuotas con días_desde_inscripcion que exceden la duración del curso. */
+  cuotasConDiasConflicto = computed<Set<number>>(() => {
+    const duracion = this.duracionMinDias();
+    if (duracion === null || this.modoCuotas() !== 'dias') return new Set();
+    const conflictos = new Set<number>();
+    this.cuotas().forEach((c, i) => {
+      if (c.dias_desde_inscripcion > duracion) {
+        conflictos.add(i);
+      }
+    });
+    return conflictos;
+  });
+
+  hayConflictosFecha = computed(() => this.cuotasConFechaConflicto().size > 0);
+  hayConflictosDias  = computed(() => this.cuotasConDiasConflicto().size > 0);
 
   // Cuotas en memoria (antes de guardar)
   cuotas = signal<CuotaLocal[]>([]);
@@ -116,6 +183,12 @@ export class PlanEdit {
         this.toast.error('Error', 'No se pudo cargar el plan'); 
         this.router.navigate(['/cenefco/planes-academicos']); 
       }
+    });
+
+    // Cargar imparticiones vinculadas a este plan para la validación de fechas
+    this.academicoSvc.getImparticionesByPlan(this.id).subscribe({
+      next: (imps) => this.imparticionesVinculadas.set(imps),
+      error: () => {} // silencioso — la validación es opcional
     });
   }
 

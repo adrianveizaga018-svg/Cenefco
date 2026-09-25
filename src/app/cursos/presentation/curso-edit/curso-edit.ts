@@ -1,5 +1,5 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -8,6 +8,9 @@ import { CursoService } from '../../application/services/curso.service';
 import { CategoriaCurso, TipoCurso, PlanDoc } from '../../domain/models/curso.model';
 import { FormularioService } from '../../../formularios/application/services/formulario.service';
 import { Formulario } from '../../../formularios/domain/models/formulario.model';
+import { AcademicoService } from '../../../common/application/services/academico.service';
+import { InscripcionService } from '../../../inscripciones/application/services/inscripcion.service';
+import { ProgramaAcademicoService } from '../../../programas-academicos/application/services/programa-academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -154,18 +157,20 @@ export class CursoEdit implements OnInit {
     setTimeout(() => this.qrCopiado.set(false), 2000);
   }
 
-  private cursoService      = inject(CursoService);
-  private formularioService = inject(FormularioService);
-  private convenioService   = inject(ConvenioService);
-  private vendedorService   = inject(VendedorService);
-  private auth              = inject(AuthService);
-  private toast             = inject(ToastService);
-  private router            = inject(Router);
-  private route             = inject(ActivatedRoute);
-  private fb                = inject(FormBuilder);
-  private fileUpload        = inject(FileUploadService);
-  private areaService       = inject(AreaService);
-  private http              = inject(HttpClient);
+  private cursoService        = inject(CursoService);
+  private formularioService   = inject(FormularioService);
+  private convenioService     = inject(ConvenioService);
+  private vendedorService     = inject(VendedorService);
+  private auth                = inject(AuthService);
+  private toast               = inject(ToastService);
+  private router              = inject(Router);
+  private route               = inject(ActivatedRoute);
+  private fb                  = inject(FormBuilder);
+  private fileUpload          = inject(FileUploadService);
+  private areaService         = inject(AreaService);
+  private academicoSvc        = inject(AcademicoService);
+  private inscripcionSvc      = inject(InscripcionService);
+  private programaAcadSvc     = inject(ProgramaAcademicoService);
 
   submitting       = signal(false);
   togglingEstado   = signal(false);
@@ -321,14 +326,14 @@ export class CursoEdit implements OnInit {
     const inicio = this.form.get('inicio_actividades')?.value || null;
     const fin = this.form.get('finalizacion_actividades')?.value || null;
     const gestion = inicio ? new Date(inicio).getFullYear() : new Date().getFullYear();
-    this.http.post<{ id_imp: number }>('/api/v1/programas-academicos/' + this.id + '/imparticiones', {
+    this.programaAcadSvc.createImparticion(this.id!, {
       nombre: 'Versión 1',
       periodo: '1',
       gestion,
       imparte_fecha_inicio: inicio,
       imparte_fecha_fin: fin,
     }).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.form.patchValue({ id_imp: res.id_imp });
         this.imparticiones.update(list => [...list, {
           id_imp: res.id_imp,
@@ -1043,9 +1048,7 @@ export class CursoEdit implements OnInit {
   loadInscritos(): void {
     if (!this.id) return;
     this.inscritosLoading.set(true);
-    this.http.get<{ data: any[] }>('/api/v1/inscripciones', {
-      params: { programa_id: String(this.id), pageSize: '500', pageIndex: '1' }
-    }).subscribe({
+    this.inscripcionSvc.getAll({ programa_id: this.id, pageSize: 500, pageIndex: 1 }).subscribe({
       next: r => {
         this.inscritos.set(r.data.map((i: any) => ({
           id_ins:             i.id_ins,
@@ -1097,7 +1100,7 @@ export class CursoEdit implements OnInit {
 
   marcarComoParticipante(row: InscriptoRow): void {
     this.marcandoParticipanteId.set(row.id_ins);
-    this.http.post(`/api/v1/inscripciones/${row.id_ins}/marcar-participante`, {}).subscribe({
+    this.inscripcionSvc.marcarParticipante(row.id_ins).subscribe({
       next: () => {
         this.marcandoParticipanteId.set(null);
         this.toast.success('Participante registrado', `${row.estudiante_nombre ?? 'El estudiante'} ahora es participante.`);
@@ -1105,7 +1108,7 @@ export class CursoEdit implements OnInit {
         this.inscritosSeleccionados.update(set => { const s = new Set(set); s.delete(row.id_ins); return s; });
         this.participantesLoaded.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.marcandoParticipanteId.set(null);
         this.toast.error('No se pudo marcar', err?.error?.error ?? 'El inscrito aún no terminó de pagar.');
       },
@@ -1117,10 +1120,7 @@ export class CursoEdit implements OnInit {
     if (!ids.length) return;
 
     this.marcandoParticipantesBulk.set(true);
-    this.http.post<{ registrados: any[]; omitidos: { id_ins: number; motivo: string }[] }>(
-      '/api/v1/inscripciones/marcar-participantes',
-      { ids }
-    ).subscribe({
+    this.inscripcionSvc.marcarParticipantesBulk(ids).subscribe({
       next: (r) => {
         this.marcandoParticipantesBulk.set(false);
         this.inscritosSeleccionados.set(new Set());
@@ -1195,13 +1195,11 @@ export class CursoEdit implements OnInit {
     this.vendedorService.getAll({ pageSize: 200 }).subscribe({ next: r => this.vendedores.set(r.data.filter(v => v.usuario_id != null)), error: () => {} });
     this.areaService.getAll({ pageSize: 100 }).subscribe({ next: r => this.areas.set(r.data), error: () => {} });
     this.formularioService.getActivos().subscribe({ next: r => this.formularios.set(r), error: () => {} });
-    this.http.get<any[]>('/api/v1/catalogo-tareas').subscribe({
+    this.academicoSvc.getCatalogoTareas().subscribe({
       next: (data) => this.catalogoTareas.set(data.filter(d => d.estado)),
       error: () => {}
     });
-    this.http.get<{ data: Imparticion[] }>('/api/v1/imparticiones', {
-      params: { pageSize: '200', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({
+    this.academicoSvc.getImparticiones({ pageSize: 200, pageIndex: 1, conInactivos: true }).subscribe({
       next: r => {
         this.imparticiones.set(r.data);
         this.actualizarImparticionActualLabel(this.form.get('id_imp')?.value ?? null);
@@ -1371,8 +1369,7 @@ export class CursoEdit implements OnInit {
     });
   }
   cargarPlanes() {
-    this.http.get('/api/v1/programas-academicos/' + this.id + '/planes').subscribe((res) => {
-      const r = res as any;
+    this.programaAcadSvc.getPlanes(this.id!).subscribe((r) => {
       this.todosLosPlanes.set(r.todos_los_planes || []);
       this.planesHabilitados.set((r.planes_habilitados || []).map((p: any) => p.id_plan));
     });
@@ -1389,9 +1386,9 @@ export class CursoEdit implements OnInit {
 
   guardarPlanes() {
     this.submittingPlanes.set(true);
-    const id = this.id;
+    const id = this.id!;
     const planes = this.planesHabilitados();
-    this.http.post('/api/v1/programas-academicos/' + id + '/planes', { planes }).subscribe({
+    this.programaAcadSvc.syncPlanes(id, planes).subscribe({
       next: () => {
         this.toast.success('Exito', 'Planes actualizados correctamente');
         this.submittingPlanes.set(false);

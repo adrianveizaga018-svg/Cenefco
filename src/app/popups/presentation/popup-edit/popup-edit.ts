@@ -1,22 +1,22 @@
-import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PopupService } from '../../application/services/popup.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 
 @Component({ selector: 'app-popup-edit', imports: [ReactiveFormsModule, RouterLink, NgIcon, PageTitle], templateUrl: './popup-edit.html' })
 export class PopupEdit {
-  private service = inject(PopupService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
-  private cdr     = inject(ChangeDetectorRef);
+  private service    = inject(PopupService);
+  private toast      = inject(ToastService);
+  private router     = inject(Router);
+  private route      = inject(ActivatedRoute);
+  private fb         = inject(FormBuilder);
+  private fileUpload = inject(FileUploadService);
 
   submitting   = signal(false);
   loading      = signal(true);
@@ -38,39 +38,17 @@ export class PopupEdit {
         this.form.patchValue(d as any);
         if (d.imagen_url) this.imgPreview.set(d.imagen_url);
         this.loading.set(false);
-        this.cdr.detectChanges();
       },
       error: () => { this.toast.error('Error', 'No se pudo cargar'); this.router.navigate(['/cenefco/popups']); }
     });
   }
 
   onImagenSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => { this.imgPreview.set(e.target?.result as string); this.cdr.detectChanges(); };
-    reader.readAsDataURL(file);
-
-    this.uploadingImg.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: (res) => {
-        this.form.patchValue({ imagen_url: res.url });
-        this.imgPreview.set(res.url);
-        this.uploadingImg.set(false);
-        this.cdr.detectChanges();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir la imagen'));
-        this.imgPreview.set(this.form.get('imagen_url')?.value || null);
-        this.uploadingImg.set(false);
-        input.value = '';
-        this.cdr.detectChanges();
-      }
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imgPreview,
+      uploading:   this.uploadingImg,
+      onSuccess:   (url) => { this.form.patchValue({ imagen_url: url }); this.imgPreview.set(url); },
+      fallbackMsg: 'No se pudo subir la imagen',
     });
   }
 

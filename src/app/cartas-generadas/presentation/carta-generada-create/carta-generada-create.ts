@@ -2,9 +2,12 @@
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CartaGeneradaService } from '../../application/services/carta-generada.service';
 import { CartaModeloService } from '../../../cartas-modelo/application/services/carta-modelo.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
+import { InscripcionService } from '../../../inscripciones/application/services/inscripcion.service';
+import { CursoService } from '../../../cursos/application/services/curso.service';
 import { CartaModelo } from '../../../cartas-modelo/domain/models/carta-modelo.model';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
@@ -19,13 +22,15 @@ interface AlumnoOption { id_us: number; nombre: string; appaterno: string | null
   templateUrl: './carta-generada-create.html'
 })
 export class CartaGeneradaCreate implements OnInit {
-  private service   = inject(CartaGeneradaService);
-  private toast     = inject(ToastService);
-  private router    = inject(Router);
-  private route     = inject(ActivatedRoute);
-  private fb        = inject(FormBuilder);
-  private http      = inject(HttpClient);
-  private modeloSvc = inject(CartaModeloService);
+  private service       = inject(CartaGeneradaService);
+  private toast         = inject(ToastService);
+  private router        = inject(Router);
+  private route         = inject(ActivatedRoute);
+  private fb            = inject(FormBuilder);
+  private modeloSvc     = inject(CartaModeloService);
+  private academicoSvc  = inject(AcademicoService);
+  private inscripcionSvc = inject(InscripcionService);
+  private cursoSvc      = inject(CursoService);
 
   submitting        = signal(false);
   vistaActiva       = signal<'formulario' | 'preview'>('formulario');
@@ -66,13 +71,12 @@ export class CartaGeneradaCreate implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: CursoOption[] }>('/api/v1/cursos', {
-      params: { pageSize: '200', pageIndex: '1' }
-    }).subscribe({ next: r => { this.cursos.set(r.data); this.cargandoCursos.set(false); }, error: () => this.cargandoCursos.set(false) });
+    this.cursoSvc.getAll({ pageSize: 200, pageIndex: 1 }).subscribe({
+      next: r => { this.cursos.set(r.data); this.cargandoCursos.set(false); },
+      error: () => this.cargandoCursos.set(false)
+    });
 
-    this.http.get<{ data: AlumnoOption[] }>('/api/v1/usuarios-academicos', {
-      params: { pageSize: '300', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({
+    this.academicoSvc.getUsuariosAcademicos({ pageSize: 300, pageIndex: 1, conInactivos: true }).subscribe({
       next: r => {
         this.todosAlumnos.set(r.data);
         this.cargandoAlumnos.set(false);
@@ -126,9 +130,7 @@ export class CartaGeneradaCreate implements OnInit {
   private cargarInscritos(programaId: number): void {
     this.cargandoInscritos.set(true);
     this.inscritosIds.set(new Set());
-    this.http.get<{ data: { id_us: number }[] }>('/api/v1/inscripciones', {
-      params: { programa_id: programaId.toString(), pageSize: '300', pageIndex: '1' }
-    }).subscribe({
+    this.inscripcionSvc.getAll({ programa_id: programaId, pageSize: 300, pageIndex: 1 }).subscribe({
       next: r => { this.inscritosIds.set(new Set(r.data.map(i => i.id_us))); this.cargandoInscritos.set(false); },
       error: () => this.cargandoInscritos.set(false),
     });

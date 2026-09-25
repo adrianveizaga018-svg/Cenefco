@@ -187,4 +187,12 @@ export class InscripcionService {
   saveReglamento(idPrograma: number, data: Partial<ReglamentoPrograma>): Observable<ReglamentoPrograma> {
     return this.http.put<ReglamentoPrograma>(`/api/v1/reglamentos/${idPrograma}`, data);
   }
+
+  getReporte(params: HttpParams): Observable<any> {
+    return this.http.get<any>('/api/v1/inscripciones/reportes', { params });
+  }
+
+  getCursosReporte(): Observable<{ data: any[] }> {
+    return this.http.get<{ data: any[] }>('/api/v1/inscripciones/cursos');
+  }
 }

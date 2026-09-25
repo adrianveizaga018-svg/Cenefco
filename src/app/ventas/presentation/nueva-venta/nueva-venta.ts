@@ -1,10 +1,11 @@
 ﻿import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { InscripcionService } from '../../../inscripciones/application/services/inscripcion.service';
 import { VentaService } from '../../application/services/venta.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
+import { UsuarioService } from '../../../usuarios/application/services/usuario.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import type { MetodoPago } from '../../domain/models/venta.model';
@@ -31,7 +32,8 @@ export class NuevaVenta implements OnInit {
   private toast              = inject(ToastService);
   private router             = inject(Router);
   private fb                 = inject(FormBuilder);
-  private http               = inject(HttpClient);
+  private academicoSvc       = inject(AcademicoService);
+  private usuarioSvc         = inject(UsuarioService);
 
   paso = signal<1 | 2 | 3>(1);
 
@@ -81,13 +83,11 @@ export class NuevaVenta implements OnInit {
   registrarPago = computed(() => !!this.formPago.get('registrar_pago')?.value);
 
   ngOnInit(): void {
-    this.http.get<{ data: ImparticionOption[] }>('/api/v1/imparticiones', {
-      params: { pageSize: '200', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({ next: r => this.imparticiones.set(r.data) });
+    this.academicoSvc.getImparticiones({ pageSize: 200, pageIndex: 1, conInactivos: true })
+      .subscribe({ next: r => this.imparticiones.set(r.data as any) });
 
-    this.http.get<{ data: UsuarioOption[] }>('/api/v1/usuarios', {
-      params: { pageSize: '200', pageIndex: '1' }
-    }).subscribe({ next: r => this.usuarios.set(r.data) });
+    this.usuarioSvc.getAll({ pageSize: 200, pageIndex: 1 })
+      .subscribe({ next: r => this.usuarios.set(r.data) });
   }
 
   imparticionLabel(imp: ImparticionOption): string {
@@ -100,11 +100,9 @@ export class NuevaVenta implements OnInit {
     const q = this.formBusqueda.get('query')?.value?.trim();
     if (!q) return;
     this.buscandoEst.set(true);
-    this.http.get<{ data: EstudianteOption[] }>('/api/v1/usuarios-academicos', {
-      params: { query: q, pageSize: '10', pageIndex: '1' }
-    }).subscribe({
+    this.academicoSvc.getUsuariosAcademicos({ query: q, pageSize: 10, pageIndex: 1 }).subscribe({
       next: r => {
-        this.estudiantesEncontrados.set(r.data);
+        this.estudiantesEncontrados.set(r.data as any);
         this.buscandoEst.set(false);
       },
       error: () => this.buscandoEst.set(false),
@@ -122,10 +120,12 @@ export class NuevaVenta implements OnInit {
     const imp = this.imparticiones().find(i => i.id_imp === idImp);
     if (!imp?.id_programa) return;
     this.loadingPlanes.set(true);
-    this.http.get<{ data: PlanOption[] }>('/api/v1/planes-academicos', {
-      params: { id_programa: imp.id_programa, pageSize: '50', pageIndex: '1' }
-    }).subscribe({
-      next: r => { this.planes.set(r.data); this.loadingPlanes.set(false); },
+    this.academicoSvc.getPlanesAcademicos({ pageSize: 50 }).subscribe({
+      next: (res: any) => {
+        const all = res.data ?? res ?? [];
+        this.planes.set(all.filter((p: any) => p.id_programa === imp.id_programa));
+        this.loadingPlanes.set(false);
+      },
       error: () => this.loadingPlanes.set(false),
     });
   }

@@ -1,8 +1,9 @@
 ﻿import { Component, inject, signal, computed } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
+import Swal from 'sweetalert2';
 import { CursoService } from '../../application/services/curso.service';
 import { CategoriaCurso } from '../../domain/models/curso.model';
 import { FormularioService } from '../../../formularios/application/services/formulario.service';
@@ -12,6 +13,7 @@ import { ConvenioOption } from '../../../convenios/domain/models/convenio.model'
 import { VendedorService } from '../../../vendedores/application/services/vendedor.service';
 import { Vendedor } from '../../../vendedores/domain/models/vendedor.model';
 import { AreaService } from '../../../areas/application/services/area.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { FileUploadService } from '../../../common/application/services/file-upload.service';
@@ -50,11 +52,11 @@ export class CursoCreate {
   private convenioService    = inject(ConvenioService);
   private vendedorService    = inject(VendedorService);
   private areaService        = inject(AreaService);
+  private academicoSvc       = inject(AcademicoService);
   private toast              = inject(ToastService);
   private router             = inject(Router);
   private fb                 = inject(FormBuilder);
   private fileUpload         = inject(FileUploadService);
-  private http               = inject(HttpClient);
 
   submitting    = signal(false);
   Editor        = ClassicEditor as any;
@@ -75,6 +77,22 @@ export class CursoCreate {
   planesSeleccionados = signal<number[]>([]);
   busquedaPlanes = signal('');
   planesFiltrados = computed(() => this.todosLosPlanes().filter(p => p.titulo.toLowerCase().includes(this.busquedaPlanes().toLowerCase())));
+
+  /** Planes seleccionados que tienen cuotas con fecha posterior al fin del curso. */
+  planesConFechaConflicto = computed<{ id_plan: number; titulo: string; cuotasConflicto: number }[]>(() => {
+    const finCurso = this.form?.get('finalizacion_actividades')?.value as string | null;
+    if (!finCurso) return [];
+    return this.todosLosPlanes()
+      .filter(p => this.planesSeleccionados().includes(p.id_plan))
+      .flatMap(plan => {
+        const cuotasConflicto = (plan.cuotas ?? []).filter(
+          (c: any) => c.fecha_fin && c.fecha_fin > finCurso
+        ).length;
+        return cuotasConflicto > 0 ? [{ id_plan: plan.id_plan, titulo: plan.titulo, cuotasConflicto }] : [];
+      });
+  });
+
+  hayConflictosFechaCurso = computed(() => this.planesConFechaConflicto().length > 0);
 
   form: FormGroup = this.fb.group({
     nombre_programa:          ['', [Validators.required, Validators.maxLength(200)]],
@@ -117,19 +135,28 @@ export class CursoCreate {
     this.vendedorService.getAll({ pageSize: 200 }).subscribe({ next: r => this.vendedores.set(r.data.filter(v => v.usuario_id != null)), error: () => {} });
     this.areaService.getAll({ pageSize: 100 }).subscribe({ next: r => this.areas.set(r.data), error: () => {} });
     this.formularioService.getActivos().subscribe({ next: r => this.formularios.set(r), error: () => {} });
-    this.http.get<{ data: Imparticion[] }>('/api/v1/imparticiones', {
-      params: { pageSize: '200', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({ next: r => this.imparticiones.set(r.data) });
+    this.academicoSvc.getImparticiones({ pageSize: 200, pageIndex: 1, conInactivos: true })
+      .subscribe({ next: r => this.imparticiones.set(r.data) });
 
-    this.http.get<any>('/api/v1/planes-academicos?pageSize=200').subscribe({
+    this.academicoSvc.getPlanesAcademicos({ pageSize: 200, soloValidos: true }).subscribe({
       next: (res: any) => {
         const lista = res.data ?? res ?? [];
-        this.todosLosPlanes.set(lista.filter((p: any) => p.estado == 1 || p.estado === "activo" || p.estado === true));
+        const validos = lista.filter((p: any) => p.estado == 1 || p.estado === "activo" || p.estado === true);
+        this.todosLosPlanes.set(validos);
+
+        // Precargar cuotas de TODOS los planes válidos en background
+        // así la validación de fechas funciona aunque el usuario no interactúe con los checkboxes
+        for (const plan of validos) {
+          this.academicoSvc.getCuotasPlan(plan.id_plan).subscribe({
+            next: (r: { data: any[] }) => this.cuotasPorPlan.set(plan.id_plan, r.data ?? []),
+            error: () => {}
+          });
+        }
       },
       error: () => {}
     });
 
-    this.http.get<any[]>('/api/v1/catalogo-tareas').subscribe({
+    this.academicoSvc.getCatalogoTareas().subscribe({
       next: (data) => {
         const activos = data.filter(d => d.estado);
         this.catalogoTareas.set(activos);
@@ -175,12 +202,22 @@ export class CursoCreate {
     return `[${imp.periodo}] ${mat}${doc ? ' — ' + doc : ''}`;
   }
 
+  /** Cuotas cacheadas por id_plan, para validación de fechas al guardar. */
+  private cuotasPorPlan = new Map<number, any[]>();
+
   togglePlan(planId: number) {
     const current = this.planesSeleccionados();
     if (current.includes(planId)) {
       this.planesSeleccionados.set(current.filter(id => id !== planId));
     } else {
       this.planesSeleccionados.set([...current, planId]);
+      // Cargar cuotas en background para validación de fechas
+      if (!this.cuotasPorPlan.has(planId)) {
+        this.academicoSvc.getCuotasPlan(planId).subscribe({
+          next: (r: { data: any[] }) => this.cuotasPorPlan.set(planId, r.data ?? []),
+          error: () => {}
+        });
+      }
     }
   }
 
@@ -199,10 +236,73 @@ export class CursoCreate {
       return;
     }
     if (this.uploadingImg() || this.uploadingPdf()) return;
+
+    // ── Validación 1: Sin planes seleccionados ────────────────────────────
+    if (this.planesSeleccionados().length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: '⚠️ Falta el Plan de Pago',
+        html: `
+          <p class="text-sm text-gray-700 mb-3">
+            Para que los estudiantes puedan inscribirse en <strong>Caja</strong>, el curso necesita
+            al menos un <strong>Plan de Pago</strong> (contado o cuotas).
+          </p>
+          <p class="text-sm text-gray-500">
+            Sin plan de pago, el cajero no podrá completar la inscripción y no se podrá cobrar.
+          </p>`,
+        confirmButtonText: 'Entendido, selecciono un plan',
+        confirmButtonColor: '#e74c3c',
+        allowOutsideClick: false,
+      });
+      // Hacer scroll al bloque de planes
+      document.querySelector('[data-section="planes"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // ── Validación 2: Cuotas con fechas posteriores al fin del curso ──────
+    const finCurso = this.form.get('finalizacion_actividades')?.value as string | null;
+    if (finCurso) {
+      const conflictos: string[] = [];
+      for (const planId of this.planesSeleccionados()) {
+        const cuotas = this.cuotasPorPlan.get(planId) ?? [];
+        const plan = this.todosLosPlanes().find(p => p.id_plan === planId);
+        const cuotasConflicto = cuotas.filter((c: any) => c.fecha_fin && c.fecha_fin > finCurso);
+        if (cuotasConflicto.length > 0) {
+          conflictos.push(`<strong>${plan?.titulo ?? 'Plan #' + planId}</strong>: ${cuotasConflicto.length} cuota(s) con fecha posterior al ${finCurso}`);
+        }
+      }
+
+      if (conflictos.length > 0) {
+        Swal.fire({
+          icon: 'error',
+          title: '🚫 Cuotas fuera del plazo del curso',
+          html: `
+            <p class="text-sm text-gray-700 mb-3">Los siguientes planes tienen cuotas con fecha de vencimiento
+            <strong>posterior a la finalización del curso (${finCurso})</strong>:</p>
+            <ul class="text-sm text-left list-disc pl-5 mb-4 space-y-1 text-red-600">${conflictos.map(c => `<li>${c}</li>`).join('')}</ul>
+            <p class="text-sm text-gray-600">
+              <strong>No se puede guardar</strong> hasta corregir las fechas de las cuotas.<br>
+              Ve a <em>Planes de Pago</em>, edita el plan correspondiente y ajusta las fechas
+              para que queden dentro del período del curso.
+            </p>`,
+          confirmButtonText: 'Entendido, voy a corregirlo',
+          confirmButtonColor: '#e74c3c',
+          allowOutsideClick: false,
+        });
+        // Scroll a la sección de planes para orientar al usuario
+        document.querySelector('[data-section="planes"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+
+    this.ejecutarGuardado();
+  }
+
+  private ejecutarGuardado(): void {
+    if (this.uploadingImg() || this.uploadingPdf()) return;
     for (const [campo, editor] of Object.entries(this.ckEditors)) {
       this.form.get(campo)?.setValue(editor.getData());
     }
-
     this.submitting.set(true);
     this.cursoService.create({ ...this.form.value, planes: this.planesSeleccionados() }).subscribe({
       next: () => {

@@ -2,9 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { SlicePipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { CartaGeneradaService } from '../../application/services/carta-generada.service';
 import { CartaGenerada } from '../../domain/models/carta-generada.model';
+import { CartaModeloService } from '../../../cartas-modelo/application/services/carta-modelo.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 
@@ -17,11 +18,12 @@ interface ModeloInfo  { id_cartamod: number; nombremodelo: string; }
   templateUrl: './carta-generada-detail.html'
 })
 export class CartaGeneradaDetail {
-  private service = inject(CartaGeneradaService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private http    = inject(HttpClient);
+  private service      = inject(CartaGeneradaService);
+  private toast        = inject(ToastService);
+  private router       = inject(Router);
+  private route        = inject(ActivatedRoute);
+  private cartaModeloSvc = inject(CartaModeloService);
+  private academicoSvc = inject(AcademicoService);
 
   loading      = signal(true);
   carta        = signal<CartaGenerada | null>(null);
@@ -38,13 +40,12 @@ export class CartaGeneradaDetail {
         this.loading.set(false);
 
         if (d.id_us) {
-          this.http.get<{ data: AlumnoInfo[] }>('/api/v1/usuarios-academicos', {
-            params: { pageSize: '300', pageIndex: '1', conInactivos: 'true' }
-          }).subscribe({ next: r => this.alumno.set(r.data.find(a => a.id_us === d.id_us) ?? null) });
+          this.academicoSvc.getUsuariosAcademicos({ pageSize: 300, pageIndex: 1, conInactivos: true })
+            .subscribe({ next: r => this.alumno.set(r.data.find(a => a.id_us === d.id_us) ?? null) });
         }
 
         if (d.id_cartamod) {
-          this.http.get<ModeloInfo>(`/api/v1/cartas-modelo/${d.id_cartamod}`)
+          this.cartaModeloSvc.getById(d.id_cartamod)
             .subscribe({ next: m => this.modelo.set(m) });
         }
       },

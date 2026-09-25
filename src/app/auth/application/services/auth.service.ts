@@ -176,6 +176,12 @@ export class AuthService {
     return ROLES_ESTUDIANTE.includes(r);
   }
 
+  updatePerfil(data: { nombre?: string; current_password?: string; password?: string; password_confirmation?: string }): Observable<AuthUser> {
+    return this.http.put<AuthUser>('/api/auth/perfil', data).pipe(
+      tap(user => this.currentUser.set(user))
+    );
+  }
+
   forgotPassword(email: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>('/api/auth/forgot-password', { email });
   }

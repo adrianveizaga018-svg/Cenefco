@@ -33,12 +33,21 @@ export interface CajaImparticion {
 }
 
 export interface CajaPlan {
-  id_plan: number;
-  titulo: string;
-  costo: string;
-  nro_cuotas: string;
-  descuento: string;
+  id_plan:      number;
+  titulo:       string;
+  costo:        string;
+  nro_cuotas:   string;
+  descuento:    string;
   qr_image_url?: string | null;
+}
+
+export interface CajaCuotaPlan {
+  id_fechapago:            number;
+  nro_pago:                string | null;
+  tipo_tramite:            string | null;
+  monto_a_pagar:           number;
+  fecha_fin:               string | null;
+  dias_desde_inscripcion:  number | null;  // null = fechas fijas, número = días desde inscripción
 }
 
 export interface CajaBanco {
@@ -83,6 +92,15 @@ export class CajaService {
 
   getCuotasPendientes(ci: string): Observable<any> {
     return this.http.get<any>(`${this.api}/cuotas-pendientes/${ci}`);
+  }
+
+  getCuotasPlan(idPlan: number): Observable<{ data: CajaCuotaPlan[] }> {
+    return this.http.get<{ data: CajaCuotaPlan[] }>('/api/v1/fechas-pago', {
+      params: new HttpParams()
+        .set('id_plan', idPlan)
+        .set('pageSize', '50')
+        .set('pageIndex', '1'),
+    });
   }
 
   registrarPagoCuota(payload: any, comprobanteFile?: File | null): Observable<any> {

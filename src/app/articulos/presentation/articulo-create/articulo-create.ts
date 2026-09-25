@@ -1,9 +1,11 @@
 import { Component, inject, signal, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { ArticuloService } from '../../application/services/articulo.service';
+import { EtiquetaService } from '../../../etiquetas/application/services/etiqueta.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -18,12 +20,13 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
   templateUrl: './articulo-create.html',
 })
 export class ArticuloCreate implements OnInit {
-  private service = inject(ArticuloService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
-  private cdr     = inject(ChangeDetectorRef);
+  private service        = inject(ArticuloService);
+  private etiquetaService = inject(EtiquetaService);
+  private toast          = inject(ToastService);
+  private router         = inject(Router);
+  private fb             = inject(FormBuilder);
+  private fileUpload     = inject(FileUploadService);
+  private cdr            = inject(ChangeDetectorRef);
 
   submitting             = signal(false);
   uploading              = signal(false);
@@ -50,8 +53,8 @@ export class ArticuloCreate implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: EtiquetaSimple[] }>('/api/v1/etiquetas', { params: { pageSize: '200' } })
-      .subscribe({ next: r => this.etiquetasDisponibles.set(r.data) });
+    this.etiquetaService.getAll({ pageSize: 200 })
+      .subscribe({ next: r => this.etiquetasDisponibles.set(r.data as any) });
 
     this.form.get('titulo')!.valueChanges.subscribe(titulo => {
       this.form.get('slug')!.setValue(generateSlug(titulo ?? ''), { emitEvent: false });
@@ -72,32 +75,16 @@ export class ArticuloCreate implements OnInit {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.imagePreview.set(reader.result as string);
-      this.cdr.detectChanges();
-    };
-    reader.readAsDataURL(file);
-
-    this.uploading.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: res => {
-        this.form.get('imagen_principal_url')!.setValue(res.url);
-        this.uploading.set(false);
+    // Restaurar el evento con el archivo validado para handleImageSelect
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imagePreview,
+      uploading:   this.uploading,
+      onSuccess:   (url) => {
+        this.form.get('imagen_principal_url')!.setValue(url);
         this.toast.success('Imagen subida', 'La imagen fue cargada correctamente.');
-        this.cdr.detectChanges();
       },
-      error: (err: HttpErrorResponse) => {
-        this.uploading.set(false);
-        this.imagePreview.set(null);
-        this.toast.error('Error al subir', extractErrorMessage(err, 'No se pudo subir la imagen.'));
-        this.cdr.detectChanges();
-      },
+      fallbackMsg: 'No se pudo subir la imagen.',
     });
-
     input.value = '';
   }
 

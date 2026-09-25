@@ -1,9 +1,10 @@
 ﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { InscripcionService } from '../../application/services/inscripcion.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -24,11 +25,11 @@ const CANALES_VENTA = [
   templateUrl: './inscripcion-create.html',
 })
 export class InscripcionCreate implements OnInit {
-  private service = inject(InscripcionService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
+  private service      = inject(InscripcionService);
+  private academicoSvc = inject(AcademicoService);
+  private toast        = inject(ToastService);
+  private router       = inject(Router);
+  private fb           = inject(FormBuilder);
 
   submitting    = signal(false);
   usuarios      = signal<UsuarioOption[]>([]);
@@ -51,13 +52,11 @@ export class InscripcionCreate implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: UsuarioOption[] }>('/api/v1/usuarios-academicos', {
-      params: { pageSize: '300', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({ next: r => this.usuarios.set(r.data) });
+    this.academicoSvc.getUsuariosAcademicos({ pageSize: 300, pageIndex: 1, conInactivos: true })
+      .subscribe({ next: r => this.usuarios.set(r.data) });
 
-    this.http.get<{ data: Imparticion[] }>('/api/v1/imparticiones', {
-      params: { pageSize: '200', pageIndex: '1', conInactivos: 'true' }
-    }).subscribe({ next: r => this.imparticiones.set(r.data) });
+    this.academicoSvc.getImparticiones({ pageSize: 200, pageIndex: 1, conInactivos: true })
+      .subscribe({ next: r => this.imparticiones.set(r.data) });
   }
 
   usuarioLabel(u: UsuarioOption): string {
@@ -85,12 +84,11 @@ export class InscripcionCreate implements OnInit {
         this.loadingPlanes.set(true);
         this.planes.set([]);
         this.form.patchValue({ id_plan: null });
-        this.http.get<{ data: PlanOption[] }>('/api/v1/planes-academicos', {
-          params: { id_mat: imp.id_mat.toString(), pageSize: '50' }
-        }).subscribe({
-          next: r => { this.planes.set(r.data); this.loadingPlanes.set(false); },
-          error: () => this.loadingPlanes.set(false),
-        });
+        this.academicoSvc.getPlanesByMateria(imp.id_mat, { pageSize: 50 })
+          .subscribe({
+            next: r => { this.planes.set(r.data); this.loadingPlanes.set(false); },
+            error: () => this.loadingPlanes.set(false),
+          });
       }
     }
   }

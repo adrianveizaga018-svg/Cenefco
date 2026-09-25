@@ -1,9 +1,10 @@
-import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { BannerService } from '../../application/services/banner.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -21,8 +22,7 @@ export class BannerEdit {
   private router        = inject(Router);
   private route         = inject(ActivatedRoute);
   private fb            = inject(FormBuilder);
-  private http          = inject(HttpClient);
-  private cdr           = inject(ChangeDetectorRef);
+  private fileUpload    = inject(FileUploadService);
 
   submitting    = signal(false);
   loadingBanner = signal(true);
@@ -64,45 +64,25 @@ export class BannerEdit {
         });
         if (banner.imagen_url) this.imgPreview.set(banner.imagen_url);
         this.loadingBanner.set(false);
-        this.cdr.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         this.toast.error('Error', extractErrorMessage(err, 'No se pudo cargar el banner'));
         this.loadingBanner.set(false);
         this.router.navigate(['/cenefco/banners']);
-        this.cdr.detectChanges();
       }
     });
   }
 
   onImagenSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => { this.imgPreview.set(e.target?.result as string); this.cdr.detectChanges(); };
-    reader.readAsDataURL(file);
-
-    this.uploadingImg.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: (res) => {
-        this.form.patchValue({ imagen_url: res.url });
-        this.imgPreview.set(res.url);
-        this.uploadingImg.set(false);
-        this.cdr.detectChanges();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir la imagen'));
-        this.imgPreview.set(this.form.get('imagen_url')?.value || null);
-        this.uploadingImg.set(false);
-        input.value = '';
-        this.cdr.detectChanges();
-      }
+    const prevUrl = this.form.get('imagen_url')?.value || null;
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imgPreview,
+      uploading:   this.uploadingImg,
+      onSuccess:   (url) => { this.form.patchValue({ imagen_url: url }); this.imgPreview.set(url); },
+      fallbackMsg: 'No se pudo subir la imagen',
     });
+    // Restaurar preview a la URL guardada si el upload falla (manejado por handleImageSelect devolviendo null)
+    void prevUrl;
   }
 
   removeImagen(): void {

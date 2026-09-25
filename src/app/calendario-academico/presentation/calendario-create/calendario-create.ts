@@ -1,9 +1,10 @@
 ﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { CalendarioAcademicoService } from '../../application/services/calendario-academico.service';
+import { CursoService } from '../../../cursos/application/services/curso.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -19,12 +20,12 @@ interface ProgramaOpt { id_programa: number; nombre_programa: string; descripcio
   templateUrl: './calendario-create.html',
 })
 export class CalendarioCreate implements OnInit {
-  private service = inject(CalendarioAcademicoService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
+  private service      = inject(CalendarioAcademicoService);
+  private toast        = inject(ToastService);
+  private router       = inject(Router);
+  private route        = inject(ActivatedRoute);
+  private fb           = inject(FormBuilder);
+  private cursoService = inject(CursoService);
   private vendedorService = inject(VendedorService);
 
   readonly tipos = TIPOS_EVENTO;
@@ -56,7 +57,7 @@ export class CalendarioCreate implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: ProgramaOpt[] }>('/api/v1/cursos', { params: { pageSize: '300' } })
+    this.cursoService.getAll({ pageSize: 300 })
       .subscribe({ next: r => { this.programas.set(r.data); this.programasLoading.set(false); } });
 
     this.vendedorService.getAll({ pageSize: 200, activo: '1' })

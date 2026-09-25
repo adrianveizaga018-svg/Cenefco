@@ -3,7 +3,7 @@ import {
   DestroyRef, HostListener, ElementRef
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpParams } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -12,6 +12,7 @@ import { NgIcon } from '@ng-icons/core';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import type { ApexOptions } from 'ng-apexcharts';
 import { PageTitle } from '../../../common/components/page-title/page-title';
+import { InscripcionService } from '../../application/services/inscripcion.service';
 import * as XLSX from 'xlsx';
 
 interface Datum { label: string; value: number; }
@@ -47,8 +48,8 @@ interface Curso {
   templateUrl: './inscripcion-reportes.html',
 })
 export class InscripcionReportes implements OnInit, OnDestroy {
-  private http       = inject(HttpClient);
-  private cdr        = inject(ChangeDetectorRef);
+  private inscripcionSvc = inject(InscripcionService);
+  private cdr            = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
   private elRef      = inject(ElementRef);
   private route      = inject(ActivatedRoute);
@@ -103,7 +104,7 @@ export class InscripcionReportes implements OnInit, OnDestroy {
 
     this.cargar$.pipe(
       switchMap(params =>
-        this.http.get<ReporteData>('/api/v1/inscripciones/reportes', { params })
+        this.inscripcionSvc.getReporte(params)
       ),
       takeUntil(this.destroy$),
     ).subscribe({
@@ -111,7 +112,7 @@ export class InscripcionReportes implements OnInit, OnDestroy {
         this.data.set(d);
         this.buildAllCharts(d.dimensiones);
         const exp: Record<string, boolean> = {};
-        d.dimensiones.forEach((dim, i) => { exp[dim.key] = i < 4; });
+        d.dimensiones.forEach((dim: Dimension, i: number) => { exp[dim.key] = i < 4; });
         this.expandidos.set(exp);
         this.cargando.set(false);
         this.cdr.detectChanges();
@@ -129,7 +130,7 @@ export class InscripcionReportes implements OnInit, OnDestroy {
       this.cursoFijo.set(true);
       this.cargandoCursos.set(false);
     } else {
-      this.http.get<{ data: Curso[] }>('/api/v1/inscripciones/cursos')
+      this.inscripcionSvc.getCursosReporte()
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: r => { this.cursos.set(r.data); this.cargandoCursos.set(false); this.cdr.detectChanges(); },

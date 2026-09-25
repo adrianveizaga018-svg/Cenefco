@@ -2,8 +2,9 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { InscripcionService } from '../../application/services/inscripcion.service';
+import { AcademicoService } from '../../../common/application/services/academico.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { FileUploadService } from '../../../common/application/services/file-upload.service';
@@ -26,13 +27,13 @@ interface UsuarioAcademico {
   templateUrl: './inscripcion-edit.html',
 })
 export class InscripcionEdit {
-  private service    = inject(InscripcionService);
-  private toast      = inject(ToastService);
-  private router     = inject(Router);
-  private route      = inject(ActivatedRoute);
-  private fb         = inject(FormBuilder);
-  private http       = inject(HttpClient);
-  private fileUpload = inject(FileUploadService);
+  private service      = inject(InscripcionService);
+  private academicoSvc = inject(AcademicoService);
+  private toast        = inject(ToastService);
+  private router       = inject(Router);
+  private route        = inject(ActivatedRoute);
+  private fb           = inject(FormBuilder);
+  private fileUpload   = inject(FileUploadService);
 
   submitting  = signal(false);
   loading     = signal(true);
@@ -84,7 +85,7 @@ export class InscripcionEdit {
   }
 
   private cargarUsuario(idUs: number): void {
-    this.http.get<UsuarioAcademico>(`/api/v1/usuarios-academicos/${idUs}`).subscribe({
+    this.academicoSvc.getUsuarioAcademicoById(idUs).subscribe({
       next: (u) => { this.usuarioForm.patchValue(u); this.loading.set(false); },
       error: () => {
         this.toast.error('Error', 'No se pudieron cargar los datos del estudiante');
@@ -202,7 +203,7 @@ export class InscripcionEdit {
 
     const idUs = this.idUs();
     if (idUs) {
-      this.http.put(`/api/v1/usuarios-academicos/${idUs}`, this.usuarioForm.value).subscribe({
+      this.academicoSvc.updateUsuarioAcademico(idUs, this.usuarioForm.value as any).subscribe({
         next: () => guardarInscripcion(true),
         error: (err: HttpErrorResponse) => {
           this.toast.error('Error', extractErrorMessage(err, 'No se pudieron actualizar los datos del estudiante'));

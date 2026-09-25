@@ -1,7 +1,6 @@
 ﻿import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIcon } from '@ng-icons/core';
-import { HttpClient } from '@angular/common/http';
 import { AuthService, AuthUser } from '../../../auth/application/services/auth.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 
@@ -12,8 +11,7 @@ import { PageTitle } from '../../../common/components/page-title/page-title';
   styles: ``
 })
 export class MiPerfil implements OnDestroy {
-  private http = inject(HttpClient);
-  auth         = inject(AuthService);
+  auth = inject(AuthService);
 
   private datosTimer?: ReturnType<typeof setTimeout>;
   private passTimer?:  ReturnType<typeof setTimeout>;
@@ -48,14 +46,13 @@ export class MiPerfil implements OnDestroy {
     this.successDatos.set('');
     this.errorDatos.set('');
 
-    this.http.put<AuthUser>('/api/auth/perfil', { nombre: this.name.trim() }).subscribe({
-      next: user => {
-        this.auth.currentUser.set(user);
+    this.auth.updatePerfil({ nombre: this.name.trim() }).subscribe({
+      next: () => {
         this.savingDatos.set(false);
         this.successDatos.set('Datos actualizados correctamente.');
         this.datosTimer = setTimeout(() => this.successDatos.set(''), 3000);
       },
-      error: err => {
+      error: (err: any) => {
         this.savingDatos.set(false);
         this.errorDatos.set(err?.error?.message ?? 'Error al actualizar los datos.');
       },
@@ -77,7 +74,7 @@ export class MiPerfil implements OnDestroy {
     this.successPass.set('');
     this.errorPass.set('');
 
-    this.http.put<AuthUser>('/api/auth/perfil', {
+    this.auth.updatePerfil({
       current_password:      this.currentPassword,
       password:              this.newPassword,
       password_confirmation: this.newPasswordConfirm,
@@ -90,7 +87,7 @@ export class MiPerfil implements OnDestroy {
         this.newPasswordConfirm = '';
         this.passTimer = setTimeout(() => this.successPass.set(''), 3000);
       },
-      error: err => {
+      error: (err: any) => {
         this.savingPassword.set(false);
         this.errorPass.set(err?.error?.error ?? err?.error?.message ?? 'Error al cambiar la contraseña.');
       },

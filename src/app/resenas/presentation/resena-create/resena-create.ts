@@ -1,9 +1,11 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
 import { ResenaService } from '../../application/services/resena.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
+import { CursoService } from '../../../cursos/application/services/curso.service';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
@@ -17,11 +19,12 @@ interface ProgramaOpt { id_programa: number; nombre_programa: string; }
   templateUrl: './resena-create.html',
 })
 export class ResenaCreate implements OnInit {
-  private service = inject(ResenaService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private fb      = inject(FormBuilder);
-  private http    = inject(HttpClient);
+  private service    = inject(ResenaService);
+  private toast      = inject(ToastService);
+  private router     = inject(Router);
+  private fb         = inject(FormBuilder);
+  private fileUpload = inject(FileUploadService);
+  private cursoSvc   = inject(CursoService);
 
   submitting         = signal(false);
   programas          = signal<ProgramaOpt[]>([]);
@@ -61,7 +64,7 @@ export class ResenaCreate implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: ProgramaOpt[] }>('/api/v1/cursos', { params: { pageSize: '200' } })
+    this.cursoSvc.getAll({ pageSize: 200 })
       .subscribe({ next: r => { this.programas.set(r.data); this.programasLoading.set(false); } });
   }
 
@@ -88,15 +91,11 @@ export class ResenaCreate implements OnInit {
   estrellas(): number[] { return [1, 2, 3, 4, 5]; }
 
   onFotoSeleccionada(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.uploadingFoto.set(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    this.http.post<{ url: string }>('/api/v1/upload/image', fd).subscribe({
-      next: (res) => { this.form.patchValue({ foto_url: res.url }); this.uploadingFoto.set(false); },
-      error: () => { this.toast.error('Error', 'No se pudo subir la foto'); this.uploadingFoto.set(false); input.value = ''; },
+    this.fileUpload.handleImageSelect(event, {
+      preview:     { set: (_: string | null) => {} } as any,
+      uploading:   this.uploadingFoto,
+      onSuccess:   (url) => this.form.patchValue({ foto_url: url }),
+      fallbackMsg: 'No se pudo subir la foto',
     });
   }
 

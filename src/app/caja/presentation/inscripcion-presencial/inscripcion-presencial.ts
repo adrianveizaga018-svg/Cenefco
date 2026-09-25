@@ -1,21 +1,26 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { NgIcon } from '@ng-icons/core';
 import Swal from 'sweetalert2';
-import { CajaService, CajaEstudiante, CajaPrograma, CajaImparticion, CajaPlan, CajaBanco } from '../../application/services/caja.service';
+import { CajaService, CajaEstudiante, CajaPrograma, CajaImparticion, CajaPlan, CajaBanco, CajaCuotaPlan } from '../../application/services/caja.service';
 import { AuthService } from '../../../auth/application/services/auth.service';
+import { SettingsService } from '../../../common/application/services/settings.service';
 
 @Component({
   selector: 'app-inscripcion-presencial',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, NgIcon],
+  imports: [CommonModule, DatePipe, ReactiveFormsModule, FormsModule, NgIcon],
   templateUrl: './inscripcion-presencial.html',
 })
 export default class InscripcionPresencialComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private cajaSvc = inject(CajaService);
-  public authSvc = inject(AuthService);
+  private fb       = inject(FormBuilder);
+  private cajaSvc  = inject(CajaService);
+  private settings = inject(SettingsService);
+  public  authSvc  = inject(AuthService);
+
+  siteLogo  = signal<string | null>(null);
+  siteNombre = signal<string>('CENEFCO');
 
   pasoActual = signal(1); // 1: Estudiante, 2: Programa, 3: Pago, 4: Confirmacion
   isSubmitting = signal(false);
@@ -51,8 +56,12 @@ export default class InscripcionPresencialComponent implements OnInit {
   });
 
   // Paso 3: Pago
-  bancos = signal<CajaBanco[]>([]);
+  bancos           = signal<CajaBanco[]>([]);
   bancoSeleccionado = signal<CajaBanco | null>(null);
+  cuotasPlan       = signal<CajaCuotaPlan[]>([]);   // cuotas template del plan
+  cargandoCuotas   = signal(false);
+  cuotaSugerida    = signal<CajaCuotaPlan | null>(null); // próxima cuota a pagar
+  modoCuotas       = signal<'fecha' | 'dias'>('fecha'); // tipo de fechas del plan
   formPago: FormGroup = this.fb.group({
     monto_pagado: ['', [Validators.required, Validators.min(1)]],
     nro_boleta: [''],
@@ -135,6 +144,13 @@ Titular: ${banco.titular || '-'}`;
 
   ngOnInit() {
     this.cajaSvc.getBancos().subscribe(res => this.bancos.set(res));
+    this.settings.getSettings().subscribe({
+      next: s => {
+        if (s.site_logo)  this.siteLogo.set(s.site_logo.startsWith('http') ? s.site_logo : `/storage/${s.site_logo}`);
+        if (s.site_name)  this.siteNombre.set(s.site_name);
+      },
+      error: () => {}
+    });
     // Set default date to today
     this.formPago.patchValue({ fecha_deposito: new Date().toISOString().split('T')[0] });
     
@@ -246,7 +262,34 @@ Titular: ${banco.titular || '-'}`;
 
   seleccionarPlan(plan: CajaPlan) {
     this.planSeleccionado.set(plan);
-    this.formPago.patchValue({ monto_pagado: plan.costo });
+    this.cuotasPlan.set([]);
+    this.cuotaSugerida.set(null);
+    // Cargar las cuotas individuales del plan
+    this.cargandoCuotas.set(true);
+    this.cajaSvc.getCuotasPlan(plan.id_plan).subscribe({
+      next: (res) => {
+        const cuotas = res.data.sort((a, b) =>
+          Number(a.nro_pago ?? 0) - Number(b.nro_pago ?? 0)
+        );
+        this.cuotasPlan.set(cuotas);
+        this.cargandoCuotas.set(false);
+        // Detectar modo: si alguna cuota tiene dias_desde_inscripcion != null → modo días
+        this.modoCuotas.set(cuotas.some(c => c.dias_desde_inscripcion != null) ? 'dias' : 'fecha');
+        // Si hay cuotas configuradas, sugerir la primera
+        if (cuotas.length > 0) {
+          this.cuotaSugerida.set(cuotas[0]);
+          this.formPago.patchValue({ monto_pagado: cuotas[0].monto_a_pagar });
+        } else {
+          // Fallback: usar el costo total si no hay cuotas definidas
+          this.formPago.patchValue({ monto_pagado: plan.costo });
+        }
+      },
+      error: () => {
+        this.cargandoCuotas.set(false);
+        // Fallback si falla la carga de cuotas
+        this.formPago.patchValue({ monto_pagado: plan.costo });
+      },
+    });
   }
 
   irPaso3() {
@@ -259,6 +302,20 @@ Titular: ${banco.titular || '-'}`;
       Swal.fire('Atención', 'Debes seleccionar un plan de pago para continuar.', 'warning');
       return;
     }
+
+    const cuotas = this.cuotasPlan();
+
+    // En Caja/Inscripción siempre se está creando una inscripción NUEVA para
+    // este programa/versión. Por lo tanto la primera cuota a cobrar es SIEMPRE
+    // la cuota 1 del plan — independientemente de si el estudiante tiene
+    // inscripciones previas en otros diplomados con el mismo plan.
+    // NO se debe consultar getCuotasPendientes aquí porque mezclaría cuotas
+    // de otras inscripciones del mismo plan en programas distintos.
+    if (cuotas.length > 0) {
+      this.cuotaSugerida.set(cuotas[0]);
+      this.formPago.patchValue({ monto_pagado: cuotas[0].monto_a_pagar });
+    }
+
     this.pasoActual.set(3);
   }
 
@@ -319,6 +376,9 @@ Titular: ${banco.titular || '-'}`;
     this.progSeleccionado.set(null);
     this.impSeleccionada.set(null);
     this.planSeleccionado.set(null);
+    this.cuotasPlan.set([]);
+    this.cuotaSugerida.set(null);
+    this.modoCuotas.set('fecha');
     this.formPago.reset({
       metodo_pago: 'deposito',
       fecha_deposito: new Date().toISOString().split('T')[0]

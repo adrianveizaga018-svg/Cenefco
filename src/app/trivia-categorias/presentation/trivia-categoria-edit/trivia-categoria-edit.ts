@@ -1,10 +1,11 @@
-import { ChangeDetectorRef, Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { TriviaCategoriaService } from '../../application/services/trivia-categoria.service';
+import { FileUploadService } from '../../../common/application/services/file-upload.service';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { extractErrorMessage } from '../../../utils/http-error';
 
@@ -15,13 +16,12 @@ import { extractErrorMessage } from '../../../utils/http-error';
   styles: ``
 })
 export class TriviaCategoriaEdit implements OnInit {
-  private fb      = inject(FormBuilder);
-  private service = inject(TriviaCategoriaService);
-  private toast   = inject(ToastService);
-  private router  = inject(Router);
-  private route   = inject(ActivatedRoute);
-  private http    = inject(HttpClient);
-  private cdr     = inject(ChangeDetectorRef);
+  private fb         = inject(FormBuilder);
+  private service    = inject(TriviaCategoriaService);
+  private toast      = inject(ToastService);
+  private router     = inject(Router);
+  private route      = inject(ActivatedRoute);
+  private fileUpload = inject(FileUploadService);
 
   submitting        = signal(false);
   loadingCategoria  = signal(true);
@@ -63,31 +63,11 @@ export class TriviaCategoriaEdit implements OnInit {
   }
 
   onImagenSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => { this.imgPreview.set(e.target?.result as string); this.cdr.detectChanges(); };
-    reader.readAsDataURL(file);
-
-    this.uploadingImg.set(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    this.http.post<{ url: string }>('/api/v1/upload/image', formData).subscribe({
-      next: (res) => {
-        this.form.patchValue({ imagen_url: res.url });
-        this.imgPreview.set(res.url);
-        this.uploadingImg.set(false);
-        this.cdr.detectChanges();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo subir la imagen'));
-        this.uploadingImg.set(false);
-        input.value = '';
-        this.cdr.detectChanges();
-      }
+    this.fileUpload.handleImageSelect(event, {
+      preview:     this.imgPreview,
+      uploading:   this.uploadingImg,
+      onSuccess:   (url) => { this.form.patchValue({ imagen_url: url }); this.imgPreview.set(url); },
+      fallbackMsg: 'No se pudo subir la imagen',
     });
   }
 

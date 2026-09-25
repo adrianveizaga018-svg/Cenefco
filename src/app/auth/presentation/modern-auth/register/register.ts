@@ -3,8 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { AuthService } from '../../../../auth/application/services/auth.service';
-import { HttpClient } from '@angular/common/http';
-import { switchMap, tap } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 
 declare var google: any;
 
@@ -16,7 +15,6 @@ declare var google: any;
 export class Register implements AfterViewInit {
   private auth   = inject(AuthService);
   private router = inject(Router);
-  private http   = inject(HttpClient);
 
   nombre   = '';
   apellido = '';

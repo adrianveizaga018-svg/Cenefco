@@ -165,7 +165,7 @@
               </thead>
               <tbody class="divide-y divide-default-100">
                 @for (c of cuotas(); track c.nro; let i = $index) {
-                  <tr class="hover:bg-default-50">
+                  <tr class="hover:bg-default-50" [class.bg-red-50]="cuotasConFechaConflicto().has(i) || cuotasConDiasConflicto().has(i)">
                     <td class="px-4 py-3 text-default-400 font-bold">{{ c.nro }}</td>
                     <td class="px-4 py-3">
                       @if (totalInscripciones() > 0) {
@@ -193,9 +193,18 @@
                         @if (totalInscripciones() > 0) {
                           <span class="text-sm text-default-700">{{ c.fecha_vencimiento }}</span>
                         } @else {
-                          <input type="date" [(ngModel)]="cuotas()[i].fecha_vencimiento"
-                                 (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
-                                 class="form-input text-sm">
+                          <div class="flex items-center gap-2">
+                            <input type="date" [(ngModel)]="cuotas()[i].fecha_vencimiento"
+                                   (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
+                                   class="form-input text-sm"
+                                   [class.border-danger]="cuotasConFechaConflicto().has(i)"
+                                   [class.text-danger]="cuotasConFechaConflicto().has(i)">
+                            @if (cuotasConFechaConflicto().has(i)) {
+                              <span title="Esta fecha es posterior al fin del curso">
+                                <ng-icon name="lucideAlertTriangle" class="size-4 text-danger shrink-0" />
+                              </span>
+                            }
+                          </div>
                         }
                       </td>
                     } @else {
@@ -206,8 +215,15 @@
                           <div class="flex items-center gap-2">
                             <input type="number" [(ngModel)]="cuotas()[i].dias_desde_inscripcion"
                                    (ngModelChange)="forzarActualizacion()" [ngModelOptions]="{standalone: true}"
-                                   class="form-input w-20 text-sm" min="0" placeholder="30">
+                                   class="form-input w-20 text-sm" min="0" placeholder="30"
+                                   [class.border-danger]="cuotasConDiasConflicto().has(i)"
+                                   [class.text-danger]="cuotasConDiasConflicto().has(i)">
                             <span class="text-xs text-default-500 whitespace-nowrap">dias</span>
+                            @if (cuotasConDiasConflicto().has(i)) {
+                              <span title="Excede la duración del curso">
+                                <ng-icon name="lucideAlertTriangle" class="size-4 text-danger shrink-0" />
+                              </span>
+                            }
                           </div>
                         }
                       </td>
@@ -239,6 +255,27 @@
                     Hay un exceso de Bs. {{ (totalCuotas() - costoNum()).toFixed(2) }}.
                   }
                 </strong>
+              </span>
+            </div>
+          }
+
+          <!-- Advertencia: cuotas fuera del rango de duración del curso -->
+          @if (hayConflictosFecha() && fechaFinCurso()) {
+            <div class="p-3 bg-danger/10 border border-danger/30 rounded-lg flex items-start gap-2 text-sm text-danger">
+              <ng-icon name="lucideAlertTriangle" class="size-4 shrink-0 mt-0.5" />
+              <span>
+                <strong>{{ cuotasConFechaConflicto().size }} cuota(s) tienen fecha posterior al fin del curso ({{ fechaFinCurso() }}).</strong>
+                Un curso corto no debería tener cuotas más allá de su fecha de finalización. Revisa las cuotas marcadas en rojo.
+              </span>
+            </div>
+          }
+
+          @if (hayConflictosDias() && duracionMinDias() !== null) {
+            <div class="p-3 bg-danger/10 border border-danger/30 rounded-lg flex items-start gap-2 text-sm text-danger">
+              <ng-icon name="lucideAlertTriangle" class="size-4 shrink-0 mt-0.5" />
+              <span>
+                <strong>{{ cuotasConDiasConflicto().size }} cuota(s) superan la duración del curso ({{ duracionMinDias() }} días).</strong>
+                El curso termina en {{ duracionMinDias() }} días desde su inicio, pero hay cuotas programadas después de ese plazo. Revisa las marcadas en rojo.
               </span>
             </div>
           }
