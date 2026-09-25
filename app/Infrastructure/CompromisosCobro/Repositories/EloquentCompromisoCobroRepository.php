@@ -27,10 +27,10 @@ class EloquentCompromisoCobroRepository implements CompromisoCobroRepositoryInte
             ->leftJoin('usuarios as reg', 'reg.id', '=', 'cc.registrado_por')
             ->select([
                 'cc.*',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.ci as estudiante_ci',
                 DB::raw("(SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = cc.id_imp ORDER BY p2.id_us_reg LIMIT 1) as curso_nombre"),
-                DB::raw("NULLIF(TRIM(CONCAT(COALESCE(reg.nombre,''), ' ', COALESCE(reg.apellido,''))), '') as registrado_por_nombre"),
+                DB::raw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(reg.nombre,'')", "' '", "COALESCE(reg.apellido,'')") . ", '') as registrado_por_nombre"),
             ]);
     }
 
@@ -102,7 +102,7 @@ class EloquentCompromisoCobroRepository implements CompromisoCobroRepositoryInte
             ->leftJoin('usuarios as reg', 'reg.id', '=', 'l.registrado_por')
             ->select([
                 'l.*',
-                DB::raw("NULLIF(TRIM(CONCAT(COALESCE(reg.nombre,''), ' ', COALESCE(reg.apellido,''))), '') as registrado_por_nombre"),
+                DB::raw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(reg.nombre,'')", "' '", "COALESCE(reg.apellido,'')") . ", '') as registrado_por_nombre"),
             ])
             ->where('l.compromiso_cobro_id', $compromisoCobroId)
             ->orderByDesc('l.id')

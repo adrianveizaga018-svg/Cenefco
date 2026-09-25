@@ -19,7 +19,7 @@ class EloquentVendedorRepository implements VendedorRepositoryInterface
     {
         $q = Vendedor::query()
             ->select('vendedores.*')
-            ->selectRaw("TRIM(CONCAT(u.nombre, ' ', COALESCE(u.apellido,''))) as usuario_nombre")
+            ->selectRaw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("u.nombre", "' '", "COALESCE(u.apellido,'')") . " as usuario_nombre")
             ->selectRaw('COALESCE(com.comision_estimada, 0) as comision_estimada')
             ->leftJoin('usuarios as u', 'u.id', '=', 'vendedores.usuario_id')
             ->leftJoinSub($this->comisionEstimadaService->comisionEstimadaPorVendedorQuery(), 'com', 'com.vendedor_id', '=', 'vendedores.id');
@@ -57,7 +57,7 @@ class EloquentVendedorRepository implements VendedorRepositoryInterface
     {
         $model = Vendedor::query()
             ->select('vendedores.*')
-            ->selectRaw("TRIM(CONCAT(u.nombre, ' ', COALESCE(u.apellido,''))) as usuario_nombre")
+            ->selectRaw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("u.nombre", "' '", "COALESCE(u.apellido,'')") . " as usuario_nombre")
             ->leftJoin('usuarios as u', 'u.id', '=', 'vendedores.usuario_id')
             ->find($id);
 

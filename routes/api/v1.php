@@ -893,6 +893,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('permiso:planes.editar');
     Route::delete('/planes-academicos/{id}', [\App\Http\Controllers\Api\PlanAcademicoController::class, 'destroy'])
         ->middleware('permiso:planes.eliminar');
+    Route::get('/planes-academicos/{id}/imparticiones', [\App\Http\Controllers\Api\PlanAcademicoController::class, 'imparticiones'])
+        ->middleware('permiso:planes.ver');
 
 
     Route::get('/planes-doc', [\App\Http\Controllers\Api\PlanDocController::class, 'index'])

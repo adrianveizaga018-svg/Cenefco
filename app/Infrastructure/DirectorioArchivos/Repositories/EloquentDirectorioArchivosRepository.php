@@ -46,14 +46,14 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
                 COALESCE(prog.nombre_programa, mat.nombre) as nombre,
                 imp.periodo,
                 imp.gestion,
-                TRIM(CONCAT(COALESCE(doc.appaterno,''), ' ', COALESCE(doc.nombre,''))) as docente,
+                TRIM(COALESCE(doc.appaterno,'') || ' ' || COALESCE(doc.nombre,'')) as docente,
                 cnt.total as participantes_con_archivos
             ");
 
         if ($pagination->query) {
             $search = $pagination->query;
             $q->havingRaw(
-                "COALESCE(prog.nombre_programa, mat.nombre) LIKE ? OR TRIM(CONCAT(COALESCE(doc.appaterno,''), ' ', COALESCE(doc.nombre,''))) LIKE ?",
+                "COALESCE(prog.nombre_programa, mat.nombre) LIKE ? OR TRIM(COALESCE(doc.appaterno,'') || ' ' || COALESCE(doc.nombre,'')) LIKE ?",
                 ["%{$search}%", "%{$search}%"]
             );
         }
@@ -88,7 +88,7 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
                 'ins.id_ins', 'ins.id_us', 'ins.fecha_ins',
                 'u.ci',
                 DB::raw("COALESCE(ins.email, u.email) as email"),
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as nombre_completo"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as nombre_completo"),
                 DB::raw("(SELECT COUNT(*) FROM jsonb_each_text(ins.documentos) AS d(k, v) WHERE v IS NOT NULL AND v <> '') as total_archivos"),
             ]);
 
@@ -130,7 +130,8 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
             ->where('ins.id_ins', $idIns)
             ->select([
                 'ins.id_ins', 'ins.id_us', 'ins.documentos', 'u.ci',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as nombre_completo"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
+                'u.ci as estudiante_ci',
                 DB::raw("COALESCE(prog.nombre_programa, mat.nombre) as curso_nombre"),
             ])
             ->first();

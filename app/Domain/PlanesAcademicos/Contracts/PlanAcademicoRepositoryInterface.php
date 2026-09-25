@@ -8,7 +8,7 @@ use App\Shared\Kernel\DTOs\PaginationDTO;
 interface PlanAcademicoRepositoryInterface
 {
     
-    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idCatplan, ?int $idMat): array;
+    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idCatplan, ?int $idMat, bool $soloValidos = false): array;
 
     public function findById(int $id): PlanAcademicoDTO;
 

@@ -46,6 +46,7 @@ class PlanAcademicoController extends Controller
                 conInactivos: $request->boolean('conInactivos', false),
                 idCatplan:    $request->has('id_catplan') ? $request->integer('id_catplan') : null,
                 idMat:        $request->has('id_mat') ? $request->integer('id_mat') : null,
+                soloValidos:  $request->boolean('solo_validos', false),
             ))
         );
     }
@@ -114,9 +115,30 @@ class PlanAcademicoController extends Controller
         return response()->json($dto);
     }
 
+    /**
+     * Devuelve las imparticiones que tienen este plan habilitado,
+     * con sus fechas de inicio y fin, para validar el calendario de cuotas.
+     */
+    public function imparticiones(int $id): JsonResponse
+    {
+        $imparticiones = DB::table('imparticion_planes as ip')
+            ->join('t_imparte as imp', 'imp.id_imp', '=', 'ip.id_imp')
+            ->where('ip.id_plan', $id)
+            ->where('imp.estado', 1)
+            ->select(
+                'imp.id_imp',
+                'imp.imparte_fecha_inicio',
+                'imp.imparte_fecha_fin',
+                DB::raw("(SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1) as nombre_programa")
+            )
+            ->orderByDesc('imp.id_imp')
+            ->get();
+
+        return response()->json($imparticiones);
+    }
+
     public function destroy(int $id): JsonResponse
     {
-        // Verificar si el plan tiene inscripciones asociadas
         $totalInscripciones = DB::table('t_inscripcion')
             ->where('id_plan', $id)
             ->count();

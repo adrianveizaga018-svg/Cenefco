@@ -11,5 +11,6 @@ final readonly class GetPlanesAcademicosQuery
         public bool $conInactivos = false,
         public ?int $idCatplan = null,
         public ?int $idMat = null,
+        public bool $soloValidos = false, // filtra planes con costo=0 o sin cuotas
     ) {}
 }

@@ -35,7 +35,7 @@ class EloquentListaAprobadosRepository implements ListaAprobadosRepositoryInterf
                 'mat.nombre as curso_nombre',
                 'imp.periodo as curso_periodo',
                 'imp.gestion as curso_gestion',
-                DB::raw("TRIM(CONCAT_WS(' ', NULLIF(us.appaterno,''), NULLIF(us.apmaterno,''), NULLIF(us.nombre,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::concatWsNulls(' ', 'us.appaterno', 'us.apmaterno', 'us.nombre') . " as estudiante_nombre"),
                 'us.appaterno as estudiante_appaterno',
                 'us.apmaterno as estudiante_apmaterno',
                 'us.nombre as estudiante_nombre_pila',

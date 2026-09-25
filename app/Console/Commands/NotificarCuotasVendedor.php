@@ -50,7 +50,7 @@ class NotificarCuotasVendedor extends Command
             ->select([
                 'fp.id_fechapago', 'fp.nro_pago', 'fp.monto_a_pagar', 'fp.fecha_fin',
                 'ins.id_ins',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 DB::raw("COALESCE(prog.nombre_programa, '') as nombre_programa"),
             ]);
     }

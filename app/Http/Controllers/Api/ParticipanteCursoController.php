@@ -209,7 +209,7 @@ class ParticipanteCursoController extends Controller
             ->select([
                 'la.id', 'la.imparte_id', 'la.usuario_id', 'la.condicion',
                 'la.nota_final', 'la.estado_certificado', 'la.comprobante_url', 'la.created_at',
-                DB::raw("TRIM(CONCAT_WS(' ', NULLIF(us.appaterno,''), NULLIF(us.apmaterno,''), NULLIF(us.nombre,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::concatWsNulls(' ', 'us.appaterno', 'us.apmaterno', 'us.nombre') . " as estudiante_nombre"),
                 'us.ci as estudiante_ci',
                 'us.email as estudiante_email',
             ])

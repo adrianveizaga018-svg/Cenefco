@@ -34,7 +34,7 @@ class EloquentImparteRepository implements ImparteRepositoryInterface
                 'i.id_moodle', 'i.estado', 'i.fecha_reg',
                 'm.nombremat as materia_nombre',
                 'm.sigla as materia_sigla',
-                DB::raw("CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,'')) as docente_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as docente_nombre"),
             ]);
 
         if (! $conInactivos) {

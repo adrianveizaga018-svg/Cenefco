@@ -97,7 +97,7 @@ class EstudiantePortalController extends Controller
                 'i.imparte_fecha_inicio',
                 'i.imparte_fecha_fin',
                 'i.horas_academicas',
-                DB::raw("TRIM(CONCAT(COALESCE(p.per_appaterno,''), ' ', COALESCE(p.per_apmaterno,''), ' ', COALESCE(p.per_nombre,''))) as nombre_docente")
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(p.per_appaterno,'')", "' '", "COALESCE(p.per_apmaterno,'')", "' '", "COALESCE(p.per_nombre,'')") . " as nombre_docente")
             )
             ->where('ins.id_us', $idUs)
             ->orderBy('ins.fecha_ins', 'desc')

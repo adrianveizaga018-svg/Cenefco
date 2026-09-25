@@ -61,16 +61,23 @@ class InscripcionController extends Controller
             'sortOrder' => $request->input('sort.order', 'desc'),
         ]);
 
+        $extraFilters = array_filter([
+            'id_vendedor' => $request->filled('id_vendedor') ? (int) $request->get('id_vendedor') : null,
+            'canal_venta' => $request->filled('canal_venta') ? $request->get('canal_venta') : null,
+            'modo_pago'   => $request->filled('modo_pago')   ? $request->get('modo_pago')   : null,
+        ], fn ($v) => $v !== null);
+
         return response()->json(
             $this->getInscripcionesHandler->handle(new GetInscripcionesQuery(
-                pagination:  $pagination,
-                conInactivos: $request->boolean('conInactivos', false),
-                idUs:        $request->filled('id_us') ? (int) $request->get('id_us') : null,
-                idImp:       $request->filled('id_imp') ? (int) $request->get('id_imp') : null,
-                programaId:  $request->filled('programa_id') ? (int) $request->get('programa_id') : null,
-                periodo:     $request->filled('periodo') ? $request->get('periodo') : null,
-                gestion:     $request->filled('gestion') ? $request->get('gestion') : null,
+                pagination:      $pagination,
+                conInactivos:    $request->boolean('conInactivos', false),
+                idUs:            $request->filled('id_us')       ? (int) $request->get('id_us')       : null,
+                idImp:           $request->filled('id_imp')      ? (int) $request->get('id_imp')      : null,
+                programaId:      $request->filled('programa_id') ? (int) $request->get('programa_id') : null,
+                periodo:         $request->filled('periodo')     ? $request->get('periodo')           : null,
+                gestion:         $request->filled('gestion')     ? $request->get('gestion')           : null,
                 idImpPermitidos: $this->vendedorScope->idImpPermitidos(auth()->user()),
+                extraFilters:    $extraFilters,
             ))
         );
     }
@@ -257,7 +264,7 @@ class InscripcionController extends Controller
                 imp.periodo,
                 imp.gestion,
                 imp.paralelo,
-                TRIM(CONCAT(COALESCE(doc.appaterno,''), ' ', COALESCE(doc.nombre,''))) as docente,
+                TRIM(COALESCE(doc.appaterno,'') || ' ' || COALESCE(doc.nombre,'')) as docente,
                 cnt.total_inscritos
             ")
             ->orderByDesc('imp.gestion')
@@ -325,8 +332,8 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'canal',
-            'titulo'    => '¿Por qué canal se inscribió?',
-            'subtitulo' => 'Distribución por canal de venta',
+            'titulo'    => 'Ã‚Â¿Por quÃƒÂ© canal se inscribiÃƒÂ³?',
+            'subtitulo' => 'DistribuciÃƒÂ³n por canal de venta',
             'tipo'      => 'donut',
             'color'     => '#6366f1',
             'datos'     => (clone $base)
@@ -341,7 +348,7 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'estado',
-            'titulo'    => '¿Cuál es el estado de la inscripción?',
+            'titulo'    => 'Ã‚Â¿CuÃƒÂ¡l es el estado de la inscripciÃƒÂ³n?',
             'subtitulo' => 'Activos vs Bajas',
             'tipo'      => 'donut',
             'color'     => '#22c55e',
@@ -356,8 +363,8 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'genero',
-            'titulo'    => '¿Cuál es el género de los inscritos?',
-            'subtitulo' => 'Distribución por género',
+            'titulo'    => 'Ã‚Â¿CuÃƒÂ¡l es el gÃƒÂ©nero de los inscritos?',
+            'subtitulo' => 'DistribuciÃƒÂ³n por gÃƒÂ©nero',
             'tipo'      => 'donut',
             'color'     => '#ec4899',
             'datos'     => (clone $base)
@@ -372,7 +379,7 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'ciudad',
-            'titulo'    => '¿De qué ciudad provienen?',
+            'titulo'    => 'Ã‚Â¿De quÃƒÂ© ciudad provienen?',
             'subtitulo' => 'Top ciudades de origen de los inscritos',
             'tipo'      => 'bar-h',
             'color'     => '#3b82f6',
@@ -389,12 +396,12 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'gestion',
-            'titulo'    => '¿En qué gestión se inscribió?',
-            'subtitulo' => 'Cantidad de inscripciones por año',
+            'titulo'    => 'Ã‚Â¿En quÃƒÂ© gestiÃƒÂ³n se inscribiÃƒÂ³?',
+            'subtitulo' => 'Cantidad de inscripciones por aÃƒÂ±o',
             'tipo'      => 'bar',
             'color'     => '#6366f1',
             'datos'     => (clone $base)
-                ->selectRaw("COALESCE(ins.gestion, 'Sin gestión') as label, COUNT(DISTINCT ins.id_ins) as value")
+                ->selectRaw("COALESCE(ins.gestion, 'Sin gestiÃƒÂ³n') as label, COUNT(DISTINCT ins.id_ins) as value")
                 ->groupBy('ins.gestion')
                 ->orderBy('ins.gestion')
                 ->get()
@@ -405,12 +412,12 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'periodo',
-            'titulo'    => '¿En qué período se inscribió?',
-            'subtitulo' => 'Distribución por período o semestre',
+            'titulo'    => 'Ã‚Â¿En quÃƒÂ© perÃƒÂ­odo se inscribiÃƒÂ³?',
+            'subtitulo' => 'DistribuciÃƒÂ³n por perÃƒÂ­odo o semestre',
             'tipo'      => 'bar',
             'color'     => '#f59e0b',
             'datos'     => (clone $base)
-                ->selectRaw("COALESCE(ins.periodo, 'Sin período') as label, COUNT(DISTINCT ins.id_ins) as value")
+                ->selectRaw("COALESCE(ins.periodo, 'Sin perÃƒÂ­odo') as label, COUNT(DISTINCT ins.id_ins) as value")
                 ->groupBy('ins.periodo')
                 ->orderBy('ins.periodo')
                 ->get()
@@ -421,8 +428,8 @@ class InscripcionController extends Controller
 
         $dimensiones[] = [
             'key'       => 'tipo_estudiante',
-            'titulo'    => '¿Qué tipo de estudiante es?',
-            'subtitulo' => 'Categoría o nivel académico del inscrito',
+            'titulo'    => 'Ã‚Â¿QuÃƒÂ© tipo de estudiante es?',
+            'subtitulo' => 'CategorÃƒÂ­a o nivel acadÃƒÂ©mico del inscrito',
             'tipo'      => 'donut',
             'color'     => '#14b8a6',
             'datos'     => (clone $base)
@@ -441,8 +448,8 @@ class InscripcionController extends Controller
         if (! $idImp) {
             $dimensiones[] = [
                 'key'       => 'programa',
-                'titulo'    => '¿En qué programa o materia?',
-                'subtitulo' => 'Top 10 cursos con más inscripciones',
+                'titulo'    => 'Ã‚Â¿En quÃƒÂ© programa o materia?',
+                'subtitulo' => 'Top 10 cursos con mÃƒÂ¡s inscripciones',
                 'tipo'      => 'bar-h',
                 'color'     => '#8b5cf6',
                 'datos'     => (clone $base)
@@ -466,8 +473,8 @@ class InscripcionController extends Controller
         
         $dimensiones[] = [
             'key'       => 'mes',
-            'titulo'    => '¿En qué mes se realizaron las inscripciones?',
-            'subtitulo' => 'Distribución mensual de inscripciones',
+            'titulo'    => 'Ã‚Â¿En quÃƒÂ© mes se realizaron las inscripciones?',
+            'subtitulo' => 'DistribuciÃƒÂ³n mensual de inscripciones',
             'tipo'      => 'bar',
             'color'     => '#ef4444',
             'datos'     => (clone $base)
@@ -504,7 +511,7 @@ class InscripcionController extends Controller
                     imp.id_imp,
                     COALESCE(prog.nombre_programa, mat.nombre) as nombre,
                     imp.periodo, imp.gestion, imp.paralelo,
-                    TRIM(CONCAT(COALESCE(doc.appaterno,''),' ',COALESCE(doc.nombre,''))) as docente
+                    TRIM(COALESCE(doc.appaterno,'') || ' ' || COALESCE(doc.nombre,'')) as docente
                 ")
                 ->first();
         }
@@ -594,7 +601,7 @@ class InscripcionController extends Controller
             $dimensiones[] = [
                 'key'       => 'form_' . $nombreCampo,
                 'titulo'    => $campo['etiqueta'] ?? $nombreCampo,
-                'subtitulo' => 'Respuestas del formulario de inscripción',
+                'subtitulo' => 'Respuestas del formulario de inscripciÃƒÂ³n',
                 'tipo'      => $esCorto ? 'donut' : 'bar-h',
                 'color'     => $colores[$i % count($colores)],
                 'datos'     => collect($conteo)

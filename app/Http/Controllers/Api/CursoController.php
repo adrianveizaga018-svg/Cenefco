@@ -270,18 +270,8 @@ class CursoController extends Controller
             planes:                   $request->input('planes'),
         ));
 
-        // Auto-crear impartición base para que el curso aparezca en Caja de inmediato
-        $idImp = (DB::table('t_imparte')->max('id_imp') ?? 0) + 1;
-        DB::table('t_imparte')->insert([
-            'id_imp'               => $idImp,
-            'id_mat'               => $dto->id_programa,
-            'nombre'               => 'Versión 1',
-            'periodo'              => null,
-            'gestion'              => now()->year,
-            'imparte_fecha_inicio' => $request->inicio_actividades ?? null,
-            'imparte_fecha_fin'    => $request->finalizacion_actividades ?? null,
-            'estado'               => 1,
-        ]);
+        // La Versión 1 se crea automáticamente en CreateCursoHandler::crearVersionInicial()
+        // No duplicar la inserción en t_imparte aquí.
 
         return response()->json($dto, 201);
     }

@@ -18,6 +18,7 @@ class GetPlanesAcademicosQueryHandler
             $query->conInactivos,
             $query->idCatplan,
             $query->idMat,
+            $query->soloValidos,
         );
     }
 }

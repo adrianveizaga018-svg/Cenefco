@@ -43,7 +43,7 @@ class EloquentSueldoDocenteRepository implements SueldoDocenteRepositoryInterfac
                 's.id', 's.id_us', 's.id_imp', 's.id_programa', 's.concepto', 's.periodo', 's.gestion',
                 's.monto_total', 's.observacion', 's.archivo_pdf', 's.estado', 's.created_at',
                 DB::raw("COALESCE(
-                    NULLIF(TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''), ' ', COALESCE(u.apmaterno,''))), ''),
+                    NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')", "' '", "COALESCE(u.apmaterno,'')") . ", ''),
                     dp.nombre_completo
                 ) as docente_nombre"),
                 'u.ci as docente_ci',

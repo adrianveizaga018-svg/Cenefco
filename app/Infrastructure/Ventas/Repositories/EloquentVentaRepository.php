@@ -56,14 +56,14 @@ class EloquentVentaRepository implements VentaRepositoryInterface
                 'ins.fecha_reg',
                 'ins.canal_venta',
                 'ins.id_vendedor',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''), ' ', COALESCE(u.apmaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')", "' '", "COALESCE(u.apmaterno,'')") . " as estudiante_nombre"),
                 'u.ci   as estudiante_ci',
                 'u.celular as estudiante_celular',
                 'u.email   as estudiante_email',
                 'prog.id_programa',
                 DB::raw('COALESCE(prog.nombre_programa, imp.titulo_personalizado, mat.nombre, mat.nombremat) as nombre_programa'),
                 'prog.slug as programa_slug',
-                DB::raw("TRIM(CONCAT(COALESCE(vend.nombre,''), ' ', COALESCE(vend.appaterno,''))) as vendedor_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(vend.nombre,'')", "' '", "COALESCE(vend.appaterno,'')") . " as vendedor_nombre"),
                 DB::raw('COALESCE(plan_agg.total_a_pagar, 0) as total_a_pagar'),
                 DB::raw($this->totalPagadoExpr() . ' as total_pagado'),
                 DB::raw('(
@@ -322,8 +322,8 @@ class EloquentVentaRepository implements VentaRepositoryInterface
         $nombres = DB::table('t_usuario as vend')
             ->whereIn('vend.id_us', $filas->pluck('id_vendedor')->filter()->all())
             ->whereRaw('vend.id_us_reg = (SELECT MIN(v2.id_us_reg) FROM t_usuario v2 WHERE v2.id_us = vend.id_us)')
-            ->selectRaw("vend.id_us, TRIM(CONCAT(COALESCE(vend.nombre,''), ' ', COALESCE(vend.appaterno,''))) as nombre")
-            ->pluck('nombre', 'id_us');
+            ->selectRaw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(vend.nombre,'')", "' '", "COALESCE(vend.appaterno,'')") . " as vend_nombre, vend.id_us as vend_id")
+            ->pluck('vend_nombre', 'vend_id');
 
         $porVendedor = $filas->map(fn ($r) => [
             'id_vendedor'     => $r->id_vendedor,

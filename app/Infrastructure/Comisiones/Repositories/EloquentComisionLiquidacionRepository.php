@@ -18,7 +18,7 @@ class EloquentComisionLiquidacionRepository implements ComisionLiquidacionReposi
             ->leftJoin('vendedores as v', 'v.id', '=', 'comisiones_liquidacion.vendedor_id')
             ->select([
                 'comisiones_liquidacion.*',
-                DB::raw("TRIM(CONCAT(v.nombre, ' ', v.apellido)) as vendedor_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("v.nombre", "' '", "v.apellido") . " as vendedor_nombre"),
             ]);
 
         if (! empty($filters['vendedor_id'])) {

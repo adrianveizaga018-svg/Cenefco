@@ -71,7 +71,7 @@ class EloquentEnvioCertificadoRepository implements EnvioCertificadoRepositoryIn
                 ec.id as id_documento,
                 ec.fecha_envio,
                 'Certificado' as tipo_documento,
-                TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as participante_nombre,
+                TRIM(COALESCE(u.nombre,'') || ' ' || COALESCE(u.appaterno,'')) as participante_nombre,
                 u.ci as participante_ci,
                 ec.ciudad_destino as participante_ciudad,
                 COALESCE((SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1), m.nombremat) as curso_nombre

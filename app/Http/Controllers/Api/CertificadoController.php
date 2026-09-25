@@ -292,7 +292,7 @@ class CertificadoController extends Controller
             })
             ->select(
                 'ins.id_ins', 'ins.id_us', 'ins.id_plan',
-                DB::raw("TRIM(CONCAT(COALESCE(u.appaterno,''), ' ', COALESCE(u.nombre,''))) as nombre")
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.appaterno,'')", "' '", "COALESCE(u.nombre,'')") . " as nombre")
             )
             ->where('ins.id_imp', $idImp)
             ->where('ins.estado', 1)

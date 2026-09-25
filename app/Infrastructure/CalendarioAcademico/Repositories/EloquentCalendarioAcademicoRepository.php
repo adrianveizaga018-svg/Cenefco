@@ -22,7 +22,7 @@ class EloquentCalendarioAcademicoRepository implements CalendarioAcademicoReposi
         $q = CalendarioAcademico::query()
             ->select('web_calendario_academico.*')
             ->selectRaw('prog.nombre_programa')
-            ->selectRaw("NULLIF(TRIM(CONCAT(vend.nombre, ' ', vend.apellido)), '') as vendedor_nombre")
+            ->selectRaw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("vend.nombre", "' '", "vend.apellido") . ", '') as vendedor_nombre")
             ->leftJoin('t_programa as prog', 'prog.id_programa', '=', 'web_calendario_academico.programa_id')
             ->leftJoin('vendedores as vend', 'vend.id', '=', 'web_calendario_academico.vendedor_id')
             ->orderBy('web_calendario_academico.fecha_inicio', 'asc');
@@ -94,7 +94,7 @@ class EloquentCalendarioAcademicoRepository implements CalendarioAcademicoReposi
         $model = CalendarioAcademico::query()
             ->select('web_calendario_academico.*')
             ->selectRaw('prog.nombre_programa')
-            ->selectRaw("NULLIF(TRIM(CONCAT(vend.nombre, ' ', vend.apellido)), '') as vendedor_nombre")
+            ->selectRaw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("vend.nombre", "' '", "vend.apellido") . ", '') as vendedor_nombre")
             ->leftJoin('t_programa as prog', 'prog.id_programa', '=', 'web_calendario_academico.programa_id')
             ->leftJoin('vendedores as vend', 'vend.id', '=', 'web_calendario_academico.vendedor_id')
             ->where('web_calendario_academico.id', $id)

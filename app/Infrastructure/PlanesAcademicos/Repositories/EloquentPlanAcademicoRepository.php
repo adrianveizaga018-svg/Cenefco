@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterface
 {
-    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idCatplan, ?int $idMat): array
+    public function paginate(PaginationDTO $pagination, bool $conInactivos, ?int $idCatplan, ?int $idMat, bool $soloValidos = false): array
     {
         $q = PlanAcademico::query();
 
@@ -37,6 +37,28 @@ class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterfac
                 ->where('estado', 1)
                 ->pluck('id_plan');
             $q->whereIn('id_plan', $planIds);
+        }
+
+        // Filtrar planes incompletos: sin costo, sin cuotas definidas o con nro_cuotas = 0
+        if ($soloValidos) {
+            $q->where(fn ($sq) => $sq
+                ->whereNotNull('costo')
+                ->where('costo', '>', 0)
+            );
+            $q->where(fn ($sq) => $sq
+                ->whereNull('nro_cuotas')
+                ->orWhere('nro_cuotas', '>', 0)
+            );
+            // Planes de 1 cuota (contado) son válidos aunque no tengan filas en t_fechapago
+            // Planes de más de 1 cuota deben tener al menos 1 fila en t_fechapago
+            $q->where(function ($sq) {
+                $sq->where('nro_cuotas', '<=', 1)
+                   ->orWhereExists(function ($ex) {
+                       $ex->from('t_fechapago')
+                          ->whereColumn('t_fechapago.id_plan', 't_plan.id_plan')
+                          ->where('t_fechapago.estado', 1);
+                   });
+            });
         }
 
         $total = $q->count();

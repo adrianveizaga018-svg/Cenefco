@@ -21,7 +21,7 @@ class EloquentPagoRepository implements PagoRepositoryInterface
             ->leftJoin('tipos_banco as tb', 'tb.id', '=', 't_pago.tipo_banco_id')
             ->select([
                 't_pago.*',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.ci as estudiante_ci',
                 'tb.nombre as tipo_banco_nombre',
             ]);

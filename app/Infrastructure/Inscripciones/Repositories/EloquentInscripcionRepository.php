@@ -43,46 +43,38 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
                 $j->on('imp.id_us', '=', 'doc.id_us')
                   ->whereRaw('doc.id_us_reg = (SELECT MIN(d2.id_us_reg) FROM t_usuario d2 WHERE d2.id_us = doc.id_us)');
             })
+            // JOIN a t_programa (evita 3 subqueries correlacionados por fila)
+            ->leftJoin(
+                DB::raw('(SELECT id_imp, MIN(id_programa) as id_programa, MIN(nombre_programa) as nombre_programa, MIN(slug) as slug, MIN(costo_monto) as costo_monto FROM t_programa GROUP BY id_imp) as prog'),
+                'prog.id_imp', '=', 'ins.id_imp'
+            )
+            // JOIN agregado para pagos (evita 2 subqueries correlacionados por fila)
+            ->leftJoin(
+                DB::raw('(SELECT p.id_ins, COUNT(*) as cuotas_pg, COALESCE(SUM(CAST(p.monto_pagado AS DECIMAL(12,2))),0) as total_pg FROM t_pago p WHERE p.estado = 1 AND p.id_ins IS NOT NULL GROUP BY p.id_ins) as pag_agg'),
+                'pag_agg.id_ins', '=', 'ins.id_ins'
+            )
+            // LEFT JOIN para participante (evita EXISTS correlacionado por fila)
+            ->leftJoin('t_lista_aprobados as la', function ($j) {
+                $j->on('la.imparte_id', '=', 'ins.id_imp')
+                  ->on('la.usuario_id', '=', 'ins.id_us');
+            })
             ->select([
                 'ins.id_ins', 'ins.id_us', 'ins.id_imp', 'ins.fecha_ins',
                 'ins.periodo', 'ins.gestion', 'ins.observacion_ins', 'ins.estado',
-                'ins.canal_venta', 'ins.id_vendedor', DB::raw("TRIM(CONCAT(COALESCE(ven.nombre,''), ' ', COALESCE(ven.appaterno,''))) as vendedor_nombre"),
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                'ins.canal_venta', 'ins.id_vendedor',
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(ven.nombre,'')", "' '", "COALESCE(ven.appaterno,'')") . " as vendedor_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.ci as estudiante_ci',
                 'u.email as estudiante_email',
                 'u.celular as estudiante_celular',
-                DB::raw("COALESCE((SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1), m.nombremat) as materia_nombre"),
-                DB::raw("COALESCE((SELECT p2.slug FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1), m.sigla) as materia_sigla"),
+                DB::raw("COALESCE(prog.nombre_programa, m.nombremat) as materia_nombre"),
+                DB::raw("COALESCE(prog.slug, m.sigla) as materia_sigla"),
                 'imp.paralelo',
-                DB::raw("TRIM(CONCAT(COALESCE(doc.nombre,''), ' ', COALESCE(doc.appaterno,''))) as docente_nombre"),
-                
-                
-                
-                
-                
-                DB::raw("CASE WHEN ins.id_plan IS NULL THEN
-                    (SELECT p2.costo_monto FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1)
-                    ELSE NULL END as curso_costo_monto"),
-                
-                
-                
-                
-                
-                DB::raw("(SELECT COUNT(*) FROM t_pago p WHERE p.id_us = ins.id_us AND p.estado = 1 AND (
-                    p.id_ins = ins.id_ins
-                    OR (p.id_ins IS NULL AND (
-                        p.id_fechapago IN (SELECT fp.id_fechapago FROM t_fechapago fp WHERE fp.id_plan = ins.id_plan)
-                        OR (p.pago_extra = 1 AND p.id_fechapago IS NULL AND EXISTS (SELECT 1 FROM t_inscripcion ins2 WHERE ins2.id_us = ins.id_us AND ins2.id_imp = ins.id_imp AND ins2.id_ins = ins.id_ins))
-                    ))
-                )) as cuotas_pagadas"),
-                DB::raw("(SELECT COALESCE(SUM(CAST(p2.monto_pagado AS DECIMAL(12,2))), 0) FROM t_pago p2 WHERE p2.id_us = ins.id_us AND p2.estado = 1 AND (
-                    p2.id_ins = ins.id_ins
-                    OR (p2.id_ins IS NULL AND (
-                        p2.id_fechapago IN (SELECT fp2.id_fechapago FROM t_fechapago fp2 WHERE fp2.id_plan = ins.id_plan)
-                        OR (p2.pago_extra = 1 AND p2.id_fechapago IS NULL AND EXISTS (SELECT 1 FROM t_inscripcion ins2 WHERE ins2.id_us = ins.id_us AND ins2.id_imp = ins.id_imp AND ins2.id_ins = ins.id_ins))
-                    ))
-                )) as total_pagado"),
-                DB::raw("EXISTS (SELECT 1 FROM t_lista_aprobados la WHERE la.imparte_id = ins.id_imp AND la.usuario_id = ins.id_us) as es_participante"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(doc.nombre,'')", "' '", "COALESCE(doc.appaterno,'')") . " as docente_nombre"),
+                DB::raw("CASE WHEN ins.id_plan IS NULL THEN prog.costo_monto ELSE NULL END as curso_costo_monto"),
+                DB::raw("COALESCE(pag_agg.cuotas_pg, 0) as cuotas_pagadas"),
+                DB::raw("COALESCE(pag_agg.total_pg, 0) as total_pagado"),
+                DB::raw("CASE WHEN la.id IS NOT NULL THEN 1 ELSE 0 END as es_participante"),
             ]);
 
         if (! $conInactivos) {
@@ -200,7 +192,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
             })
             ->select([
                 'ins.*',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.appaterno as est_appaterno', 'u.apmaterno as est_apmaterno',
                 'u.ci as est_ci', 'u.email as est_email', 'u.celular as est_celular',
                 'u.ciudad as est_ciudad', 'u.titulo_academico as est_titulo', 'u.tipoestudiante',
@@ -211,7 +203,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
                 'm.carga_horaria as materia_horas', 'm.semestre as materia_semestre',
                 'imp.paralelo', 'imp.cupo', 'imp.nro_resolucion_hcu',
                 'imp.gestion as imp_gestion', 'imp.id_mat',
-                DB::raw("TRIM(CONCAT(COALESCE(doc.nombre,''), ' ', COALESCE(doc.appaterno,''))) as docente_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(doc.nombre,'')", "' '", "COALESCE(doc.appaterno,'')") . " as docente_nombre"),
                 'doc.titulo_academico as docente_titulo', 'doc.email as docente_email',
                 DB::raw("(SELECT p2.costo_monto FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1) as curso_costo_monto"),
             ])
@@ -247,7 +239,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
                 'p.metodo_pago', 'p.id_us_cajero', 'p.comprobante_archivo', 'p.estado_verificacion',
                 'p.nota_verificacion', 'p.monto_descuento_extra as monto_descuento', 'p.motivo_descuento',
                 'p.tipo_banco_id', 'tb.nombre as tipo_banco_nombre',
-                DB::raw("NULLIF(TRIM(CONCAT(COALESCE(cj.nombre,''), ' ', COALESCE(cj.apellido,''))), '') as cajero_nombre"),
+                DB::raw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(cj.nombre,'')", "' '", "COALESCE(cj.apellido,'')") . ", '') as cajero_nombre"),
                 'fp.id_fechapago', 'fp.nro_pago as cuota_nro', 'fp.monto_a_pagar as cuota_monto',
                 'fp.tipo_tramite', 'fp.fecha_inicio as cuota_fecha_inicio', 'fp.fecha_fin as cuota_fecha_fin',
                 'pl.id_plan', 'pl.titulo as plan_titulo', 'pl.convenio as plan_convenio',
@@ -614,3 +606,4 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
         $ins->delete();
     }
 }
+

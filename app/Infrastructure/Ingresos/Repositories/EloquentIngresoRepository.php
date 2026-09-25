@@ -38,7 +38,7 @@ class EloquentIngresoRepository implements IngresoRepositoryInterface
                 'p.fecha_deposito',
                 'p.observacion_pago',
                 'p.estado',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.ci as estudiante_ci',
                 'fp.nro_pago as cuota_nro',
                 'fp.tipo_tramite',

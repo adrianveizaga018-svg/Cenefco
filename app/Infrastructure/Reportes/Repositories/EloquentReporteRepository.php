@@ -104,7 +104,7 @@ class EloquentReporteRepository implements ReporteRepositoryInterface
             })
             ->select([
                 'ins.id_ins', 'ins.id_us', 'ins.id_imp', 'ins.id_plan', 'ins.periodo', 'ins.gestion',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.appaterno,''))) as estudiante_nombre"),
+                DB::raw(\App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.appaterno,'')") . " as estudiante_nombre"),
                 'u.ci as estudiante_ci', 'u.email as estudiante_email', 'u.celular as estudiante_celular',
                 DB::raw("COALESCE((SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1), m.nombremat) as curso_nombre"),
 

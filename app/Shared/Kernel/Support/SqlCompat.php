@@ -67,4 +67,19 @@ final class SqlCompat
         if (self::isSqlite()) return "CAST(strftime('%H', {$column}) AS INTEGER)";
         return self::isPgsql() ? "CAST(EXTRACT(HOUR FROM {$column}) AS INTEGER)" : "HOUR({$column})";
     }
+
+    /**
+     * Cross-DB equivalente a CONCAT_WS(' ', NULLIF(a,''), NULLIF(b,''), ...).
+     * En SQLite usa || con NULLIF. En MySQL/PgSQL usa CONCAT_WS.
+     */
+    public static function concatWsNulls(string $separator, string ...$columns): string
+    {
+        if (self::isSqlite()) {
+            // SQLite: TRIM(col1 || ' ' || col2 ...) — filtra nulos con NULLIF
+            $parts = array_map(fn($c) => "COALESCE(NULLIF({$c},''), '')", $columns);
+            return 'TRIM(' . implode(" || '{$separator}' || ", $parts) . ')';
+        }
+        $nullified = array_map(fn($c) => "NULLIF({$c},'')", $columns);
+        return "TRIM(CONCAT_WS('{$separator}', " . implode(', ', $nullified) . "))";
+    }
 }
