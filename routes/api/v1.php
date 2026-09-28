@@ -852,7 +852,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     Route::get('/envios-certificado',        [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'index'])
         ->middleware('permiso:inscripciones.ver');
+    Route::get('/envios-certificado/dashboard', [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'dashboard'])
+        ->middleware('permiso:inscripciones.ver');
+    Route::get('/envios-certificado/autocomplete', [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'autocomplete'])
+        ->middleware('permiso:inscripciones.ver');
     Route::post('/envios-certificado',       [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'store'])
+        ->middleware('permiso:inscripciones.editar');
+    Route::put('/envios-certificado/{id}',   [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'update'])
         ->middleware('permiso:inscripciones.editar');
     Route::delete('/envios-certificado/{id}', [\App\Http\Controllers\Api\EnvioCertificadoController::class, 'destroy'])
         ->middleware('permiso:inscripciones.editar');

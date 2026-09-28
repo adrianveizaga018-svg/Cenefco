@@ -6,6 +6,7 @@ final readonly class CreateEnvioCertificadoCommand
 {
     public function __construct(
         public int     $id_ins,
+        public ?string $departamento,
         public string  $ciudad_destino,
         public string  $fecha_envio,
         public string  $imagen_guia,
