@@ -59,7 +59,7 @@ export class VersionImparticionForm implements OnInit {
     gestion: [new Date().getFullYear(), Validators.required],
     imparte_fecha_inicio: ['', Validators.required],
     imparte_fecha_fin: ['', Validators.required],
-    inicio_inscripciones: [''],
+    inicio_inscripciones: ['', Validators.required],
   }, { validators: fechasVersionValidator });
 
   ngOnInit(): void {

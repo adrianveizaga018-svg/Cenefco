@@ -28,5 +28,10 @@ export const DASHBOARDS_ROUTES: Routes = [
         path: 'cobranzas/dashboard',
         loadComponent: () => import('../../cobranzas/presentation/dashboard/dashboard').then(m => m.Dashboard),
         data: { title: 'Dashboard de Cobranzas' }
+    },
+    {
+        path: 'envios/dashboard',
+        loadComponent: () => import('../../envios-certificado/presentation/dashboard-envios/dashboard-envios').then(m => m.DashboardEnvios),
+        data: { title: 'Dashboard de Envíos' }
     }
 ]

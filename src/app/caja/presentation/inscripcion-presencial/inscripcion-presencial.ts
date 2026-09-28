@@ -6,6 +6,8 @@ import Swal from 'sweetalert2';
 import { CajaService, CajaEstudiante, CajaPrograma, CajaImparticion, CajaPlan, CajaBanco, CajaCuotaPlan } from '../../application/services/caja.service';
 import { AuthService } from '../../../auth/application/services/auth.service';
 import { SettingsService } from '../../../common/application/services/settings.service';
+import { EnvioCertificadoService } from '../../../envios-certificado/application/services/envio-certificado.service';
+import { DEPARTAMENTOS_BOLIVIA } from '../../../envios-certificado/domain/models/envio-certificado.model';
 
 @Component({
   selector: 'app-inscripcion-presencial',
@@ -17,10 +19,27 @@ export default class InscripcionPresencialComponent implements OnInit {
   private fb       = inject(FormBuilder);
   private cajaSvc  = inject(CajaService);
   private settings = inject(SettingsService);
+  private envioSvc = inject(EnvioCertificadoService);
   public  authSvc  = inject(AuthService);
 
-  siteLogo  = signal<string | null>(null);
+  siteLogo   = signal<string | null>(null);
   siteNombre = signal<string>('CENEFCO');
+
+  // ── Sección de Envío a provincia ─────────────────────────────────────────
+  readonly DEPARTAMENTOS = DEPARTAMENTOS_BOLIVIA;
+
+  requiereEnvio       = signal(false);
+  envioDepartamento   = signal<string>('');
+  envioCiudad         = signal<string>('');
+  sugerenciasCiudad   = signal<string[]>([]);
+  buscandoSugerencias = signal(false);
+  mostrarSugerencias  = signal(false);
+
+  /** Valida que si requiereEnvio está activo, ambos campos estén completos */
+  envioValido = computed(() =>
+    !this.requiereEnvio() ||
+    (this.envioDepartamento().trim() !== '' && this.envioCiudad().trim() !== '')
+  );
 
   pasoActual = signal(1); // 1: Estudiante, 2: Programa, 3: Pago, 4: Confirmacion
   isSubmitting = signal(false);
@@ -29,16 +48,17 @@ export default class InscripcionPresencialComponent implements OnInit {
   searchCi = signal('');
   isSearchingCi = signal(false);
   estudianteEncontrado = signal<CajaEstudiante | null>(null);
+  haBuscado = signal(false); // true solo después de hacer una búsqueda
   
   formEstudiante: FormGroup = this.fb.group({
     id_us: [null],
     nombre: ['', Validators.required],
-    apellido_paterno: [''],
+    apellido_paterno: ['', Validators.required],
     apellido_materno: [''],
     ci: ['', Validators.required],
     expedido: [null],
-    celular: [''],
-    email: ['', [Validators.email]],
+    celular: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
     genero: [2] // 1: Fem, 2: Masc
   });
 
@@ -178,6 +198,7 @@ Titular: ${banco.titular || '-'}`;
     this.cajaSvc.buscarEstudiante(ci).subscribe({
       next: (est) => {
         this.estudianteEncontrado.set(est);
+        this.haBuscado.set(true);
         if (est) {
           this.formEstudiante.patchValue({
             id_us: est.id_us,
@@ -201,12 +222,18 @@ Titular: ${banco.titular || '-'}`;
 
   nuevoEstudiante() {
     this.estudianteEncontrado.set(null);
+    this.haBuscado.set(false);
     this.formEstudiante.reset({ genero: 2 });
     this.searchCi.set('');
   }
 
   irPaso2() {
     if (this.formEstudiante.valid) {
+      // Validar sección de envío antes de avanzar
+      if (this.requiereEnvio() && !this.envioValido()) {
+        Swal.fire('Atención', 'Si marcas envío a provincia, debes seleccionar el departamento y escribir la ciudad/provincia de destino.', 'warning');
+        return;
+      }
       const est = this.estudianteEncontrado();
       if (est && this.formEstudiante.dirty) {
         Swal.fire({
@@ -319,18 +346,31 @@ Titular: ${banco.titular || '-'}`;
     this.pasoActual.set(3);
   }
 
-  // --- MÉTODOS PASO 3 ---
+  // ── Autocomplete de ciudades ─────────────────────────────────────────────
   comprobanteFile = signal<File | null>(null);
 
   onFileChange(event: any) {
     const file = event.target.files[0];
-    if (file) {
-      this.comprobanteFile.set(file);
-    } else {
-      this.comprobanteFile.set(null);
-    }
+    if (file) { this.comprobanteFile.set(file); } else { this.comprobanteFile.set(null); }
   }
 
+  onCiudadInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.envioCiudad.set(val);
+    if (val.length < 2) { this.sugerenciasCiudad.set([]); this.mostrarSugerencias.set(false); return; }
+    this.buscandoSugerencias.set(true);
+    this.envioSvc.autocomplete(val, this.envioDepartamento() || undefined).subscribe({
+      next: s => { this.sugerenciasCiudad.set(s); this.mostrarSugerencias.set(s.length > 0); this.buscandoSugerencias.set(false); },
+      error: () => this.buscandoSugerencias.set(false),
+    });
+  }
+
+  seleccionarCiudad(ciudad: string): void {
+    this.envioCiudad.set(ciudad);
+    this.mostrarSugerencias.set(false);
+  }
+
+  // ── Finalizar inscripción ─────────────────────────────────────────────────
   finalizarInscripcion() {
     if (this.formPago.invalid) {
       this.formPago.markAllAsTouched();
@@ -351,6 +391,17 @@ Titular: ${banco.titular || '-'}`;
       next: (res) => {
         this.resultado.set(res);
         this.isSubmitting.set(false);
+
+        // Si requiere envío, crear el registro de envío con el id_ins recién generado
+        if (this.requiereEnvio() && res.id_ins && this.envioDepartamento() && this.envioCiudad()) {
+          this.envioSvc.create({
+            id_ins:         res.id_ins,
+            departamento:   this.envioDepartamento(),
+            ciudad_destino: this.envioCiudad(),
+            fecha_envio:    new Date().toISOString().split('T')[0],
+          }).subscribe({ error: () => {} }); // silencioso — no bloquea el flujo principal
+        }
+
         this.pasoActual.set(4);
       },
       error: (err) => {
@@ -379,6 +430,10 @@ Titular: ${banco.titular || '-'}`;
     this.cuotasPlan.set([]);
     this.cuotaSugerida.set(null);
     this.modoCuotas.set('fecha');
+    this.requiereEnvio.set(false);
+    this.envioDepartamento.set('');
+    this.envioCiudad.set('');
+    this.sugerenciasCiudad.set([]);
     this.formPago.reset({
       metodo_pago: 'deposito',
       fecha_deposito: new Date().toISOString().split('T')[0]

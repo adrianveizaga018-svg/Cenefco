@@ -278,16 +278,25 @@
             <div class="card-body">
               <div class="grid sm:grid-cols-3 grid-cols-1 gap-4">
                 <div>
-                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Actividades</label>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Actividades <span class="text-danger">*</span></label>
                   <input type="date" class="form-input" formControlName="inicio_actividades">
+                  @if (form.get('inicio_actividades')?.invalid && form.get('inicio_actividades')?.touched) {
+                    <p class="mt-1 text-danger text-xs">La fecha es requerida.</p>
+                  }
                 </div>
                 <div>
-                  <label class="block mb-1.5 text-sm font-medium text-default-800">Finalización</label>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Finalización <span class="text-danger">*</span></label>
                   <input type="date" class="form-input" formControlName="finalizacion_actividades">
+                  @if (form.get('finalizacion_actividades')?.invalid && form.get('finalizacion_actividades')?.touched) {
+                    <p class="mt-1 text-danger text-xs">La fecha es requerida.</p>
+                  }
                 </div>
                 <div>
-                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Inscripciones</label>
+                  <label class="block mb-1.5 text-sm font-medium text-default-800">Inicio de Inscripciones <span class="text-danger">*</span></label>
                   <input type="date" class="form-input" formControlName="inicio_inscripciones">
+                  @if (form.get('inicio_inscripciones')?.invalid && form.get('inicio_inscripciones')?.touched) {
+                    <p class="mt-1 text-danger text-xs">La fecha es requerida.</p>
+                  }
                 </div>
               </div>
             @if (form.errors?.['inscripcionTardia']) {
@@ -1247,6 +1256,19 @@
                   (click)="abrirModalImportar()">
                   <ng-icon name="lucideFileSpreadsheet" class="size-3.5" />
                   Importar por Excel
+                </button>
+                <button type="button"
+                  class="btn btn-sm bg-primary text-white gap-1.5 shrink-0 shadow-sm shadow-primary/30"
+                  [disabled]="generandoCertificados()"
+                  (click)="emitirCertificados()"
+                  title="Emitir certificados para estudiantes con pago completo">
+                  @if (generandoCertificados()) {
+                    <ng-icon name="lucideLoader" class="size-3.5 animate-spin" />
+                    Generando...
+                  } @else {
+                    <ng-icon name="lucideAward" class="size-3.5" />
+                    Emitir Certificados
+                  }
                 </button>
               </div>
             </div>

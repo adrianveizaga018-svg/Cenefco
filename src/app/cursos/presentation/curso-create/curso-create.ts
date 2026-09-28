@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -112,9 +112,9 @@ export class CursoCreate {
     url_whatsapp:             [''],
     url_whatsapp2:            [''],
     imagenes:                 [[] as string[]],
-    inicio_actividades:       [''],
-    finalizacion_actividades: [''],
-    inicio_inscripciones:     [''],
+    inicio_actividades:       ['', Validators.required],
+    finalizacion_actividades: ['', Validators.required],
+    inicio_inscripciones:     ['', Validators.required],
     mes_facturacion:          [''],
     tipo_honorario:           [null as string | null],
     id_imp:                   [null as number | null],

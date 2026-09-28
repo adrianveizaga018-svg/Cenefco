@@ -170,6 +170,36 @@ export class PlanCreate {
 
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+
+    const cuotas = this.cuotas();
+    if (this.nroCuotasNum() > 1) {
+      let suma = 0;
+      for (const q of cuotas) {
+        if (!q.descripcion || !q.descripcion.trim()) {
+          this.toast.warning('Cuotas incompletas', `La cuota #${q.nro} no tiene descripción.`);
+          return;
+        }
+        if (this.modoCuotas() === 'fecha' && !q.fecha_vencimiento) {
+          this.toast.warning('Cuotas incompletas', `La cuota #${q.nro} requiere una fecha de cobro.`);
+          return;
+        }
+        if (this.modoCuotas() === 'dias' && (q.dias_desde_inscripcion === null || q.dias_desde_inscripcion === undefined || q.dias_desde_inscripcion.toString() === '')) {
+          this.toast.warning('Cuotas incompletas', `La cuota #${q.nro} requiere especificar los días.`);
+          return;
+        }
+        if (!q.monto || q.monto <= 0) {
+          this.toast.warning('Cuotas incompletas', `La cuota #${q.nro} debe tener un monto válido.`);
+          return;
+        }
+        suma += q.monto;
+      }
+      const totalCost = this.costoNum();
+      if (Math.abs(suma - totalCost) > 0.05) {
+        this.toast.warning('Montos inválidos', `La suma de las cuotas (Bs. ${suma.toFixed(2)}) no coincide con el costo total (Bs. ${totalCost}).`);
+        return;
+      }
+    }
+
     this.submitting.set(true);
 
     const formVals = this.form.value;

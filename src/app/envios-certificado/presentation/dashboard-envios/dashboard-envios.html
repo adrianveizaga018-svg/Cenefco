@@ -1,0 +1,288 @@
+<main>
+  <app-page-title title="Dashboard de Envíos" subtitle="Inscripciones y Pagos" />
+
+  <!-- ── KPIs ──────────────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <button type="button"
+            class="card p-5 border-t-4 border-t-warning text-left hover:shadow-md transition-shadow"
+            (click)="filtros.patchValue({estado:'pendiente'}); aplicarFiltros()">
+      <p class="text-xs font-semibold text-default-500 uppercase tracking-wide mb-1">Pendientes de enviar</p>
+      <p class="text-3xl font-black text-warning">{{ totalRegistros() }}</p>
+      <p class="text-xs text-default-400 mt-1">Haz clic para filtrar</p>
+    </button>
+
+    <button type="button"
+            class="card p-5 border-t-4 border-t-primary text-left hover:shadow-md transition-shadow"
+            (click)="filtros.patchValue({estado:'enviado'}); aplicarFiltros()">
+      <p class="text-xs font-semibold text-default-500 uppercase tracking-wide mb-1">Enviados (en tránsito)</p>
+      <p class="text-3xl font-black text-primary">{{ resumen().enviados }}</p>
+      <p class="text-xs text-default-400 mt-1">Haz clic para filtrar</p>
+    </button>
+
+    <button type="button"
+            class="card p-5 border-t-4 border-t-success text-left hover:shadow-md transition-shadow"
+            (click)="filtros.patchValue({estado:'entregado'}); aplicarFiltros()">
+      <p class="text-xs font-semibold text-default-500 uppercase tracking-wide mb-1">Entregados</p>
+      <p class="text-3xl font-black text-success">{{ resumen().entregados }}</p>
+      <p class="text-xs text-default-400 mt-1">Haz clic para filtrar</p>
+    </button>
+  </div>
+
+  <!-- ── Filtros ────────────────────────────────────────────────────────── -->
+  <div class="card mb-5">
+    <details class="group" open>
+      <summary class="px-5 py-3.5 cursor-pointer flex items-center justify-between select-none list-none border-b border-default-100">
+        <span class="text-sm font-semibold text-default-700 flex items-center gap-2">
+          <ng-icon name="lucideFilter" class="size-4" /> Filtros
+        </span>
+        <ng-icon name="lucideChevronDown" class="size-4 text-default-400 transition-transform group-open:rotate-180" />
+      </summary>
+      <form [formGroup]="filtros" (ngSubmit)="aplicarFiltros()" class="px-5 pb-5 pt-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <div>
+            <label class="block text-xs font-medium text-default-500 mb-1">Estado</label>
+            <select formControlName="estado" class="form-input w-full text-sm">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregado">Entregado</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-500 mb-1">Departamento</label>
+            <select formControlName="departamento" class="form-input w-full text-sm">
+              <option value="">Todos</option>
+              @for (dep of DEPARTAMENTOS; track dep) {
+                <option [value]="dep">{{ dep }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-500 mb-1">C.I. Estudiante</label>
+            <input type="text" formControlName="ci" class="form-input w-full text-sm" placeholder="Ej: 1234567" (keyup.enter)="aplicarFiltros()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-default-500 mb-1">Fecha desde</label>
+            <input type="date" formControlName="fecha_desde" class="form-input w-full text-sm">
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="btn bg-primary text-white text-sm px-4" [disabled]="cargando()">
+            <ng-icon name="lucideSearch" class="size-3.5 me-1" /> Buscar
+          </button>
+          <button type="button" class="btn bg-default-100 text-default-600 text-sm px-4" (click)="limpiarFiltros()">
+            <ng-icon name="lucideX" class="size-3.5 me-1" /> Limpiar
+          </button>
+        </div>
+      </form>
+    </details>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="px-5 py-3 border-b border-default-100 flex items-center justify-between">
+      <h4 class="text-sm font-semibold text-default-700">
+        Envíos registrados
+        <span class="ml-2 text-xs font-normal text-default-400">({{ totalRegistros() }} total)</span>
+      </h4>
+      @if (cargando()) {
+        <div class="size-4 animate-spin text-primary"><ng-icon name="lucideLoader" /></div>
+      }
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-default-50 text-default-500 border-b border-default-100 text-xs uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 font-medium">Estudiante</th>
+            <th class="px-4 py-3 font-medium">Programa</th>
+            <th class="px-4 py-3 font-medium">Destino</th>
+            <th class="px-4 py-3 font-medium">Fecha</th>
+            <th class="px-4 py-3 font-medium">Agencia / Guía</th>
+            <th class="px-4 py-3 font-medium">Estado</th>
+            <th class="px-4 py-3 font-medium text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-default-50">
+          @if (cargando()) {
+            <tr><td colspan="7" class="px-4 py-10 text-center text-default-400">
+              <div class="size-6 animate-spin mx-auto mb-2"><ng-icon name="lucideLoader" /></div>
+              Cargando...
+            </td></tr>
+          } @else if (envios().length === 0) {
+            <tr><td colspan="7" class="px-4 py-10 text-center text-default-400 text-sm">
+              No hay envíos que coincidan con los filtros.
+            </td></tr>
+          } @else {
+            @for (e of envios(); track e.id) {
+              <tr class="hover:bg-default-50 transition-colors">
+
+                <td class="px-4 py-3">
+                  <p class="font-medium text-default-900">{{ e.estudiante_nombre }}</p>
+                  <p class="text-xs text-default-400">CI: {{ e.estudiante_ci }}</p>
+                  @if (e.estudiante_celular) {
+                    <p class="text-xs text-default-400">Cel: {{ e.estudiante_celular }}</p>
+                  }
+                </td>
+
+                <td class="px-4 py-3 text-default-700 text-sm">
+                  {{ e.programa_nombre || '—' }}
+                </td>
+
+                <td class="px-4 py-3">
+                  <p class="font-medium text-default-800">{{ e.ciudad_destino }}</p>
+                  <p class="text-xs text-default-500">{{ e.departamento }}</p>
+                </td>
+
+                <td class="px-4 py-3 text-default-600 text-sm">
+                  {{ e.fecha_envio | date:'dd/MM/yyyy' }}
+                  @if (e.fecha_entrega) {
+                    <p class="text-xs text-success">Entregado: {{ e.fecha_entrega | date:'dd/MM/yyyy' }}</p>
+                  }
+                </td>
+
+                <td class="px-4 py-3">
+                  @if (e.agencia) {
+                    <p class="text-sm text-default-700">{{ e.agencia }}</p>
+                  }
+                  @if (e.nro_seguimiento) {
+                    <p class="text-xs text-default-500 font-mono">{{ e.nro_seguimiento }}</p>
+                  }
+                  @if (!e.agencia && !e.nro_seguimiento) {
+                    <span class="text-default-300 text-xs">—</span>
+                  }
+                </td>
+
+                <td class="px-4 py-3">
+                  <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="badgeEstado(e.estado).css">
+                    {{ badgeEstado(e.estado).label }}
+                  </span>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="flex items-center justify-center gap-2">
+
+                    <!-- Ver guía de remisión -->
+                    @if (e.imagen_guia) {
+                      <a [href]="storageUrl(e.imagen_guia)" target="_blank"
+                         class="text-primary hover:opacity-70" title="Ver guía de remisión">
+                        <ng-icon name="lucideFileImage" class="size-4" />
+                      </a>
+                    }
+
+                    <!-- WhatsApp al estudiante (solo si está enviado) -->
+                    @if (e.estado === 'enviado' && e.estudiante_celular) {
+                      <a [href]="whatsappUrl(e.estudiante_celular, e)" target="_blank"
+                         class="text-success hover:opacity-70" title="Notificar al estudiante por WhatsApp">
+                        <ng-icon name="lucideMessageCircle" class="size-4" />
+                      </a>
+                    }
+
+                    <!-- Marcar como Enviado -->
+                    @if (e.estado === 'pendiente') {
+                      <button type="button" (click)="abrirModalEnviar(e.id)"
+                              class="text-xs px-2 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg font-medium whitespace-nowrap">
+                        Marcar enviado
+                      </button>
+                    }
+
+                    <!-- Marcar como Entregado -->
+                    @if (e.estado === 'enviado') {
+                      <button type="button" (click)="confirmarEntregado(e.id)"
+                              class="text-xs px-2 py-1 bg-success/10 text-success hover:bg-success/20 rounded-lg font-medium whitespace-nowrap">
+                        Marcar entregado
+                      </button>
+                    }
+
+                    <!-- Eliminar -->
+                    <button type="button" (click)="eliminar(e.id)"
+                            class="text-danger hover:opacity-70" title="Eliminar">
+                      <ng-icon name="lucideTrash2" class="size-3.5" />
+                    </button>
+
+                  </div>
+                </td>
+
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="px-5 py-3 border-t border-default-100 flex justify-between items-center text-sm">
+      <span class="text-default-500">Total: <strong>{{ totalRegistros() }}</strong></span>
+      <div class="flex items-center gap-2">
+        <button class="btn btn-sm border border-default-200 text-xs px-3"
+                (click)="cambiarPagina(-1)" [disabled]="paginaActual() === 1">Anterior</button>
+        <span class="px-3 py-1 bg-default-100 rounded text-xs font-medium">{{ paginaActual() }}</span>
+        <button class="btn btn-sm border border-default-200 text-xs px-3"
+                (click)="cambiarPagina(1)" [disabled]="envios().length < 25">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Modal: Marcar como Enviado ─────────────────────────────────────────── -->
+@if (enviandoId()) {
+  <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+       (click)="cerrarModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-primary to-primary-600 px-6 pt-5 pb-6 text-white rounded-t-2xl">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-primary-100 text-xs uppercase tracking-wide mb-1">Registrar despacho</p>
+            <h3 class="text-lg font-bold">Marcar como Enviado</h3>
+          </div>
+          <button (click)="cerrarModal()" class="text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/10">
+            <ng-icon name="lucideX" class="size-5" />
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="formMarcar" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">
+            Agencia / Flota de transporte
+          </label>
+          <input type="text" formControlName="agencia" class="form-input w-full text-sm"
+                 placeholder="Ej: Trans Copacabana, Flota Bolívar...">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">
+            Nro. de Guía / Seguimiento
+          </label>
+          <input type="text" formControlName="nro_seguimiento" class="form-input w-full text-sm"
+                 placeholder="Ej: 001234">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">
+            Observaciones (opcional)
+          </label>
+          <textarea formControlName="aclaraciones" rows="2" class="form-input w-full text-sm"
+                    placeholder="Instrucciones especiales, horario de recojo, etc."></textarea>
+        </div>
+      </form>
+
+      <div class="px-5 pb-5 flex gap-3">
+        <button type="button" class="flex-1 btn border border-default-200 text-default-600 text-sm"
+                (click)="cerrarModal()" [disabled]="procesando()">
+          Cancelar
+        </button>
+        <button type="button"
+                class="flex-1 btn bg-primary text-white text-sm font-semibold shadow-sm shadow-primary/30"
+                (click)="confirmarEnviado()" [disabled]="procesando()">
+          @if (procesando()) {
+            <div class="size-4 animate-spin me-2"><ng-icon name="lucideLoader" /></div> Guardando...
+          } @else {
+            <ng-icon name="lucideCheck" class="size-4 me-1.5" /> Confirmar Envío
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

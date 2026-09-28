@@ -848,6 +848,117 @@ export class CursoEdit implements OnInit {
     });
   }
 
+  // ── Emitir certificados masivos desde el tab de participantes ──────────
+
+  generandoCertificados = signal(false);
+
+  emitirCertificados(): void {
+    const programaId = this.cursoIdPrograma();
+    if (!programaId) {
+      this.toast.warning('Sin programa', 'No se pudo determinar el ID del programa.');
+      return;
+    }
+
+    // 1. Preview: ¿cuántos estudiantes tienen pago completo?
+    Swal.fire({ title: 'Verificando...', text: 'Buscando estudiantes con pago completo.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+    this.certSvc.previewPagosCompletos(programaId).subscribe({
+      next: (preview) => {
+        Swal.close();
+
+        if (preview.total === 0) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Sin estudiantes elegibles',
+            text: 'No hay estudiantes con pago completo en este programa. Solo se emiten certificados para quienes han completado todos sus pagos.',
+          });
+          return;
+        }
+
+        // 2. Cargar plantillas disponibles
+        this.certSvc.getPlantillas({ soloActivos: true }).subscribe({
+          next: (plantRes) => {
+            if (!plantRes.data.length) {
+              Swal.fire({
+                icon: 'error',
+                title: '🚫 Sin plantilla de certificado',
+                html: `<p class="text-sm text-gray-700 mb-2">No hay ninguna plantilla de certificado configurada para este programa.</p>
+                       <p class="text-sm text-gray-500">Ve a <b>Certificados → Plantillas</b> y crea una antes de emitir.</p>`,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#e74c3c',
+              });
+              return;
+            }
+
+            // 3. Confirmar emisión
+            const opcionesPlantilla = plantRes.data.reduce<Record<number, string>>((acc, p) => {
+              acc[p.id] = p.nombre ?? `Plantilla #${p.id}`;
+              return acc;
+            }, {});
+
+            Swal.fire({
+              icon: 'question',
+              title: '¿Emitir certificados?',
+              html: `
+                <p class="text-sm text-gray-700 mb-4">Se generarán certificados para
+                <strong>${preview.total} estudiante(s)</strong> con pago completo.</p>
+                <div class="text-left">
+                  <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Plantilla de certificado</label>
+                  <select id="plantilla-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    ${Object.entries(opcionesPlantilla).map(([id, nombre]) => `<option value="${id}">${nombre}</option>`).join('')}
+                  </select>
+                </div>`,
+              showCancelButton: true,
+              confirmButtonText: '🎓 Emitir certificados',
+              cancelButtonText: 'Cancelar',
+              confirmButtonColor: '#2563eb',
+              allowOutsideClick: false,
+              preConfirm: () => {
+                const sel = document.getElementById('plantilla-select') as HTMLSelectElement;
+                return sel ? Number(sel.value) : null;
+              },
+            }).then(result => {
+              if (!result.isConfirmed || !result.value) return;
+              const plantillaId = result.value as number;
+
+              this.generandoCertificados.set(true);
+              Swal.fire({ title: 'Generando...', text: 'Esto puede tomar unos segundos.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+              this.certSvc.generarPagosCompletos(programaId, plantillaId).subscribe({
+                next: (res) => {
+                  this.generandoCertificados.set(false);
+                  Swal.fire({
+                    icon: 'success',
+                    title: '¡Certificados emitidos!',
+                    html: `<p class="text-sm">Se generaron <strong>${res.generados}</strong> certificado(s) correctamente.</p>
+                           ${res.errores?.length ? `<p class="text-xs text-orange-600 mt-2">${res.errores.length} error(es) al procesar algunos registros.</p>` : ''}`,
+                    confirmButtonText: 'Ver certificados',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cerrar',
+                  }).then(r2 => {
+                    if (r2.isConfirmed) {
+                      // Redirigir a la lista de certificados de este programa
+                      window.open(`/cenefco/certificados?imparte_id=${this.impId()}`, '_blank');
+                    }
+                  });
+                },
+                error: (err: any) => {
+                  this.generandoCertificados.set(false);
+                  Swal.fire('Error', err?.error?.message ?? 'No se pudieron generar los certificados.', 'error');
+                },
+              });
+            });
+          },
+          error: () => Swal.fire('Error', 'No se pudieron cargar las plantillas.', 'error'),
+        });
+      },
+      error: (err: any) => {
+        Swal.close();
+        Swal.fire('Error', err?.error?.message ?? 'No se pudo verificar los pagos.', 'error');
+      },
+    });
+  }
+
   descargarPlantillaImportacion(): void {
     const encabezados = ['CI', 'Nombre', 'Apellido Paterno', 'Apellido Materno', 'Email', 'Condición', 'Nota Final', 'Observación'];
     const ejemplo      = ['12345678', 'Ana', 'Lopez', 'Gomez', 'ana@ejemplo.com', 'aprobado', 88, ''];
@@ -1159,9 +1270,9 @@ export class CursoEdit implements OnInit {
     url_whatsapp:             [''],
     url_whatsapp2:            [''],
     imagenes:                 [[] as string[]],
-    inicio_actividades:       [''],
-    finalizacion_actividades: [''],
-    inicio_inscripciones:     [''],
+    inicio_actividades:       ['', Validators.required],
+    finalizacion_actividades: ['', Validators.required],
+    inicio_inscripciones:     ['', Validators.required],
     mes_facturacion:          [''],
     tipo_honorario:           [null as string | null],
     id_tipoprograma:          [null],
