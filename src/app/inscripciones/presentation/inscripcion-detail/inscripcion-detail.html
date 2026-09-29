@@ -84,8 +84,68 @@
           <div class="size-4"><ng-icon name="lucidePrinter"></ng-icon></div>
           Imprimir PDF
         </button>
+
+        <!-- Certificado individual -->
+        <button type="button" (click)="emitirCertificadoIndividual()" [disabled]="emitiendoCertificado()"
+          class="btn btn-sm bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 flex items-center gap-1.5 disabled:opacity-60">
+          @if (emitiendoCertificado()) {
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Generando...
+          } @else {
+            <div class="size-4"><ng-icon name="lucideAward"></ng-icon></div> Emitir Certificado
+          }
+        </button>
+
+        <!-- Cambio de programa -->
+        @if (detalle()?.inscripcion?.estado === 1) {
+          <button type="button" (click)="abrirTransferencia()"
+            class="btn btn-sm bg-warning/10 text-warning border border-warning/20 hover:bg-warning/20 flex items-center gap-1.5">
+            <div class="size-4"><ng-icon name="lucideArrowLeftRight"></ng-icon></div>
+            Cambiar Programa
+          </button>
+        }
+
+        <!-- Dar de baja / Reactivar -->
+        @if (detalle()?.inscripcion?.estado === 1) {
+          <button type="button" (click)="darDeBaja()" [disabled]="procesandoBaja()"
+            class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
+            @if (procesandoBaja()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            } @else {
+              <div class="size-4"><ng-icon name="lucideUserX"></ng-icon></div>
+            }
+            Dar de Baja
+          </button>
+        } @else if (detalle()?.inscripcion?.estado === 0) {
+          <button type="button" (click)="reactivarInscripcion()" [disabled]="procesandoReactivar()"
+            class="btn btn-sm bg-success/10 text-success border border-success/20 hover:bg-success/20 flex items-center gap-1.5 disabled:opacity-60">
+            @if (procesandoReactivar()) {
+              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
+            } @else {
+              <div class="size-4"><ng-icon name="lucideUserCheck"></ng-icon></div>
+            }
+            Reactivar
+          </button>
+        }
+
       </div>
     </div>
+
+    <!-- Banner estado BAJA -->
+    @if (detalle()?.inscripcion?.estado === 0) {
+      <div class="mb-5 flex items-center gap-3 px-5 py-3.5 bg-danger/10 border border-danger/30 rounded-xl">
+        <div class="size-8 rounded-full bg-danger/15 flex items-center justify-center text-danger shrink-0">
+          <ng-icon name="lucideUserX" class="size-4" />
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-danger text-sm">Inscripción dada de baja</p>
+          <p class="text-xs text-danger/80 mt-0.5">Esta inscripción está inactiva. Puedes reactivarla desde el botón superior.</p>
+        </div>
+        <button type="button" (click)="reactivarInscripcion()" [disabled]="procesandoReactivar()"
+          class="btn btn-sm bg-success/10 text-success border border-success/20 hover:bg-success/20 shrink-0">
+          <ng-icon name="lucideUserCheck" class="size-3.5 me-1" /> Reactivar
+        </button>
+      </div>
+    }
 
     @if (showEnviarCorreo()) {
     <div class="card mb-5 border border-primary/30">
@@ -1705,3 +1765,207 @@
   </div>
   }
 </main>
+
+<!-- ── Modal: Cambio de Programa ──────────────────────────────────────────── -->
+@if (showTransferencia()) {
+  <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-auto flex flex-col">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-warning to-amber-500 px-6 pt-5 pb-5 text-white rounded-t-2xl shrink-0">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-amber-100 text-xs uppercase tracking-wide mb-1">Operación contable</p>
+            <h3 class="text-lg font-bold">Cambio de Programa</h3>
+            <p class="text-amber-100 text-xs mt-1">El saldo pagado se distribuye automáticamente en el nuevo plan.</p>
+          </div>
+          <button (click)="cerrarTransferencia()" class="text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/10">
+            <ng-icon name="lucideX" class="size-5" />
+          </button>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-5 flex-1 overflow-auto">
+
+        <!-- Paso 1: Buscar programa destino -->
+        <div>
+          <p class="text-xs font-bold text-default-500 uppercase tracking-wide mb-2">
+            <span class="inline-flex size-5 items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold mr-1.5">1</span>
+            Selecciona el programa destino
+          </p>
+          <div class="flex gap-2 mb-3">
+            <input type="text" class="form-input flex-1 text-sm"
+                   [ngModel]="transferQuery()" (ngModelChange)="transferQuery.set($event)"
+                   (keyup.enter)="buscarProgramasTransfer()"
+                   placeholder="Buscar programa...">
+            <button type="button" class="btn bg-default-100 text-default-600 text-sm px-4"
+                    (click)="buscarProgramasTransfer()" [disabled]="transferBuscando()">
+              @if (transferBuscando()) {
+                <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+              } @else {
+                <ng-icon name="lucideSearch" class="size-4" />
+              }
+            </button>
+          </div>
+
+          <div class="space-y-1.5 max-h-44 overflow-y-auto border border-default-100 rounded-xl p-2">
+            @for (prog of transferProgramas(); track prog.id_programa) {
+              <button type="button"
+                      class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+                      [class.bg-warning/10]="transferProgSel()?.id_programa === prog.id_programa"
+                      [class.text-warning]="transferProgSel()?.id_programa === prog.id_programa"
+                      [class.hover:bg-default-50]="transferProgSel()?.id_programa !== prog.id_programa"
+                      (click)="seleccionarProgTransfer(prog)">
+                <p class="font-medium">{{ prog.nombre_programa }}</p>
+                <p class="text-xs text-default-400">{{ prog.imparticiones?.length }} versiones</p>
+              </button>
+            }
+            @if (transferProgramas().length === 0) {
+              <p class="text-sm text-default-400 text-center py-3">Busca un programa arriba</p>
+            }
+          </div>
+        </div>
+
+        <!-- Paso 2: Versión e impartición -->
+        @if (transferProgSel()) {
+          <div>
+            <p class="text-xs font-bold text-default-500 uppercase tracking-wide mb-2">
+              <span class="inline-flex size-5 items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold mr-1.5">2</span>
+              Selecciona la versión
+            </p>
+            <div class="grid grid-cols-1 gap-1.5">
+              @for (imp of transferProgSel().imparticiones; track imp.id_imp) {
+                <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-colors text-sm"
+                       [class.border-warning]="transferImpSel()?.id_imp === imp.id_imp"
+                       [class.bg-warning/5]="transferImpSel()?.id_imp === imp.id_imp"
+                       [class.border-default-200]="transferImpSel()?.id_imp !== imp.id_imp">
+                  <input type="radio" name="imp-destino" [value]="imp.id_imp"
+                         [checked]="transferImpSel()?.id_imp === imp.id_imp"
+                         (change)="seleccionarImpTransfer(imp)" class="accent-warning">
+                  <div class="flex-1">
+                    <p class="font-medium">{{ imp.nombre_version || imp.periodo }}</p>
+                    <p class="text-xs text-default-400">{{ imp.gestion }}</p>
+                  </div>
+                </label>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Paso 3: Plan de pago -->
+        @if (transferImpSel()) {
+          <div>
+            <p class="text-xs font-bold text-default-500 uppercase tracking-wide mb-2">
+              <span class="inline-flex size-5 items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold mr-1.5">3</span>
+              Selecciona el plan de pago
+            </p>
+            <div class="grid grid-cols-1 gap-1.5">
+              @for (plan of (transferImpSel().planes?.length ? transferImpSel().planes : transferProgSel().planes); track plan.id_plan) {
+                <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-colors text-sm"
+                       [class.border-warning]="transferPlanSel()?.id_plan === plan.id_plan"
+                       [class.bg-warning/5]="transferPlanSel()?.id_plan === plan.id_plan"
+                       [class.border-default-200]="transferPlanSel()?.id_plan !== plan.id_plan">
+                  <input type="radio" name="plan-destino" [value]="plan.id_plan"
+                         [checked]="transferPlanSel()?.id_plan === plan.id_plan"
+                         (change)="seleccionarPlanTransfer(plan)" class="accent-warning">
+                  <div class="flex-1">
+                    <p class="font-medium">{{ plan.titulo }}</p>
+                    <p class="text-xs text-default-400">Bs. {{ plan.costo }} · {{ plan.nro_cuotas }} cuota(s)</p>
+                  </div>
+                </label>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Vista previa de distribución -->
+        @if (transferCargandoPreview()) {
+          <div class="flex items-center gap-2 text-sm text-default-400 py-3">
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
+            Calculando distribución automática...
+          </div>
+        }
+
+        @if (transferPreview()) {
+          <div class="rounded-xl border border-default-200 overflow-hidden">
+            <div class="px-4 py-2.5 bg-default-50 border-b border-default-100 flex justify-between items-center">
+              <p class="text-xs font-semibold text-default-600 uppercase tracking-wide">Distribución automática</p>
+              <div class="flex gap-3 text-xs">
+                <span class="text-default-500">Transferido: <strong class="text-primary">Bs. {{ transferPreview()!.total_pagado_origen | number:'1.2-2' }}</strong></span>
+                <span class="text-default-500">Nuevo plan: <strong>Bs. {{ transferPreview()!.total_nuevo_plan | number:'1.2-2' }}</strong></span>
+              </div>
+            </div>
+            <table class="w-full text-xs">
+              <thead class="bg-default-50/50 text-default-400 uppercase tracking-wide">
+                <tr>
+                  <th class="px-3 py-2 text-left">Cuota</th>
+                  <th class="px-3 py-2 text-right">Monto</th>
+                  <th class="px-3 py-2 text-right">Acreditado</th>
+                  <th class="px-3 py-2 text-right">Pendiente</th>
+                  <th class="px-3 py-2 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-50">
+                @for (c of transferPreview()!.distribucion; track c.nro_cuota) {
+                  <tr [class.bg-success/5]="c.estado === 'pagado'"
+                      [class.bg-warning/5]="c.estado === 'parcial'">
+                    <td class="px-3 py-2 font-medium">{{ c.descripcion }}</td>
+                    <td class="px-3 py-2 text-right">Bs. {{ c.monto_cuota | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-right text-success font-semibold">
+                      @if (c.monto_acreditado > 0) { Bs. {{ c.monto_acreditado | number:'1.2-2' }} }
+                      @else { — }
+                    </td>
+                    <td class="px-3 py-2 text-right"
+                        [class.text-danger]="c.monto_pendiente > 0">
+                      @if (c.monto_pendiente > 0) { Bs. {{ c.monto_pendiente | number:'1.2-2' }} }
+                      @else { — }
+                    </td>
+                    <td class="px-3 py-2 text-center">
+                      @if (c.estado === 'pagado') {
+                        <span class="px-1.5 py-0.5 rounded bg-success/10 text-success font-semibold text-[10px]">Pagado</span>
+                      } @else if (c.estado === 'parcial') {
+                        <span class="px-1.5 py-0.5 rounded bg-warning/10 text-warning font-semibold text-[10px]">Parcial</span>
+                      } @else {
+                        <span class="px-1.5 py-0.5 rounded bg-default-100 text-default-500 font-semibold text-[10px]">Pendiente</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Motivo -->
+          <div>
+            <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">
+              Motivo del cambio (opcional)
+            </label>
+            <input type="text" class="form-input w-full text-sm"
+                   [ngModel]="transferMotivo()" (ngModelChange)="transferMotivo.set($event)"
+                   placeholder="Ej: Solicitud del estudiante, cambio de horario...">
+          </div>
+        }
+
+      </div>
+
+      <!-- Acciones -->
+      <div class="px-5 pb-5 flex gap-3 border-t border-default-100 pt-4 shrink-0">
+        <button type="button" class="flex-1 btn border border-default-200 text-default-600 text-sm"
+                (click)="cerrarTransferencia()" [disabled]="transferProcesando()">
+          Cancelar
+        </button>
+        <button type="button"
+                class="flex-1 btn bg-warning text-white text-sm font-semibold shadow-sm shadow-warning/30"
+                [disabled]="!transferPreview() || transferProcesando()"
+                (click)="confirmarTransferencia()">
+          @if (transferProcesando()) {
+            <div class="size-4 animate-spin me-2"><ng-icon name="lucideLoader" /></div> Procesando...
+          } @else {
+            <ng-icon name="lucideArrowLeftRight" class="size-4 me-1.5" /> Confirmar Cambio
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

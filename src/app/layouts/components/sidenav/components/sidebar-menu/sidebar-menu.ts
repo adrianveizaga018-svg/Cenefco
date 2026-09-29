@@ -151,17 +151,16 @@ export class SidebarMenu implements OnInit {
     },
 
     { type: 'title', label: 'Certificados' },
-    { type: 'item', label: 'Generación Masiva PDF',      icon: 'lucideFileText',      color: 'text-amber-500',   link: '/cenefco/certificados-masivos', permission: 'certificados.crear' },
-    { type: 'item', label: 'Generar Certificados (Firma)', icon: 'lucideAward',       color: 'text-amber-600',   link: '/cenefco/certificados', permission: 'certificados.crear' },
     {
       type: 'accordion',
-      label: 'Configuración',
-      icon: 'lucideImage',
+      label: 'Certificados',
+      icon: 'lucideAward',
       color: 'text-amber-500',
       children: [
-        { type: 'item', label: 'Plantillas',             icon: 'lucideImage',         color: 'text-amber-400',   link: '/cenefco/cert-plantillas', permission: 'certificados.ver' },
-        { type: 'item', label: 'Certificados Post-Inscripción', icon: 'lucideSettings2', color: 'text-amber-500', link: '/cenefco/cert-config-programas', permission: 'cert-config.ver' },
-        { type: 'item', label: 'Solicitudes de Certificados', icon: 'lucideInbox',     color: 'text-amber-600',   link: '/cenefco/cert-solicitudes', permission: 'cert-solicitudes.ver' },
+        { type: 'item', label: 'Plantillas',                    icon: 'lucideImage',     color: 'text-amber-400',   link: '/cenefco/cert-plantillas',        permission: 'certificados.ver' },
+        { type: 'item', label: 'Certificados Emitidos',         icon: 'lucideAward',     color: 'text-amber-500',   link: '/cenefco/certificados',           permission: 'certificados.ver' },
+        { type: 'item', label: 'Config. Post-Inscripción',      icon: 'lucideSettings2', color: 'text-amber-500',   link: '/cenefco/cert-config-programas',  permission: 'cert-config.ver' },
+        { type: 'item', label: 'Solicitudes de Certificados',   icon: 'lucideInbox',     color: 'text-amber-600',   link: '/cenefco/cert-solicitudes',       permission: 'cert-solicitudes.ver' },
       ]
     },
 

@@ -225,3 +225,21 @@ export interface DocumentosInscripcion {
   plan_id:    number | null;
   requeridos: DocRequerido[];
 }
+
+export interface CuotaDistribucion {
+  id_fechapago?:    number | null;
+  nro_cuota:        number | string;
+  descripcion:      string;
+  monto_cuota:      number;
+  monto_acreditado: number;
+  monto_pendiente:  number;
+  estado:           'pagado' | 'parcial' | 'pendiente';
+  fecha_vencimiento?: string | null;
+  dias_desde_inscripcion?: number | null;
+}
+
+export interface PreviewTransferencia {
+  total_pagado_origen: number;
+  total_nuevo_plan:    number;
+  distribucion:        CuotaDistribucion[];
+}

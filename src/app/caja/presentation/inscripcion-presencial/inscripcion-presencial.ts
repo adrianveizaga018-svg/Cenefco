@@ -82,8 +82,14 @@ export default class InscripcionPresencialComponent implements OnInit {
   cargandoCuotas   = signal(false);
   cuotaSugerida    = signal<CajaCuotaPlan | null>(null); // próxima cuota a pagar
   modoCuotas       = signal<'fecha' | 'dias'>('fecha'); // tipo de fechas del plan
+
+  /** True si el plan seleccionado tiene costo 0 (curso gratuito) */
+  planGratuito = computed(() => {
+    const p = this.planSeleccionado();
+    return p !== null && (Number(p.costo) === 0 || p.costo === '0' || p.costo === '0.00');
+  });
   formPago: FormGroup = this.fb.group({
-    monto_pagado: ['', [Validators.required, Validators.min(1)]],
+    monto_pagado: ['', [Validators.required, Validators.min(0)]],
     nro_boleta: [''],
     fecha_deposito: ['', Validators.required],
     metodo_pago: ['deposito', Validators.required],
@@ -291,6 +297,25 @@ Titular: ${banco.titular || '-'}`;
     this.planSeleccionado.set(plan);
     this.cuotasPlan.set([]);
     this.cuotaSugerida.set(null);
+    // Detectar si es plan gratuito y ajustar validaciones
+    const esGratuito = Number(plan.costo) === 0;
+    const boltaCtrl = this.formPago.get('nro_boleta')!;
+    const metodoCtrl = this.formPago.get('metodo_pago')!;
+
+    if (esGratuito) {
+      // Gratuito: monto 0, boleta no requerida, método efectivo
+      boltaCtrl.clearValidators();
+      boltaCtrl.setValue('');
+      boltaCtrl.updateValueAndValidity();
+      metodoCtrl.setValue('efectivo', { emitEvent: false });
+    } else {
+      // Restaurar validadores normales según método actual
+      if (metodoCtrl.value !== 'efectivo') {
+        boltaCtrl.setValidators([Validators.required]);
+        boltaCtrl.updateValueAndValidity();
+      }
+    }
+
     // Cargar las cuotas individuales del plan
     this.cargandoCuotas.set(true);
     this.cajaSvc.getCuotasPlan(plan.id_plan).subscribe({

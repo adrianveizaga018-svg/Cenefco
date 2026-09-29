@@ -5,6 +5,7 @@ import {
   Inscripcion, InscripcionDetalle,
   InscripcionListResponse, InscripcionListParams,
   CreateInscripcionPayload, DocumentosInscripcion, DevolucionItem,
+  PreviewTransferencia,
 } from '../../domain/models/inscripcion.model';
 import { ReglamentoPrograma } from '../../../ventas/domain/models/reglamento.model';
 
@@ -194,5 +195,30 @@ export class InscripcionService {
 
   getCursosReporte(): Observable<{ data: any[] }> {
     return this.http.get<{ data: any[] }>('/api/v1/inscripciones/cursos');
+  }
+
+  // ── Baja, reactivación y transferencia ────────────────────────────────
+
+  darDeBaja(id: number, motivo: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/dar-baja`, { motivo });
+  }
+
+  reactivar(id: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/reactivar`, {});
+  }
+
+  previewTransferencia(id: number, idPlanDestino: number): Observable<PreviewTransferencia> {
+    return this.http.get<PreviewTransferencia>(
+      `${this.baseUrl}/${id}/preview-transferencia`,
+      { params: { id_plan_destino: idPlanDestino } }
+    );
+  }
+
+  transferir(id: number, payload: {
+    id_imp_destino:  number;
+    id_plan_destino: number;
+    motivo?:         string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/transferir`, payload);
   }
 }

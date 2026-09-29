@@ -17,6 +17,8 @@ import { TipoBanco } from '../../../tipos-banco/domain/models/tipo-banco.model';
 import { EnvioCertificadoService } from '../../../envios-certificado/application/services/envio-certificado.service';
 import { EnvioCertificado } from '../../../envios-certificado/domain/models/envio-certificado.model';
 import { CompromisoCobroService } from '../../../compromisos-cobro/application/services/compromiso-cobro.service';
+import { CertificadoService } from '../../../certificados/application/services/certificado.service';
+import { CajaService } from '../../../caja/application/services/caja.service';
 import {
   CompromisoCobroLog,
   ESTADO_COMPROMISO_CLASES,
@@ -46,6 +48,8 @@ export class InscripcionDetail implements OnInit, OnDestroy {
   private tipoBancoService = inject(TipoBancoService);
   private envioCertService = inject(EnvioCertificadoService);
   private compromisoCobroService = inject(CompromisoCobroService);
+  private certSvc  = inject(CertificadoService);
+  private cajaSvc  = inject(CajaService);
 
   canAprobar = computed(() => {
     const user = this.auth.currentUser();
@@ -127,6 +131,26 @@ export class InscripcionDetail implements OnInit, OnDestroy {
     'Pago al contado',
     'Grupo familiar',
   ];
+
+  // ── Baja y Reactivación ───────────────────────────────────────────────
+  procesandoBaja       = signal(false);
+  procesandoReactivar  = signal(false);
+
+  // ── Cambio de programa / Transferencia ────────────────────────────────
+  showTransferencia     = signal(false);
+  transferProgramas     = signal<any[]>([]);
+  transferBuscando      = signal(false);
+  transferQuery         = signal('');
+  transferProgSel       = signal<any | null>(null);
+  transferImpSel        = signal<any | null>(null);
+  transferPlanSel       = signal<any | null>(null);
+  transferMotivo        = signal('');
+  transferPreview       = signal<import('../../domain/models/inscripcion.model').PreviewTransferencia | null>(null);
+  transferCargandoPreview = signal(false);
+  transferProcesando    = signal(false);
+
+  // ── Certificado individual ─────────────────────────────────────────────
+  emitiendoCertificado  = signal(false);
 
   showDevolucion = signal(false);
   devolucionMonto = signal<number | null>(null);
@@ -620,6 +644,261 @@ export class InscripcionDetail implements OnInit, OnDestroy {
   nombreArchivoDevolucion(): string {
     const url = this.devolucionDocUrl();
     return url ? url.split('/').pop() ?? url : '';
+  }
+
+  // ── BAJA Y REACTIVACIÓN ───────────────────────────────────────────────
+
+  darDeBaja(): void {
+    Swal.fire({
+      title: '¿Dar de baja esta inscripción?',
+      html: `<div class="text-left">
+        <p class="text-sm text-gray-600 mb-3">Esta acción puede revertirse posteriormente desde el mismo detalle.</p>
+        <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Motivo de la baja *</label>
+        <textarea id="motivo-baja" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" rows="3"
+          placeholder="Ej: Solicitud del estudiante, dificultades económicas..."></textarea>
+      </div>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Dar de baja',
+      cancelButtonText: 'Cancelar',
+      allowOutsideClick: false,
+      preConfirm: () => {
+        const motivo = (document.getElementById('motivo-baja') as HTMLTextAreaElement)?.value?.trim();
+        if (!motivo) { Swal.showValidationMessage('El motivo es requerido'); return false; }
+        return motivo;
+      },
+    }).then(r => {
+      if (!r.isConfirmed || !r.value) return;
+      this.procesandoBaja.set(true);
+      this.service.darDeBaja(this.id, r.value).subscribe({
+        next: () => {
+          this.toast.success('Dada de baja', 'La inscripción fue dada de baja correctamente.');
+          this.procesandoBaja.set(false);
+          this.cargar();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.toast.error('Error', extractErrorMessage(err, 'No se pudo dar de baja.'));
+          this.procesandoBaja.set(false);
+        },
+      });
+    });
+  }
+
+  reactivarInscripcion(): void {
+    Swal.fire({
+      title: '¿Reactivar esta inscripción?',
+      text: 'El estudiante volverá a quedar activo en el programa.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#22c55e',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar',
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.procesandoReactivar.set(true);
+      this.service.reactivar(this.id).subscribe({
+        next: () => {
+          this.toast.success('Reactivada', 'La inscripción fue reactivada correctamente.');
+          this.procesandoReactivar.set(false);
+          this.cargar();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.toast.error('Error', extractErrorMessage(err, 'No se pudo reactivar.'));
+          this.procesandoReactivar.set(false);
+        },
+      });
+    });
+  }
+
+  // ── CAMBIO DE PROGRAMA ────────────────────────────────────────────────
+
+  abrirTransferencia(): void {
+    this.showTransferencia.set(true);
+    this.transferQuery.set('');
+    this.transferProgSel.set(null);
+    this.transferImpSel.set(null);
+    this.transferPlanSel.set(null);
+    this.transferPreview.set(null);
+    this.transferMotivo.set('');
+    this.cajaSvc.buscarProgramas('').subscribe({
+      next: progs => this.transferProgramas.set(progs),
+      error: () => {},
+    });
+  }
+
+  cerrarTransferencia(): void { this.showTransferencia.set(false); }
+
+  buscarProgramasTransfer(): void {
+    this.transferBuscando.set(true);
+    this.cajaSvc.buscarProgramas(this.transferQuery()).subscribe({
+      next: progs => { this.transferProgramas.set(progs); this.transferBuscando.set(false); },
+      error: () => this.transferBuscando.set(false),
+    });
+  }
+
+  seleccionarProgTransfer(prog: any): void {
+    this.transferProgSel.set(prog);
+    this.transferImpSel.set(null);
+    this.transferPlanSel.set(null);
+    this.transferPreview.set(null);
+  }
+
+  seleccionarImpTransfer(imp: any): void {
+    this.transferImpSel.set(imp);
+    this.transferPlanSel.set(null);
+    this.transferPreview.set(null);
+  }
+
+  seleccionarPlanTransfer(plan: any): void {
+    this.transferPlanSel.set(plan);
+    this.transferPreview.set(null);
+    // Cargar preview automáticamente
+    this.transferCargandoPreview.set(true);
+    this.service.previewTransferencia(this.id, plan.id_plan).subscribe({
+      next: p => { this.transferPreview.set(p); this.transferCargandoPreview.set(false); },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error('Error', extractErrorMessage(err, 'No se pudo calcular la transferencia.'));
+        this.transferCargandoPreview.set(false);
+      },
+    });
+  }
+
+  confirmarTransferencia(): void {
+    const imp  = this.transferImpSel();
+    const plan = this.transferPlanSel();
+    if (!imp || !plan) return;
+    const motivo = this.transferMotivo().trim() || 'Cambio de programa solicitado por el estudiante';
+
+    this.transferProcesando.set(true);
+    this.service.transferir(this.id, {
+      id_imp_destino:  imp.id_imp,
+      id_plan_destino: plan.id_plan,
+      motivo,
+    }).subscribe({
+      next: (res) => {
+        this.transferProcesando.set(false);
+        this.showTransferencia.set(false);
+        Swal.fire({
+          icon: 'success',
+          title: '¡Transferencia completada!',
+          html: `<p class="text-sm">La inscripción fue transferida correctamente.<br>
+                 Nueva inscripción: <strong>#${res.id_ins_destino}</strong></p>`,
+          confirmButtonText: 'Ver nueva inscripción',
+          showCancelButton: true,
+          cancelButtonText: 'Cerrar',
+        }).then(r2 => {
+          if (r2.isConfirmed) {
+            window.location.href = `/cenefco/inscripcion-detail/${res.id_ins_destino}`;
+          } else {
+            this.cargar(); // Recarga para mostrar estado baja
+          }
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error('Error', extractErrorMessage(err, 'No se pudo realizar la transferencia.'));
+        this.transferProcesando.set(false);
+      },
+    });
+  }
+
+  // ── CERTIFICADO INDIVIDUAL ────────────────────────────────────────────
+
+  emitirCertificadoIndividual(): void {
+    const d = this.detalle();
+    if (!d) return;
+    const ins = d.inscripcion;
+
+    // Verificar pago completo
+    const resumen = d.resumen as any;
+    const pendiente = resumen?.pendiente ?? resumen?.total_pendiente ?? null;
+    const pagoCompleto = pendiente !== null ? pendiente <= 0 : false;
+
+    if (!pagoCompleto) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Pago incompleto',
+        html: `<p class="text-sm">El estudiante tiene un saldo pendiente de <strong>Bs. ${Math.abs(pendiente ?? 0).toFixed(2)}</strong>.<br>
+               Solo se emiten certificados a estudiantes con pago completo.</p>`,
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
+    // Cargar plantillas
+    Swal.fire({ title: 'Cargando plantillas...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+    this.certSvc.getPlantillas({ soloActivos: true }).subscribe({
+      next: (plantRes) => {
+        Swal.close();
+        if (!plantRes.data.length) {
+          Swal.fire({
+            icon: 'error',
+            title: '🚫 Sin plantilla',
+            html: '<p class="text-sm">No hay plantillas de certificado configuradas. Ve a <b>Certificados → Plantillas</b> y crea una.</p>',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#e74c3c',
+          });
+          return;
+        }
+
+        const opciones = plantRes.data.reduce<Record<number, string>>((acc, p) => {
+          acc[p.id] = p.nombre ?? `Plantilla #${p.id}`;
+          return acc;
+        }, {});
+
+        Swal.fire({
+          icon: 'question',
+          title: '¿Emitir certificado?',
+          html: `<p class="text-sm text-gray-700 mb-3">Se generará un certificado para <strong>${ins.estudiante_nombre}</strong>.</p>
+                 <div class="text-left">
+                   <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Plantilla</label>
+                   <select id="plantilla-ind" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                     ${Object.entries(opciones).map(([id, nombre]) => `<option value="${id}">${nombre}</option>`).join('')}
+                   </select>
+                 </div>`,
+          showCancelButton: true,
+          confirmButtonText: '🎓 Emitir',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#2563eb',
+          allowOutsideClick: false,
+          preConfirm: () => {
+            const sel = document.getElementById('plantilla-ind') as HTMLSelectElement;
+            return sel ? Number(sel.value) : null;
+          },
+        }).then(result => {
+          if (!result.isConfirmed || !result.value) return;
+
+          this.emitiendoCertificado.set(true);
+          Swal.fire({ title: 'Generando...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+          this.certSvc.generarLote(ins.id_imp as number, result.value).subscribe({
+            next: (res: any) => {
+              this.emitiendoCertificado.set(false);
+              Swal.fire({
+                icon: 'success',
+                title: '¡Certificado emitido!',
+                html: `<p class="text-sm">El certificado de <strong>${ins.estudiante_nombre}</strong> fue generado correctamente.</p>`,
+                confirmButtonText: 'Ver certificados',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+              }).then(r2 => {
+                if (r2.isConfirmed) {
+                  window.open(`/cenefco/certificados?imparte_id=${ins.id_imp}`, '_blank');
+                }
+              });
+            },
+            error: (err: any) => {
+              this.emitiendoCertificado.set(false);
+              Swal.fire('Error', err?.error?.message ?? 'No se pudo generar el certificado.', 'error');
+            },
+          });
+        });
+      },
+      error: () => { Swal.close(); Swal.fire('Error', 'No se pudieron cargar las plantillas.', 'error'); },
+    });
   }
 
   guardarDevolucion(): void {

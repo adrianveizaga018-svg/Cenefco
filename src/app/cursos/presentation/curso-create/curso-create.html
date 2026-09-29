@@ -386,16 +386,24 @@
               <input type="text" class="form-input mb-4" placeholder="Buscar plan..." (input)="busquedaPlanes.set($any($event.target).value)">
             @for (plan of planesFiltrados(); track plan.id_plan) {
               <label class="flex items-center gap-3 p-3 border border-default-200 rounded-lg cursor-pointer hover:bg-default-50 transition-colors"
-                     [class.border-primary]="planesSeleccionados().includes(plan.id_plan)"
-                     [class.bg-primary/5]="planesSeleccionados().includes(plan.id_plan)">
+                     [class.border-primary]="planesSeleccionados().includes(plan.id_plan) && !planTieneConflicto(plan.id_plan)"
+                     [class.bg-primary/5]="planesSeleccionados().includes(plan.id_plan) && !planTieneConflicto(plan.id_plan)"
+                     [class.border-danger]="planTieneConflicto(plan.id_plan)"
+                     [class.bg-danger/5]="planTieneConflicto(plan.id_plan)">
                 <input type="checkbox"
                        class="form-checkbox text-primary rounded shrink-0"
                        [checked]="planesSeleccionados().includes(plan.id_plan)"
                        (change)="togglePlan(plan.id_plan)">
-                <div>
+                <div class="flex-1">
                   <p class="text-sm font-bold text-default-900">{{ plan.titulo }}</p>
                   <p class="text-xs text-default-500">Bs. {{ plan.costo }} &bull; {{ plan.nro_cuotas }} cuota(s)</p>
                 </div>
+                @if (planTieneConflicto(plan.id_plan)) {
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-danger/10 text-danger font-semibold whitespace-nowrap shrink-0">
+                    <ng-icon name="lucideAlertTriangle" class="size-3 inline" />
+                    {{ conflictosDePlan(plan.id_plan) }} cuota(s) fuera del plazo
+                  </span>
+                }
               </label>
             }
             @empty {

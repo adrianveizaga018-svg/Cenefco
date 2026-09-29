@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+﻿import { Component, inject, signal, computed } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -78,21 +78,57 @@ export class CursoCreate {
   busquedaPlanes = signal('');
   planesFiltrados = computed(() => this.todosLosPlanes().filter(p => p.titulo.toLowerCase().includes(this.busquedaPlanes().toLowerCase())));
 
-  /** Planes seleccionados que tienen cuotas con fecha posterior al fin del curso. */
-  planesConFechaConflicto = computed<{ id_plan: number; titulo: string; cuotasConflicto: number }[]>(() => {
-    const finCurso = this.form?.get('finalizacion_actividades')?.value as string | null;
+  /** Planes seleccionados que tienen cuotas en conflicto con la duración del curso.
+   *  Evalúa AMBOS modos: fechas fijas y desde-que-se-inscribe. */
+  planesConFechaConflicto = computed<{ id_plan: number; titulo: string; cuotasConflicto: number; modo: string }[]>(() => {
+    const finCurso   = this.form?.get('finalizacion_actividades')?.value as string | null;
+    const inicioCurso = this.form?.get('inicio_actividades')?.value as string | null;
     if (!finCurso) return [];
+
+    // Duración del curso en días (para modo relativo)
+    let duracionDias: number | null = null;
+    if (inicioCurso && finCurso) {
+      const ms = new Date(finCurso).getTime() - new Date(inicioCurso).getTime();
+      duracionDias = Math.ceil(ms / (1000 * 60 * 60 * 24));
+    }
+
     return this.todosLosPlanes()
       .filter(p => this.planesSeleccionados().includes(p.id_plan))
       .flatMap(plan => {
-        const cuotasConflicto = (plan.cuotas ?? []).filter(
-          (c: any) => c.fecha_fin && c.fecha_fin > finCurso
-        ).length;
-        return cuotasConflicto > 0 ? [{ id_plan: plan.id_plan, titulo: plan.titulo, cuotasConflicto }] : [];
+        const cuotas = this.cuotasPorPlan.get(plan.id_plan) ?? [];
+        // Detectar modo del plan por las cuotas
+        const esDias = cuotas.some((c: any) => c.dias_desde_inscripcion != null);
+
+        let cuotasConflicto = 0;
+        if (esDias && duracionDias !== null) {
+          // Modo relativo: alguna cuota vence más tarde que la duración del curso
+          cuotasConflicto = cuotas.filter(
+            (c: any) => c.dias_desde_inscripcion != null && c.dias_desde_inscripcion > duracionDias!
+          ).length;
+        } else {
+          // Modo fechas fijas: alguna fecha_fin supera el fin del curso
+          cuotasConflicto = cuotas.filter(
+            (c: any) => c.fecha_fin && c.fecha_fin > finCurso
+          ).length;
+        }
+
+        return cuotasConflicto > 0
+          ? [{ id_plan: plan.id_plan, titulo: plan.titulo, cuotasConflicto, modo: esDias ? 'dias' : 'fecha' }]
+          : [];
       });
   });
 
   hayConflictosFechaCurso = computed(() => this.planesConFechaConflicto().length > 0);
+
+  /** Helper para el template — devuelve la cantidad de cuotas en conflicto para un plan dado */
+  conflictosDePlan(idPlan: number): number {
+    return this.planesConFechaConflicto().find(c => c.id_plan === idPlan)?.cuotasConflicto ?? 0;
+  }
+
+  /** Helper para el template — true si el plan seleccionado tiene conflicto de fechas */
+  planTieneConflicto(idPlan: number): boolean {
+    return this.planesSeleccionados().includes(idPlan) && this.conflictosDePlan(idPlan) > 0;
+  }
 
   form: FormGroup = this.fb.group({
     nombre_programa:          ['', [Validators.required, Validators.maxLength(200)]],
@@ -262,13 +298,30 @@ export class CursoCreate {
     // ── Validación 2: Cuotas con fechas posteriores al fin del curso ──────
     const finCurso = this.form.get('finalizacion_actividades')?.value as string | null;
     if (finCurso) {
+      const inicioCurso = this.form.get('inicio_actividades')?.value as string | null;
+      let duracionDias: number | null = null;
+      if (inicioCurso && finCurso) {
+        const ms = new Date(finCurso).getTime() - new Date(inicioCurso).getTime();
+        duracionDias = Math.ceil(ms / (1000 * 60 * 60 * 24));
+      }
+
       const conflictos: string[] = [];
       for (const planId of this.planesSeleccionados()) {
         const cuotas = this.cuotasPorPlan.get(planId) ?? [];
         const plan = this.todosLosPlanes().find(p => p.id_plan === planId);
-        const cuotasConflicto = cuotas.filter((c: any) => c.fecha_fin && c.fecha_fin > finCurso);
-        if (cuotasConflicto.length > 0) {
-          conflictos.push(`<strong>${plan?.titulo ?? 'Plan #' + planId}</strong>: ${cuotasConflicto.length} cuota(s) con fecha posterior al ${finCurso}`);
+        const esDias = cuotas.some((c: any) => c.dias_desde_inscripcion != null);
+
+        let cuotasConflicto: any[] = [];
+        if (esDias && duracionDias !== null) {
+          cuotasConflicto = cuotas.filter((c: any) => c.dias_desde_inscripcion != null && c.dias_desde_inscripcion > duracionDias!);
+          if (cuotasConflicto.length > 0) {
+            conflictos.push(`<strong>${plan?.titulo ?? 'Plan #' + planId}</strong>: ${cuotasConflicto.length} cuota(s) superan los ${duracionDias} días de duración del curso`);
+          }
+        } else {
+          cuotasConflicto = cuotas.filter((c: any) => c.fecha_fin && c.fecha_fin > finCurso);
+          if (cuotasConflicto.length > 0) {
+            conflictos.push(`<strong>${plan?.titulo ?? 'Plan #' + planId}</strong>: ${cuotasConflicto.length} cuota(s) con fecha posterior al ${finCurso}`);
+          }
         }
       }
 
@@ -277,19 +330,16 @@ export class CursoCreate {
           icon: 'error',
           title: '🚫 Cuotas fuera del plazo del curso',
           html: `
-            <p class="text-sm text-gray-700 mb-3">Los siguientes planes tienen cuotas con fecha de vencimiento
-            <strong>posterior a la finalización del curso (${finCurso})</strong>:</p>
+            <p class="text-sm text-gray-700 mb-3">Los siguientes planes tienen cuotas <strong>fuera del período del curso (${finCurso})</strong>:</p>
             <ul class="text-sm text-left list-disc pl-5 mb-4 space-y-1 text-red-600">${conflictos.map(c => `<li>${c}</li>`).join('')}</ul>
             <p class="text-sm text-gray-600">
               <strong>No se puede guardar</strong> hasta corregir las fechas de las cuotas.<br>
-              Ve a <em>Planes de Pago</em>, edita el plan correspondiente y ajusta las fechas
-              para que queden dentro del período del curso.
+              Ve a <em>Planes de Pago</em>, edita el plan y ajusta las fechas o los días para que queden dentro del período del curso.
             </p>`,
           confirmButtonText: 'Entendido, voy a corregirlo',
           confirmButtonColor: '#e74c3c',
           allowOutsideClick: false,
         });
-        // Scroll a la sección de planes para orientar al usuario
         document.querySelector('[data-section="planes"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }

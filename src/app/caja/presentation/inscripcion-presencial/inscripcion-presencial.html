@@ -438,163 +438,134 @@
           <p class="text-sm text-default-600">{{ impSeleccionada()?.nombre_version || impSeleccionada()?.periodo || 'VersiÃƒÂ³n' }}{{ impSeleccionada()?.gestion ? ' / ' + impSeleccionada()?.gestion : '' }}</p>
         </div>
         <div class="text-right">
-          <p class="text-xs text-default-500 uppercase">Plan Seleccionado</p>
+          <p class="text-xs uppercase">Plan Seleccionado</p>
           <p class="font-bold text-primary">{{ planSeleccionado()?.titulo || 'Sin Plan' }}</p>
-          <p class="text-sm text-green-600 font-medium">{{ planSeleccionado() ? 'Costo Base: Bs. ' + planSeleccionado()?.costo : '' }}</p>
+          @if (planGratuito()) {
+            <p class="text-sm text-success font-semibold">🎁 Plan Gratuito</p>
+          } @else {
+            <p class="text-sm text-green-600 font-medium">{{ planSeleccionado() ? 'Costo Base: Bs. ' + planSeleccionado()?.costo : '' }}</p>
+          }
         </div>
       </div>
 
       <form [formGroup]="formPago">
         <h4 class="text-sm font-semibold text-default-600 mb-4 uppercase border-b pb-2">Registro de Pago (Caja)</h4>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <!-- Monto -->
-          <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">
-              Monto Pagado (Bs.) *
-              @if (cuotaSugerida()) {
-                <span class="ml-2 text-xs font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  {{ cuotaSugerida()?.tipo_tramite || cuotaSugerida()?.nro_pago || 'Cuota' }}
-                  @if (cuotaSugerida()?.dias_desde_inscripcion != null) {
-                    Ã¢â‚¬â€ a {{ cuotaSugerida()?.dias_desde_inscripcion }} dÃƒÂ­as de inscribirse
-                  } @else if (cuotaSugerida()?.fecha_fin) {
-                    Ã¢â‚¬â€ vence {{ cuotaSugerida()?.fecha_fin | date:'dd/MM/yyyy' }}
-                  }
-                </span>
-              }
-            </label>
-            <div class="relative">
-              <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
-              <input type="number" formControlName="monto_pagado"
-                class="w-full pl-10 pr-3 py-2 border border-default-200 rounded-lg text-lg font-bold text-green-700"
-                placeholder="0.00" min="0" step="0.01">
+
+        <!-- Banner plan gratuito -->
+        @if (planGratuito()) {
+          <div class="mb-5 flex items-center gap-3 px-4 py-3.5 bg-success/10 border border-success/30 rounded-xl">
+            <div class="size-9 rounded-full bg-success/15 flex items-center justify-center text-success shrink-0">
+              <ng-icon name="lucideGift" class="size-5" />
             </div>
-            @if (cargandoCuotas()) {
-              <p class="text-xs text-default-400 mt-1">Cargando cuotas del planÃ¢â‚¬Â¦</p>
-            }
-            @if (formPago.get('monto_pagado')?.touched && formPago.get('monto_pagado')?.invalid) {
-              <p class="text-xs text-red-500 mt-1">El monto es requerido y mayor a 0.</p>
-            }
+            <div>
+              <p class="font-semibold text-success text-sm">Plan Gratuito — Sin cobro</p>
+              <p class="text-xs text-success/80 mt-0.5">Este programa es gratuito. No se registrará ningún pago. Solo confirma la inscripción.</p>
+            </div>
           </div>
+        }
+        
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-          <!-- Nro Boleta (no aplica para efectivo) -->
-          @if (formPago.get('metodo_pago')?.value !== 'efectivo') {
+          @if (!planGratuito()) {
             <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo *</label>
-              <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-300 rounded-lg" placeholder="Ej. 123456789">
-              @if (formPago.get('nro_boleta')?.touched && formPago.get('nro_boleta')?.invalid) {
-                <p class="text-xs text-red-500 mt-1">El numero de comprobante es requerido.</p>
-              }
-            </div>
-          } @else {
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo</label>
-              <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-200 rounded-lg bg-default-50" placeholder="No aplica para efectivo">
-            </div>
-          }
-
-          <!-- Metodo y Banco -->
-          <div class="grid grid-cols-2 gap-2 md:col-span-2">
-            <div>
-              <label class="block text-sm font-medium text-default-700 mb-1">MÃƒÂ©todo de Pago *</label>
-              <select formControlName="metodo_pago" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
-                <option value="deposito">DepÃƒÂ³sito Bancario</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="qr">Pago por QR</option>
-                <option value="efectivo">Efectivo (en Caja)</option>
-                <option value="pos">Tarjeta (POS)</option>
-              </select>
-            </div>
-            <div>
-              @if (formPago.get('metodo_pago')?.value === 'deposito' || formPago.get('metodo_pago')?.value === 'transferencia') {
-                <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino</label>
-                <select formControlName="tipo_banco_id" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white"
-                  (change)="onBancoChange($event)">
-                  <option [ngValue]="null">-- Seleccionar --</option>
-                  @for (b of bancos(); track b.id) {
-                    <option [value]="b.id">{{ b.nombre }}</option>
-                  }
-                </select>
-                @if (bancoSeleccionado() && (bancoSeleccionado()?.numero_cuenta || bancoSeleccionado()?.titular)) {
-                  <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm space-y-1 animate-fade-in">
-                    @if (bancoSeleccionado()?.numero_cuenta) {
-                      <p class="text-default-800"><span class="font-semibold">Nro. de Cuenta:</span> {{ bancoSeleccionado()?.numero_cuenta }}</p>
-                    }
-                    @if (bancoSeleccionado()?.titular) {
-                      <p class="text-default-800"><span class="font-semibold">Titular:</span> {{ bancoSeleccionado()?.titular }}</p>
-                    }
-                  </div>
+              <label class="block text-sm font-medium text-default-700 mb-1">Monto Pagado (Bs.) *
+                @if (cuotaSugerida()) {
+                  <span class="ml-2 text-xs font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    {{ cuotaSugerida()?.tipo_tramite || cuotaSugerida()?.nro_pago || 'Cuota' }}
+                  </span>
                 }
-              } @else {
-                <!-- Espaciador invisible para mantener la alineaciÃƒÂ³n -->
-                <label class="block text-sm font-medium text-transparent mb-1 select-none">Banco Destino</label>
-                <div class="w-full px-3 py-2 border border-transparent"></div>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-2.5 text-default-500 font-bold">Bs.</span>
+                <input type="number" formControlName="monto_pagado"
+                  class="w-full pl-10 pr-3 py-2 border border-default-200 rounded-lg text-lg font-bold text-green-700"
+                  placeholder="0.00" min="0" step="0.01">
+              </div>
+              @if (formPago.get('monto_pagado')?.touched && formPago.get('monto_pagado')?.invalid) {
+                <p class="text-xs text-red-500 mt-1">El monto es requerido y mayor o igual a 0.</p>
               }
             </div>
-          </div>
-
-          @if (formPago.get('metodo_pago')?.value === 'qr') {
-            @if (planSeleccionado()?.qr_image_url) {
-              <div class="md:col-span-2 mt-2 flex flex-col items-center gap-3 p-5 bg-green-50 border border-green-200 rounded-xl">
-              <p class="text-sm font-semibold text-green-800 text-center">
-                CÃƒÂ³digo QR - {{ planSeleccionado()?.titulo }}<br>
-                <span class="text-xs text-green-600 font-normal">Muestra este cÃƒÂ³digo al cliente o envÃƒÂ­aselo por WhatsApp</span>
-              </p>
-              
-              <img [src]="planSeleccionado()!.qr_image_url!" alt="QR de pago" class="w-56 h-56 object-contain bg-white rounded-xl border border-green-300 p-2 shadow-sm">
-              
-              <div class="flex gap-3 mt-2 w-full justify-center">
-                <button type="button" (click)="descargarQr()"
-                   class="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 flex items-center justify-center">
-                  Descargar
-                </button>
-                <button type="button" (click)="copiarQr()"
-                   class="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 flex items-center justify-center">
-                  Copiar Imagen
-                </button>
-                <button type="button" (click)="enviarQrWhatsapp()"
-                   class="px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#1ebd5a] flex items-center justify-center shadow-sm">
-                  Mensaje WhatsApp
-                </button>
+            @if (formPago.get('metodo_pago')?.value !== 'efectivo') {
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo *</label>
+                <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-300 rounded-lg" placeholder="Ej. 123456789">
+                @if (formPago.get('nro_boleta')?.touched && formPago.get('nro_boleta')?.invalid) {
+                  <p class="text-xs text-red-500 mt-1">El numero de comprobante es requerido.</p>
+                }
               </div>
-            </div>
             } @else {
-              <div class="md:col-span-2 mt-2 p-4 bg-orange-50 border border-orange-200 rounded-xl text-center">
-                <p class="text-sm text-orange-800">
-                  <span class="font-semibold">No hay QR:</span> El plan <b>{{ planSeleccionado()?.titulo }}</b> no tiene una imagen QR subida. <br>
-                  Ve a la pestana de Planes de Pago, edita este plan y subele una imagen para que aparezca aqui.
-                </p>
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Nro. de Boleta / Recibo</label>
+                <input type="text" formControlName="nro_boleta" class="w-full px-3 py-2 border border-default-200 rounded-lg bg-default-50" placeholder="No aplica para efectivo">
               </div>
             }
-          }
-
-          <!-- Fecha -->
-          <div>
-            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de DepÃƒÂ³sito/Pago *</label>
-            <input type="date" formControlName="fecha_deposito" class="w-full px-3 py-2 border border-default-300 rounded-lg">
-          </div>
-        
-          <!-- Comprobante (Opcional) -->
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-default-700 mb-1">
-              Comprobante de Pago
-              <span class="ml-2 text-xs text-default-400 font-normal">(Opcional - jpg, png o pdf, max. 5MB)</span>
-            </label>
-            <div class="flex items-center gap-3">
-              <label class="flex-1 flex items-center gap-3 cursor-pointer border-2 border-dashed border-default-300 rounded-lg px-4 py-3 hover:border-primary hover:bg-primary-50 transition-all"
-                [class]="comprobanteFile() ? 'border-green-400 bg-green-50' : ''">
-                <ng-icon name="lucideUpload" class="size-5 text-default-400 flex-shrink-0"></ng-icon>
-                <span class="text-sm text-default-600 truncate">
-                  {{ comprobanteFile() ? comprobanteFile()!.name : 'Haz clic para subir imagen o PDF del voucher' }}
-                </span>
-                <input type="file" class="hidden" accept=".jpg,.jpeg,.png,.pdf" (change)="onFileChange($event)">
-              </label>
-              @if (comprobanteFile()) {
-                <button type="button" (click)="comprobanteFile.set(null)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                  <ng-icon name="lucideX" class="size-4"></ng-icon>
-                </button>
-              }
+            <div class="grid grid-cols-2 gap-2 md:col-span-2">
+              <div>
+                <label class="block text-sm font-medium text-default-700 mb-1">Metodo de Pago *</label>
+                <select formControlName="metodo_pago" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white">
+                  <option value="deposito">Deposito Bancario</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="qr">Pago por QR</option>
+                  <option value="efectivo">Efectivo (en Caja)</option>
+                  <option value="pos">Tarjeta (POS)</option>
+                </select>
+              </div>
+              <div>
+                @if (formPago.get('metodo_pago')?.value === 'deposito' || formPago.get('metodo_pago')?.value === 'transferencia') {
+                  <label class="block text-sm font-medium text-default-700 mb-1">Banco Destino</label>
+                  <select formControlName="tipo_banco_id" class="w-full px-3 py-2 border border-default-300 rounded-lg bg-white" (change)="onBancoChange($event)">
+                    <option [ngValue]="null">-- Seleccionar --</option>
+                    @for (b of bancos(); track b.id) {
+                      <option [value]="b.id">{{ b.nombre }}</option>
+                    }
+                  </select>
+                  @if (bancoSeleccionado()?.numero_cuenta) {
+                    <p class="text-xs text-default-600 mt-1">Cuenta: {{ bancoSeleccionado()?.numero_cuenta }}</p>
+                  }
+                } @else {
+                  <label class="block text-sm font-medium text-transparent mb-1 select-none">Banco</label>
+                  <div class="w-full px-3 py-2 border border-transparent"></div>
+                }
+              </div>
             </div>
+            @if (formPago.get('metodo_pago')?.value === 'qr' && planSeleccionado()?.qr_image_url) {
+              <div class="md:col-span-2 mt-2 flex flex-col items-center gap-3 p-5 bg-green-50 border border-green-200 rounded-xl">
+                <img [src]="planSeleccionado()!.qr_image_url!" alt="QR de pago" class="w-56 h-56 object-contain bg-white rounded-xl border border-green-300 p-2 shadow-sm">
+                <div class="flex gap-3">
+                  <button type="button" (click)="descargarQr()" class="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100">Descargar</button>
+                  <button type="button" (click)="enviarQrWhatsapp()" class="px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-medium hover:bg-[#1ebd5a]">Mensaje WhatsApp</button>
+                </div>
+              </div>
+            }
+          } <!-- /!planGratuito -->
+
+          <!-- Fecha (siempre visible) -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-default-700 mb-1">Fecha de Registro *</label>
+            <input type="date" formControlName="fecha_deposito" class="w-full max-w-xs px-3 py-2 border border-default-300 rounded-lg">
+          </div>
+
+        </div><!-- /grid pago -->
+        <!-- Comprobante (Opcional) -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-default-700 mb-1">
+            Comprobante de Pago
+            <span class="ml-2 text-xs text-default-400 font-normal">(Opcional - jpg, png o pdf, max. 5MB)</span>
+          </label>
+          <div class="flex items-center gap-3">
+            <label class="flex-1 flex items-center gap-3 cursor-pointer border-2 border-dashed border-default-300 rounded-lg px-4 py-3 hover:border-primary hover:bg-primary-50 transition-all"
+              [class]="comprobanteFile() ? 'border-green-400 bg-green-50' : ''">
+              <ng-icon name="lucideUpload" class="size-5 text-default-400 flex-shrink-0"></ng-icon>
+              <span class="text-sm text-default-600 truncate">
+                {{ comprobanteFile() ? comprobanteFile()!.name : 'Haz clic para subir imagen o PDF del voucher' }}
+              </span>
+              <input type="file" class="hidden" accept=".jpg,.jpeg,.png,.pdf" (change)="onFileChange($event)">
+            </label>
+            @if (comprobanteFile()) {
+              <button type="button" (click)="comprobanteFile.set(null)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                <ng-icon name="lucideX" class="size-4"></ng-icon>
+              </button>
+            }
           </div>
         </div>
 
@@ -604,6 +575,8 @@
             class="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium shadow-sm hover:bg-green-700  flex items-center gap-2">
             @if (isSubmitting()) {
               <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Procesando...
+            } @else if (planGratuito()) {
+              <ng-icon name="lucideCheck" class="size-4" /> Confirmar Inscripción Gratuita
             } @else {
               Confirmar InscripciÃ³n y Pago
               <ng-icon name="lucideCheck"></ng-icon>
@@ -699,7 +672,15 @@
               }
               <tr>
                 <td class="py-3 font-bold text-default-900">Monto Cancelado</td>
-                <td class="py-3 font-bold text-green-600 text-right text-lg">Bs. {{ (formPago.value.monto_pagado | number:'1.2-2') }}</td>
+                <td class="py-3 font-bold text-right text-lg"
+                    [class.text-green-600]="!planGratuito()"
+                    [class.text-success]="planGratuito()">
+                  @if (planGratuito()) {
+                    Gratuito (Bs. 0.00)
+                  } @else {
+                    Bs. {{ (formPago.value.monto_pagado | number:'1.2-2') }}
+                  }
+                </td>
               </tr>
             </tbody>
           </table>
