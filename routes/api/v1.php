@@ -347,6 +347,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('permiso:inscripciones.editar');
     Route::post('/inscripciones/marcar-participantes', [\App\Http\Controllers\Api\InscripcionController::class, 'marcarParticipantesBulk'])
         ->middleware('permiso:inscripciones.editar');
+    // ── Baja, reactivación y transferencia ────────────────────────────────
+    Route::post('/inscripciones/{id}/dar-baja', [\App\Http\Controllers\Api\TransferenciaInscripcionController::class, 'darDeBaja'])
+        ->middleware('permiso:inscripciones.editar');
+    Route::post('/inscripciones/{id}/reactivar', [\App\Http\Controllers\Api\TransferenciaInscripcionController::class, 'reactivar'])
+        ->middleware('permiso:inscripciones.editar');
+    Route::get('/inscripciones/{id}/preview-transferencia', [\App\Http\Controllers\Api\TransferenciaInscripcionController::class, 'previewTransferencia'])
+        ->middleware('permiso:inscripciones.ver');
+    Route::post('/inscripciones/{id}/transferir', [\App\Http\Controllers\Api\TransferenciaInscripcionController::class, 'transferir'])
+        ->middleware('permiso:inscripciones.editar');
     Route::get('/inscripciones/{id}/devoluciones', [\App\Http\Controllers\Api\DevolucionController::class, 'index'])
         ->middleware('permiso:inscripciones.ver');
     Route::post('/inscripciones/{id}/devoluciones', [\App\Http\Controllers\Api\DevolucionController::class, 'store'])

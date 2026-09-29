@@ -179,25 +179,13 @@ class CajaController extends Controller
         ]);
 
         // â”€â”€ Validar boleta duplicada â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        $nroBoleta = $request->input('nro_boleta');
-        if ($nroBoleta && strtolower($nroBoleta) !== 'efectivo') {
-            $existeBoleta = DB::table('t_pago')
-                ->where('nro_boleta_bancaria', $nroBoleta)
-                ->where('estado', 1)
-                ->first();
-
-            if ($existeBoleta) {
-                $usuario = DB::table('users')->where('id', $existeBoleta->id_us_reg)->first();
-                $cajeroAnterior = $usuario ? $usuario->nombre . ' ' . $usuario->apellido : 'otro cajero';
-                $fechaBoleta = $existeBoleta->fecha_reg ? date('d/m/Y', strtotime($existeBoleta->fecha_reg)) : 'otra fecha';
-                
-                return response()->json([
-                    'message' => "âš  Este nÃºmero de boleta ({$nroBoleta}) ya fue registrado el {$fechaBoleta} por {$cajeroAnterior}. Verifique el comprobante."
-                ], 422);
-            }
+        // ── Validar boleta duplicada (usando helper centralizado) ──────────
+        $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->input('nro_boleta'));
+        if ($boletaCheck['duplicada']) {
+            return response()->json(array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []), 422);
         }
 
-        // Guardar comprobante si viene
+                // Guardar comprobante si viene
         $comprobanteUrl = null;
         if ($request->hasFile('comprobante')) {
             $comprobanteUrl = $request->file('comprobante')

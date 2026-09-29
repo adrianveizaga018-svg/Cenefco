@@ -41,18 +41,26 @@ class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterfac
 
         // Filtrar planes incompletos: sin costo, sin cuotas definidas o con nro_cuotas = 0
         if ($soloValidos) {
-            $q->where(fn ($sq) => $sq
-                ->whereNotNull('costo')
-                ->where('costo', '>', 0)
-            );
+            // Un plan es inválido si:
+            // - costo = 0 Y nro_cuotas > 1 (cuotas sin monto no tiene sentido)
+            // Plan gratuito legítimo: costo = 0 Y nro_cuotas <= 1 → válido
+            $q->where(function ($sq) {
+                $sq->where('costo', '>', 0)
+                   ->orWhere(function ($sub) {
+                       // Gratuito contado: costo 0 pero cuota única
+                       $sub->where(fn ($s) => $s->whereNull('costo')->orWhere('costo', '=', 0))
+                           ->where(fn ($s) => $s->whereNull('nro_cuotas')->orWhere('nro_cuotas', '<=', 1));
+                   });
+            });
             $q->where(fn ($sq) => $sq
                 ->whereNull('nro_cuotas')
                 ->orWhere('nro_cuotas', '>', 0)
             );
-            // Planes de 1 cuota (contado) son válidos aunque no tengan filas en t_fechapago
+            // Planes de 1 cuota (contado o gratuito) son válidos aunque no tengan filas en t_fechapago
             // Planes de más de 1 cuota deben tener al menos 1 fila en t_fechapago
             $q->where(function ($sq) {
                 $sq->where('nro_cuotas', '<=', 1)
+                   ->orWhere(fn ($s) => $s->whereNull('nro_cuotas'))
                    ->orWhereExists(function ($ex) {
                        $ex->from('t_fechapago')
                           ->whereColumn('t_fechapago.id_plan', 't_plan.id_plan')

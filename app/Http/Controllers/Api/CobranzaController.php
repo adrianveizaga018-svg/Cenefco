@@ -64,6 +64,12 @@ class CobranzaController extends Controller
             return response()->json(['error' => 'Cuota no válida o ya pagada'], 400);
         }
 
+        // Validar boleta duplicada
+        $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->nro_boleta);
+        if ($boletaCheck['duplicada']) {
+            return response()->json(array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []), 422);
+        }
+
         $inscripcion = DB::table('t_inscripcion')->where('id_ins', $cuota->id_ins)->first();
 
         $comprobanteUrl = null;

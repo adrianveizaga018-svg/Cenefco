@@ -76,6 +76,12 @@ class PagoController extends Controller
     {
         $this->vendedorScope->assertAccesoInscripcion(auth()->user(), $request->filled('id_ins') ? (int) $request->id_ins : null);
 
+        // Validar boleta duplicada
+        $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->nro_boleta_bancaria);
+        if ($boletaCheck['duplicada']) {
+            return response()->json(array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []), 422);
+        }
+
         $comprobantePath = null;
         if ($request->hasFile('comprobante_archivo')) {
             $comprobantePath = $request->file('comprobante_archivo')->store('comprobantes-pagos', 'public');
