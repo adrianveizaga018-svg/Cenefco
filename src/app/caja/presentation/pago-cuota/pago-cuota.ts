@@ -143,8 +143,15 @@ export class PagoCuota {
         this.buscar(); // Recargar la lista
       },
       error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo registrar el pago'));
         this.procesando.set(false);
+        if (err.status === 422 && err.error?.boleta_duplicada) {
+          const d = err.error;
+          this.toast.error('Comprobante duplicado',
+            `La boleta "${d.nro_boleta}" ya fue registrada el ${d.registrado_el} por ${d.registrado_por}.`
+          );
+        } else {
+          this.toast.error('Error', extractErrorMessage(err, 'No se pudo registrar el pago'));
+        }
       }
     });
   }

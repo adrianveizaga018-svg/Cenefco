@@ -431,12 +431,31 @@ Titular: ${banco.titular || '-'}`;
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        let errorMsg = err.error?.message || 'Error al inscribir';
-        if (err.error?.errors) {
+        const data = err.error ?? {};
+        const errorMsg = data?.message || 'Error al inscribir';
+
+        if (err.status === 422 && data?.boleta_duplicada) {
+          // Boleta duplicada — mostrar alerta específica con detalles
+          Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Número de comprobante duplicado',
+            html: `
+              <p class="text-sm text-gray-700 mb-3">${errorMsg}</p>
+              <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 text-left text-xs text-orange-800 space-y-1">
+                <p><strong>Boleta:</strong> ${data.nro_boleta ?? ''}</p>
+                <p><strong>Registrado por:</strong> ${data.registrado_por ?? '—'}</p>
+                <p><strong>Fecha:</strong> ${data.registrado_el ?? '—'}</p>
+              </div>`,
+            confirmButtonText: 'Entendido, voy a revisar',
+            confirmButtonColor: '#f59e0b',
+            allowOutsideClick: false,
+          });
+        } else if (err.error?.errors) {
           const firstKey = Object.keys(err.error.errors)[0];
-          errorMsg = err.error.errors[firstKey][0];
+          Swal.fire('Error de validación', err.error.errors[firstKey][0], 'error');
+        } else {
+          Swal.fire('Error', errorMsg, 'error');
         }
-        Swal.fire('Error', errorMsg, 'error');
       }
     });
   }
