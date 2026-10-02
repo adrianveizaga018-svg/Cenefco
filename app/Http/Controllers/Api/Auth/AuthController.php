@@ -17,6 +17,7 @@ use App\Application\Usuarios\Handlers\LogoutHandler;
 use App\Application\Usuarios\Handlers\RegisterUserHandler;
 use App\Application\Usuarios\Handlers\ResetPasswordHandler;
 use App\Application\Usuarios\Handlers\UpdatePerfilHandler;
+use App\Application\Usuarios\Services\IdentidadUnicaService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Usuarios\ForgotPasswordRequest;
 use App\Http\Requests\Usuarios\LoginRequest;
@@ -26,6 +27,7 @@ use App\Http\Requests\Usuarios\ResetPasswordRequest;
 use App\Http\Requests\Usuarios\UpdatePerfilRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -133,6 +135,7 @@ class AuthController extends Controller
                     email: $request->email,
                     password: $request->password,
                     roleId: $rolParticipante,
+                    apellidoMaterno: $request->apellido_materno,
                 )
             );
 
@@ -185,12 +188,38 @@ class AuthController extends Controller
         $request->validate([
             'ci' => ['required', 'string', 'max:20'],
             'telefono' => ['required', 'string', 'max:20'],
+            'nombre' => ['sometimes', 'required', 'string', 'max:100'],
+            'apellido' => ['sometimes', 'required', 'string', 'max:100'],
+            'apellido_materno' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = $request->user();
-        
+
+        $request->merge([
+            'ci'       => trim($request->ci),
+            'telefono' => trim($request->telefono),
+        ]);
+
+        // El CI enlaza la cuenta con el historial académico: una vez fijado no se cambia desde aquí
+        $errores = (! empty($user->ci) && $user->ci !== $request->ci)
+            ? ['ci' => 'Tu cuenta ya tiene un carnet registrado. Para corregirlo comunícate con CENEFCO.']
+            : app(IdentidadUnicaService::class)->errores($user->id, $user->email, $request->ci, $request->telefono, ! empty($user->ci));
+
+        if ($errores) {
+            throw ValidationException::withMessages($errores);
+        }
+
         $user->ci = $request->ci;
         $user->telefono = $request->telefono;
+        if ($request->has('nombre')) {
+            $user->nombre = $request->nombre;
+        }
+        if ($request->has('apellido')) {
+            $user->apellido = $request->apellido;
+        }
+        if ($request->has('apellido_materno')) {
+            $user->apellido_materno = $request->apellido_materno;
+        }
         $user->save();
 
         $legacyUser = \Illuminate\Support\Facades\DB::table('t_usuario')->where('ci', $request->ci)->first();
@@ -203,6 +232,7 @@ class AuthController extends Controller
                 'id_us' => $newId,
                 'nombre' => $user->nombre,
                 'appaterno' => $user->apellido,
+                'apmaterno' => $user->apellido_materno,
                 'ci' => $request->ci,
                 'celular' => $request->telefono,
                 'email' => $user->email,

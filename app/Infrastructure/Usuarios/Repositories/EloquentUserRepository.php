@@ -157,7 +157,9 @@ class EloquentUserRepository implements UserRepositoryInterface
         try {
             $client = new \Google_Client(['client_id' => config('services.google.client_id')]);
             $payload = $client->verifyIdToken($command->idToken);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            // Un fallo aquí suele ser de conexión con Google (certificados, red), no del token
+            report($e);
             $payload = false;
         }
 

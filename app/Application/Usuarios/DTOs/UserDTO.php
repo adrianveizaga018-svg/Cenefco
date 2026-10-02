@@ -21,6 +21,7 @@ class UserDTO
         public readonly ?string $avatarUrl = null,
         public readonly ?string $ci = null,
         public readonly ?string $telefono = null,
+        public readonly ?string $apellidoMaterno = null,
     ) {}
 
     public static function fromModel(User $user): self
@@ -54,6 +55,7 @@ class UserDTO
             avatarUrl: $user->avatar_url,
             ci: $user->ci,
             telefono: $user->telefono,
+            apellidoMaterno: $user->apellido_materno,
         );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Application\Pagos\Handlers;
 
 use App\Application\Pagos\Commands\RegistrarAnticipoCommand;
 use App\Application\Pagos\DTOs\PagoDTO;
+use App\Application\Usuarios\Services\PromocionEstudianteService;
 use App\Domain\CompromisosCobro\Contracts\CompromisoCobroRepositoryInterface;
 use App\Domain\Pagos\Contracts\PagoRepositoryInterface;
 use App\Enums\PrioridadEnum;
@@ -17,6 +18,7 @@ class RegistrarAnticipoHandler
         private readonly PagoRepositoryInterface $repository,
         private readonly CompromisoCobroRepositoryInterface $compromisoCobroRepository,
         private readonly NotificacionService $notificacionService,
+        private readonly PromocionEstudianteService $promocionEstudiante,
     ) {}
 
     public function handle(RegistrarAnticipoCommand $command): PagoDTO
@@ -47,6 +49,8 @@ class RegistrarAnticipoHandler
 
             return $pago;
         });
+
+        $this->promocionEstudiante->promoverPorIdUs($command->idUs);
 
         $this->notificacionService->enviarAPermiso(
             permiso:      'pagos.editar',

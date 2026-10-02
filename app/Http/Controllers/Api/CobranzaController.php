@@ -77,7 +77,7 @@ class CobranzaController extends Controller
             $comprobanteUrl = $request->file('comprobante')->store('pagos/cuotas', 'public');
         }
 
-        return DB::transaction(function () use ($request, $cuota, $inscripcion, $comprobanteUrl) {
+        $respuesta = DB::transaction(function () use ($request, $cuota, $inscripcion, $comprobanteUrl) {
             $cajero = $request->user();
             $idPago = (DB::table('t_pago')->max('id_pago') ?? 0) + 1;
 
@@ -107,6 +107,10 @@ class CobranzaController extends Controller
 
             return response()->json(['mensaje' => 'Pago de cuota registrado', 'id_pago' => $idPago]);
         });
+
+        app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)->promoverPorIdUs($inscripcion->id_us);
+
+        return $respuesta;
     }
 
     // Para modulo de Dashboard de Cobranzas — agrupado por inscripción
@@ -248,5 +252,82 @@ class CobranzaController extends Controller
             'cuotas_pendientes' => (int) ($res->cuotas_pendientes ?? 0),
             'cuotas_pagadas'   => (int) ($res->cuotas_pagadas ?? 0),
         ]);
+    }
+
+    // ── Pagar cuota desde dashboard (ruta: POST /cobranzas/cuotas/{id}/pagar) ──
+
+    public function pagarCuota(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'monto_pagado'   => 'required|numeric|min:0',
+            'nro_boleta'     => 'nullable|string|max:200',
+            'fecha_deposito' => 'required|date',
+            'metodo_pago'    => 'required|string',
+            'tipo_banco_id'  => 'nullable|integer',
+            'comprobante'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $cuota = DB::table('t_inscripcion_cuotas')->where('id', $id)->first();
+        if (!$cuota) {
+            return response()->json(['message' => 'Cuota no encontrada'], 404);
+        }
+        if ($cuota->estado === 'pagado') {
+            return response()->json(['message' => 'Esta cuota ya fue pagada'], 422);
+        }
+
+        // Validar boleta duplicada
+        $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->input('nro_boleta'));
+        if ($boletaCheck['duplicada']) {
+            return response()->json(
+                array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []),
+                422
+            );
+        }
+
+        $inscripcion = DB::table('t_inscripcion')->where('id_ins', $cuota->id_ins)->first();
+
+        $comprobanteUrl = null;
+        if ($request->hasFile('comprobante')) {
+            $comprobanteUrl = $request->file('comprobante')->store('pagos/cuotas', 'public');
+        }
+
+        $respuesta = DB::transaction(function () use ($request, $cuota, $inscripcion, $comprobanteUrl, $id) {
+            $cajero = $request->user();
+            $idPago = (DB::table('t_pago')->max('id_pago') ?? 0) + 1;
+
+            DB::table('t_pago')->insert([
+                'id_pago'             => $idPago,
+                'id_us_reg'           => $cajero->id,
+                'id_us'               => $inscripcion->id_us,
+                'id_ins'              => $inscripcion->id_ins,
+                'monto_pagado'        => $request->input('monto_pagado'),
+                'nro_boleta_bancaria' => $request->input('nro_boleta'),
+                'fecha_deposito'      => $request->input('fecha_deposito'),
+                'metodo_pago'         => $request->input('metodo_pago'),
+                'tipo_banco_id'       => $request->input('tipo_banco_id'),
+                'estado'              => 1,
+                'estado_verificacion' => 'verificado',
+                'nota_verificacion'   => 'Pago de cuota registrado desde cobranzas por ' . $cajero->nombre,
+                'fecha_reg'           => now(),
+                'pago_extra'          => 0,
+                'comprobante_url'     => $comprobanteUrl,
+            ]);
+
+            DB::table('t_inscripcion_cuotas')->where('id', $id)->update([
+                'estado'     => 'pagado',
+                'id_pago'    => $idPago,
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'mensaje'  => 'Pago de cuota registrado correctamente',
+                'id_pago'  => $idPago,
+                'id_cuota' => $id,
+            ]);
+        });
+
+        app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)->promoverPorIdUs($inscripcion->id_us);
+
+        return $respuesta;
     }
 }

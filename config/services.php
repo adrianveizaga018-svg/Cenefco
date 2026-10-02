@@ -39,6 +39,7 @@ return [
 
     'portal' => [
         'api_key' => env('PORTAL_API_KEY'),
+        'url' => env('PORTAL_URL', env('CERTIFICADOS_PORTAL_URL', 'http://localhost:4201')),
     ],
 
     'moodle' => [

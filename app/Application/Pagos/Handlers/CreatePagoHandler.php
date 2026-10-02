@@ -4,6 +4,7 @@ namespace App\Application\Pagos\Handlers;
 
 use App\Application\Pagos\Commands\CreatePagoCommand;
 use App\Application\Pagos\DTOs\PagoDTO;
+use App\Application\Usuarios\Services\PromocionEstudianteService;
 use App\Domain\CompromisosCobro\Contracts\CompromisoCobroRepositoryInterface;
 use App\Domain\Pagos\Contracts\PagoRepositoryInterface;
 use App\Domain\Pagos\Exceptions\PagoBoletaDuplicadaException;
@@ -19,6 +20,7 @@ class CreatePagoHandler
         private readonly PagoRepositoryInterface $repository,
         private readonly CompromisoCobroRepositoryInterface $compromisoCobroRepository,
         private readonly NotificacionService $notificacionService,
+        private readonly PromocionEstudianteService $promocionEstudiante,
     ) {}
 
     public function handle(CreatePagoCommand $command): PagoDTO
@@ -71,6 +73,8 @@ class CreatePagoHandler
 
             return $pago;
         });
+
+        $this->promocionEstudiante->promoverPorIdUs($command->idUs);
 
         $mensajeDescuento = $command->montoDescuento
             ? " Incluye descuento de Bs. {$command->montoDescuento} ({$command->motivoDescuento})."

@@ -59,7 +59,9 @@ class InscripcionPortalController extends Controller
 
             if (! $idUs) {
 
-                DB::statement('SELECT pg_advisory_xact_lock(1)');
+                if (DB::getDriverName() === 'pgsql') {
+                    DB::statement('SELECT pg_advisory_xact_lock(1)');
+                }
                 $idUs = (DB::table('t_usuario')->max('id_us') ?? 9000) + 1;
 
                 DB::table('t_usuario')->insert([
@@ -91,52 +93,8 @@ class InscripcionPortalController extends Controller
             ], 'id_ins');
         });
 
-        // Ascender automáticamente el rol del usuario de 'participante' a 'estudiante'
-        // cuando concreta una inscripción en el portal.
-        $email = $request->input('email') ?? null;
-        if (! $email) {
-            // Intentar sacar el email de los campos del formulario
-            foreach ($request->except(['programa_id', 'documentos', 'campos_extra', 'origen', 'captcha_key', 'captcha_value']) as $key => $val) {
-                if (str_contains(strtolower($key), 'email') && filter_var($val, FILTER_VALIDATE_EMAIL)) {
-                    $email = $val;
-                    break;
-                }
-            }
-        }
-
-        if ($email) {
-            $rolEstudiante = DB::table('roles')->where('nombre', 'Estudiante')->value('id');
-            if ($rolEstudiante) {
-                $usuario = DB::table('usuarios')->where('email', $email)->first(['id']);
-                if ($usuario) {
-                    // Solo escalar si actualmente es participante o ciudadano
-                    $rolesActuales = DB::table('model_has_roles')
-                        ->where('model_type', 'App\\Models\\User')
-                        ->where('model_id', $usuario->id)
-                        ->pluck('role_id')
-                        ->toArray();
-
-                    $rolParticipante = DB::table('roles')->whereIn('nombre', ['participante', 'Ciudadano'])->pluck('id')->toArray();
-
-                    $esParticipante = count(array_intersect($rolesActuales, $rolParticipante)) > 0;
-                    $yaEsEstudiante = in_array($rolEstudiante, $rolesActuales);
-
-                    if ($esParticipante && ! $yaEsEstudiante) {
-                        // Quitar rol anterior y asignar Estudiante
-                        DB::table('model_has_roles')
-                            ->where('model_type', 'App\\Models\\User')
-                            ->where('model_id', $usuario->id)
-                            ->delete();
-
-                        DB::table('model_has_roles')->insert([
-                            'role_id'    => $rolEstudiante,
-                            'model_type' => 'App\\Models\\User',
-                            'model_id'   => $usuario->id,
-                        ]);
-                    }
-                }
-            }
-        }
+        // El rol sigue siendo 'participante' hasta que se registre el primer pago
+        // (ver PromocionEstudianteService).
 
         return response()->json(['inscripcion_id' => $idIns], 201);
     }

@@ -28,9 +28,11 @@ class InscripcionCuotasService
 
         foreach ($templates as $i => $t) {
             $fechaVencimiento = null;
-            if ($modoFechas === 'relativo' && isset($t->dias_desde_inscripcion)) {
-                $fechaVencimiento = $fechaIns->copy()->addDays($t->dias_desde_inscripcion)->format('Y-m-d');
+            if ($modoFechas === 'relativo' && isset($t->dias_desde_inscripcion) && $t->dias_desde_inscripcion !== null) {
+                // Plan "desde que se inscribe": calcular fecha relativa a la inscripción
+                $fechaVencimiento = $fechaIns->copy()->addDays((int) $t->dias_desde_inscripcion)->format('Y-m-d');
             } else {
+                // Plan "fecha fija": usar la fecha límite absoluta del template
                 $fechaVencimiento = $t->fecha_fin;
             }
 

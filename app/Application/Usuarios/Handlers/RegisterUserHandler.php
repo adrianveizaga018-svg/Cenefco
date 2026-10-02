@@ -17,6 +17,7 @@ class RegisterUserHandler
         return $this->userRepository->register([
             'nombre'   => $command->nombre,
             'apellido' => $command->apellido,
+            'apellido_materno' => $command->apellidoMaterno,
             'email'    => $command->email,
             'password' => $command->password,
             'tipo'     => 'ciudadano',

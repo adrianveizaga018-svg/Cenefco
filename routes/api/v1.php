@@ -696,6 +696,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/cert-plantillas/{id}', [\App\Http\Controllers\Api\CertPlantillaController::class, 'destroy'])
         ->middleware('permiso:contenido.eliminar');
 
+    Route::get('/cert-fuentes', [\App\Http\Controllers\Api\CertFuentesController::class, 'index'])
+        ->middleware('permiso:certificados.ver');
+
     Route::get('/cert-plantilla-campos', [\App\Http\Controllers\Api\CertPlantillaCampoController::class, 'index'])
         ->middleware('permiso:certificados.ver');
     Route::post('/cert-plantilla-campos', [\App\Http\Controllers\Api\CertPlantillaCampoController::class, 'store'])

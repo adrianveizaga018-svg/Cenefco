@@ -10,5 +10,6 @@ class RegisterUserCommand
         public readonly string $email,
         public readonly string $password,
         public readonly ?int $roleId = null,
+        public readonly ?string $apellidoMaterno = null,
     ) {}
 }

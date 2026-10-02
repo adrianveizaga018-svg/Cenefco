@@ -36,26 +36,46 @@ class CertificadoService
 
     private function resolveFont(?string $campoFuente = null): string
     {
+        // 1. Ruta relativa tipo "assets/fonts/Roboto_regular.ttf" → absoluta
+        if ($campoFuente && !str_starts_with($campoFuente, '/') && !preg_match('/^[A-Z]:\//i', $campoFuente)) {
+            $campoFuente = base_path($campoFuente);
+        }
+
+        // 2. Ruta absoluta explícita proporcionada por el campo
         if ($campoFuente && file_exists($campoFuente)) {
             return $campoFuente;
         }
+
+        // 3. Variable de entorno CERT_FONT_PATH
         $envFont = env('CERT_FONT_PATH');
         if ($envFont && file_exists($envFont)) {
             return $envFont;
         }
+
+        // 4. Fuentes empaquetadas en el proyecto
+        $empaquetadas = [
+            base_path('assets/fonts/Asap_700.ttf'),
+            base_path('assets/fonts/Roboto_regular.ttf'),
+            base_path('assets/fonts/Open_Sans_regular.ttf'),
+            base_path('assets/fonts/Ubuntu_regular.ttf'),
+            base_path('assets/fonts/Khand_500.ttf'),
+            base_path('assets/fonts/ABeeZee_regular.ttf'),
+        ];
+        foreach ($empaquetadas as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        // 5. Fuentes del sistema operativo
         foreach (self::$FONT_CANDIDATES as $path) {
             if (file_exists($path)) {
                 return $path;
             }
         }
 
-        $fuenteEmpaquetada = base_path('assets/fonts/Asap_700.ttf');
-        if (file_exists($fuenteEmpaquetada)) {
-            return $fuenteEmpaquetada;
-        }
-
         throw new \RuntimeException(
-            'No se encontró ninguna fuente TTF para generar el certificado. '.
+            'No se encontró ninguna fuente TTF para generar el certificado. ' .
             'Configure CERT_FONT_PATH en el archivo .env con la ruta a una fuente .ttf válida.'
         );
     }

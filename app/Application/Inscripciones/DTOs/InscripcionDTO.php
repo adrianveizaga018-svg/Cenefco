@@ -29,10 +29,10 @@ final readonly class InscripcionDTO
         public float $total_pagado,
         public ?int    $id_vendedor,
         public ?string $canal_venta,
+        public ?array  $documentos = null,
+        public ?float  $curso_costo_monto = null,
+        public bool    $es_participante = false,
         public ?string $vendedor_nombre = null,
-        public ?array  $documentos,
-        public ?float  $curso_costo_monto,
-        public bool    $es_participante,
     ) {}
 
     public static function fromModel(object $model): self
@@ -65,6 +65,7 @@ final readonly class InscripcionDTO
             documentos:        is_string($model->documentos ?? null) ? json_decode($model->documentos, true) : ($model->documentos ?? null),
             curso_costo_monto: isset($model->curso_costo_monto) ? (float) $model->curso_costo_monto : null,
             es_participante:   (bool) ($model->es_participante ?? false),
+            vendedor_nombre:   $model->vendedor_nombre ?? null,
         );
     }
 }

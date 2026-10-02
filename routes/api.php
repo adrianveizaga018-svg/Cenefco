@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\Auth\SesionHandoffController;
 use App\Http\Controllers\Api\Auth\VerifyEmailController;
 use App\Http\Controllers\Api\PagoOnlineSessionController;
 use App\Http\Controllers\Api\PagoPublicoController;
@@ -19,12 +20,16 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:forgot-password');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])
         ->middleware('throttle:5,15');
+    Route::post('/handoff/canjear', [SesionHandoffController::class, 'canjear'])
+        ->middleware('throttle:10,1');
 });
 
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/handoff', [SesionHandoffController::class, 'crear'])
+        ->middleware('throttle:20,1');
     Route::post('/complete-profile', [AuthController::class, 'completeProfile']);
     Route::put('/perfil', [AuthController::class, 'updatePerfil']);
     Route::post('/register', [AuthController::class, 'register'])
