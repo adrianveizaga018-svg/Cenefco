@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Application\PlanesAcademicos\Commands\CreatePlanAcademicoCommand;
+use App\Application\PlanesAcademicos\Commands\DeletePlanAcademicoCommand;
+use App\Application\PlanesAcademicos\Commands\UpdatePlanAcademicoCommand;
+use App\Application\PlanesAcademicos\Handlers\CreatePlanAcademicoHandler;
+use App\Application\PlanesAcademicos\Handlers\DeletePlanAcademicoHandler;
+use App\Application\PlanesAcademicos\Handlers\UpdatePlanAcademicoHandler;
+use App\Application\PlanesAcademicos\Queries\GetPlanAcademicoByIdQuery;
+use App\Application\PlanesAcademicos\Queries\GetPlanesAcademicosQuery;
+use App\Application\PlanesAcademicos\QueryHandlers\GetPlanAcademicoByIdQueryHandler;
+use App\Application\PlanesAcademicos\QueryHandlers\GetPlanesAcademicosQueryHandler;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\PlanesAcademicos\StorePlanAcademicoRequest;
+use App\Http\Requests\PlanesAcademicos\UpdatePlanAcademicoRequest;
+use App\Shared\Kernel\DTOs\PaginationDTO;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class PlanAcademicoController extends Controller
+{
+    public function __construct(
+        private readonly GetPlanesAcademicosQueryHandler $getPlanesHandler,
+        private readonly GetPlanAcademicoByIdQueryHandler $getPlanByIdHandler,
+        private readonly CreatePlanAcademicoHandler $createHandler,
+        private readonly UpdatePlanAcademicoHandler $updateHandler,
+        private readonly DeletePlanAcademicoHandler $deleteHandler,
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $pagination = PaginationDTO::fromArray([
+            'pageIndex' => $request->get('pageIndex', 1),
+            'pageSize'  => $request->get('pageSize', 30),
+            'query'     => $request->get('query', ''),
+            'sortKey'   => 'titulo',
+            'sortOrder' => 'asc',
+        ]);
+
+        return response()->json(
+            $this->getPlanesHandler->handle(new GetPlanesAcademicosQuery(
+                pagination:   $pagination,
+                conInactivos: $request->boolean('conInactivos', false),
+                idCatplan:    $request->has('id_catplan') ? $request->integer('id_catplan') : null,
+                idMat:        $request->has('id_mat') ? $request->integer('id_mat') : null,
+                soloValidos:  $request->boolean('solo_validos', false),
+            ))
+        );
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        return response()->json(
+            $this->getPlanByIdHandler->handle(new GetPlanAcademicoByIdQuery($id))
+        );
+    }
+
+    public function store(StorePlanAcademicoRequest $request): JsonResponse
+    {
+        $qrUrl = null;
+        if ($request->hasFile('qr_image')) {
+            $qrUrl = $request->file('qr_image')->store('planes/qr', 'public');
+        }
+
+        $dto = $this->createHandler->handle(new CreatePlanAcademicoCommand(
+            id_plan:           $request->integer('id_plan'),
+            id_us_reg:         $request->integer('id_us_reg', 0),
+            titulo:            $request->titulo,
+            titulo_plan:       $request->titulo_plan,
+            convenio:          $request->convenio,
+            convenio_id:       $request->filled('convenio_id') ? $request->integer('convenio_id') : null,
+            anio:              $request->anio,
+            numero_resolucion: $request->numero_resolucion,
+            costo:             $request->costo,
+            nro_cuotas:        $request->nro_cuotas,
+            descuento:         $request->descuento,
+            costo_por_cuota:   $request->costo_por_cuota,
+            id_catplan:        $request->filled('id_catplan') ? $request->integer('id_catplan') : null,
+            estado:            $request->integer('estado', 1),
+            qr_image_url:      $qrUrl,
+        ));
+
+        return response()->json($dto, 201);
+    }
+
+    public function update(UpdatePlanAcademicoRequest $request, int $id): JsonResponse
+    {
+        $qrImageUrl = null;
+        if ($request->hasFile('qr_image')) {
+            $qrImageUrl = $request->file('qr_image')->store('planes/qr', 'public');
+        } elseif ($request->input('remove_qr') == '1') {
+            $qrImageUrl = 'REMOVE';
+        }
+
+        $dto = $this->updateHandler->handle(new UpdatePlanAcademicoCommand(
+            id:                $id,
+            titulo:            $request->titulo,
+            titulo_plan:       $request->titulo_plan,
+            convenio:          $request->convenio,
+            convenio_id:       $request->filled('convenio_id') ? $request->integer('convenio_id') : null,
+            anio:              $request->anio,
+            numero_resolucion: $request->numero_resolucion,
+            costo:             $request->costo,
+            nro_cuotas:        $request->nro_cuotas,
+            descuento:         $request->descuento,
+            costo_por_cuota:   $request->costo_por_cuota,
+            id_catplan:        $request->filled('id_catplan') ? $request->integer('id_catplan') : null,
+            estado:            $request->filled('estado') ? $request->integer('estado') : null,
+            qr_image_url:      $qrImageUrl
+        ));
+
+        return response()->json($dto);
+    }
+
+    /**
+     * Devuelve las imparticiones que tienen este plan habilitado,
+     * con sus fechas de inicio y fin, para validar el calendario de cuotas.
+     */
+    public function imparticiones(int $id): JsonResponse
+    {
+        $imparticiones = DB::table('imparticion_planes as ip')
+            ->join('t_imparte as imp', 'imp.id_imp', '=', 'ip.id_imp')
+            ->where('ip.id_plan', $id)
+            ->where('imp.estado', 1)
+            ->select(
+                'imp.id_imp',
+                'imp.imparte_fecha_inicio',
+                'imp.imparte_fecha_fin',
+                DB::raw("(SELECT p2.nombre_programa FROM t_programa p2 WHERE p2.id_imp = imp.id_imp ORDER BY p2.id_us_reg LIMIT 1) as nombre_programa")
+            )
+            ->orderByDesc('imp.id_imp')
+            ->get();
+
+        return response()->json($imparticiones);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $totalInscripciones = DB::table('t_inscripcion')
+            ->where('id_plan', $id)
+            ->count();
+
+        if ($totalInscripciones > 0) {
+            return response()->json([
+                'message' => "Este plan tiene {$totalInscripciones} inscripción(es) registrada(s). No se puede eliminar para proteger el historial de datos. Puedes marcarlo como Inactivo.",
+                'total_inscripciones' => $totalInscripciones,
+                'sugerencia' => 'Cambia el estado del plan a Inactivo en lugar de eliminarlo.'
+            ], 422);
+        }
+
+        $this->deleteHandler->handle(new DeletePlanAcademicoCommand($id));
+
+        return response()->json(null, 204);
+    }
+}

@@ -1,736 +1,910 @@
-# CLAUDE.md — Guía para Agentes AI y Onboarding Técnico: admin_ventas
+# CLAUDE.md — Guía para Agentes AI y Onboarding Técnico
 
-> Referencia principal para Claude Code y cualquier desarrollador nuevo en el frontend.
-> Describe la arquitectura, patrones, convenciones y ejemplos reales del código.
+> Este archivo es la referencia principal para Claude Code y cualquier desarrollador nuevo.
+> Describe los patrones del proyecto, convenciones estrictas y ejemplos reales de código.
 
 ---
 
 ## Qué es este proyecto
 
-**admin_ventas** es el panel de administración del sistema comercial **cenefco**.
-Construido con Angular 18+ usando **standalone components**, **Signals**, y **Zoneless Change Detection**.
+**cenefco API** es una API REST construida con Laravel 12 para la gestión de cursos, diplomados y programas de formación continua. Centraliza la administración de estudiantes, inscripciones, notas, pagos, docentes y la estructura académica de los programas.
+Implementa **DDD (Domain-Driven Design) + CQRS** de forma estricta en todas las capas.
 
-Stack: Angular 20 · TypeScript · TailwindCSS · ApexCharts · Angular Signals · Zoneless (`provideZonelessChangeDetection`)
+Stack: PHP 8.2 · Laravel 12 · MySQL 8 · Laravel Sanctum · DomPDF · Spatie Laravel Settings
 
-API base: `/api/v1/` — servida por `api_ventas` (Laravel 12 DDD)
+Módulos principales: Cursos · Diplomados · Programas · Inscripciones · Notas · Pagos · Docentes · Estudiantes · Horarios · Usuarios y roles · Permisos · Contenido web · **Web Institucional** · **Certificados con QR** · **Pre-inscripción** · **WhatsApp grupos** · **CRM Leads/Seguimiento** · **Control Académico (Tareas dinámicas)** · **Catálogo de Requisitos Académicos**
 
 ---
 
 ## Estructura de carpetas
 
-```
-src/app/
+```text
+app/
+├── Domain/                  # Contratos (interfaces), excepciones, enums — SIN dependencias externas
+│   ├── Noticias/
+│   │   ├── Contracts/
+│   │   │   └── NoticiaRepositoryInterface.php
+│   │   └── Exceptions/
+│   │       └── NoticiaNotFoundException.php
+│   └── ...
 │
-├── auth/                          ← Autenticación
-│   ├── application/services/
-│   │   └── auth.service.ts        ← Login, logout, currentUser (signal)
-│   ├── guards/
-│   │   ├── auth.guard.ts          ← Protege rutas autenticadas
-│   │   └── guest.guard.ts         ← Protege rutas públicas
-│   ├── infrastructure/interceptors/
-│   │   └── auth.interceptor.ts    ← Añade Bearer token a cada request
-│   └── presentation/modern-auth/ ← Páginas de login, register, reset-password
+├── Application/             # Commands, Queries, Handlers, DTOs — orquesta el dominio
+│   ├── Noticias/
+│   │   ├── Commands/
+│   │   │   ├── CreateNoticiaCommand.php
+│   │   │   ├── UpdateNoticiaCommand.php
+│   │   │   └── DeleteNoticiaCommand.php
+│   │   ├── Handlers/
+│   │   │   ├── CreateNoticiaHandler.php
+│   │   │   ├── UpdateNoticiaHandler.php
+│   │   │   └── DeleteNoticiaHandler.php
+│   │   ├── Queries/
+│   │   │   ├── GetNoticiasQuery.php
+│   │   │   └── GetNoticiaBySlugQuery.php
+│   │   ├── QueryHandlers/
+│   │   │   ├── GetNoticiasQueryHandler.php
+│   │   │   └── GetNoticiaBySlugQueryHandler.php
+│   │   └── DTOs/
+│   │       └── NoticiaDTO.php
+│   └── ...
 │
-├── common/                        ← Código compartido entre todos los features
-│   ├── domain/models/
-│   │   └── settings.model.ts      ← Tipos de configuración del negocio
-│   ├── application/services/
-│   │   ├── toast.service.ts       ← Notificaciones (signal-based)
-│   │   ├── title.service.ts       ← Título del navegador dinámico
-│   │   ├── layout-store.service.ts ← Estado del sidebar/layout
-│   │   ├── settings.service.ts    ← Configuraciones generales del negocio
-│   │   ├── notificacion.service.ts← Notificaciones del sistema
-│   │   └── departamento.service.ts← Departamentos/ciudades de Bolivia
-│   └── components/               ← Componentes UI reutilizables
-│       ├── apexchart/             ← Wrapper de ApexCharts
-│       ├── page-title/            ← Encabezado de página con breadcrumb
-│       ├── pagination/            ← Componente de paginación
-│       ├── route-loader/          ← Barra de progreso entre rutas
-│       ├── searchable-select/     ← Select con búsqueda
-│       ├── toast-container/       ← Contenedor de toasts
-│       └── file-uploader/         ← Subida de archivos
+├── Infrastructure/          # Implementaciones concretas: Eloquent, APIs externas
+│   ├── Noticias/
+│   │   ├── Models/
+│   │   │   └── Noticia.php
+│   │   └── Repositories/
+│   │       └── EloquentNoticiaRepository.php
+│   └── ...
 │
-├── dashboard/                     ← Dashboard principal
-│   ├── domain/models/
-│   │   └── dashboard.model.ts     ← DashboardStats, TopProducto, VentaMes, etc.
-│   ├── application/services/
-│   │   └── dashboard.service.ts   ← Consultas de métricas al API
-│   └── presentation/ecommerce/
-│       ├── ecommerce.ts           ← Página principal del dashboard
-│       └── components/            ← overview, sales-chart, order-chart, etc.
+├── Http/                    # Controllers, Requests, Middleware — solo entrada/salida HTTP
+│   ├── Controllers/Api/
+│   │   └── NoticiaController.php
+│   ├── Requests/Noticias/
+│   │   ├── StoreNoticiaRequest.php
+│   │   └── UpdateNoticiaRequest.php
+│   └── Middleware/
 │
-├── ventas/                        ← Módulo de ventas
-│   ├── domain/models/venta.model.ts
-│   ├── application/services/venta.service.ts
-│   └── presentation/
-│       ├── ventas/                ← Listado de ventas
-│       ├── venta-create/          ← Crear nueva venta
-│       └── venta-detail/          ← Detalle de venta
-│
-├── productos/                     ← Módulo de productos
-├── clientes/                      ← Módulo de clientes
-├── proveedores/                   ← Módulo de proveedores
-├── compras/                       ← Módulo de compras
-├── caja/                          ← Módulo de caja
-├── inventario/                    ← Inventario y ajustes
-├── categorias/                    ← Categorías de productos
-├── tipos-pago/                    ← Tipos de pago
-├── roles/                         ← Roles y permisos
-├── usuarios/                      ← Usuarios del sistema
-├── reportes/                      ← Reportes y exportaciones
-├── whatsapp/                      ← Bot de WhatsApp (conversaciones y plantillas)
-├── configuraciones/               ← Configuraciones del negocio
-├── cuenta/                        ← Perfil del usuario logueado
-│   └── presentation/mi-perfil/
-│
-├── layouts/                       ← Layout principal (sin cambios)
-│   ├── main-layout/               ← Layout raíz con sidebar + topbar
-│   └── components/
-│       ├── sidenav/               ← Sidebar con menú de navegación
-│       ├── topbar/                ← Barra superior con usuario y notificaciones
-│       ├── footer/
-│       └── customizer/            ← Panel de personalización del tema
-│
-├── views/                         ← Archivos de rutas (orquestadores)
-│   ├── views.routes.ts            ← Raíz de rutas autenticadas
-│   ├── dashboards/dashboards.routes.ts
-│   ├── ecommerce/ecommerce.routes.ts ← Rutas de todos los features de negocio
-│   └── extra/                     ← Páginas auxiliares (404, maintenance, etc.)
-│
-├── utils/                         ← Utilidades puras (sin Angular)
-│   ├── calculate-time.ts
-│   ├── file-utils.ts
-│   ├── input-restrict.directive.ts
-│   └── zod-validators.ts
-│
-├── constants/index.ts             ← Constantes globales
-├── app.routes.ts                  ← Rutas raíz de la aplicación
-└── app.config.ts                  ← Configuración Angular (providers, interceptors)
+└── Providers/
+    └── DomainServiceProvider.php   # Bindea interfaces → implementaciones
 ```
 
 ---
 
-## Arquitectura de cada feature
+## Reglas estrictas de arquitectura
 
-Cada módulo de negocio sigue el mismo patrón de 3 capas:
+### Lo que ESTÁ PROHIBIDO
 
-```
-<feature>/
-├── domain/
-│   └── models/
-│       └── <feature>.model.ts     ← Interfaces/tipos puros (sin Angular)
-├── application/
-│   └── services/
-│       └── <feature>.service.ts   ← Lógica de negocio, llamadas HTTP
-└── presentation/
-    └── <vista>/
-        ├── <vista>.ts             ← Componente Angular (standalone)
-        └── <vista>.html           ← Template
-```
+```php
+// ❌ NUNCA: Eloquent en la capa Domain
+namespace App\Domain\Noticias\Contracts;
+use App\Infrastructure\Noticias\Models\Noticia; // ← PROHIBIDO
 
-### Reglas de la arquitectura
-
-```typescript
-// ✅ La capa domain solo tiene interfaces/tipos TypeScript puros
-// domain/models/venta.model.ts
-export interface Venta {
-  id: number;
-  numero: string;
-  total: number;
-  // ...
+// ❌ NUNCA: Lógica de negocio en Controllers
+public function store(Request $request): JsonResponse {
+    $noticia = Noticia::create($request->all()); // ← PROHIBIDO
+    return response()->json($noticia);
 }
 
-// ✅ La capa application tiene el servicio que llama al API
-// application/services/venta.service.ts
-@Injectable({ providedIn: 'root' })
-export class VentaService {
-  private http = inject(HttpClient);
-  private readonly baseUrl = '/api/v1/ventas';
+// ❌ NUNCA: DB::raw o consultas SQL fuera de repositorios
+DB::select("SELECT * FROM noticias WHERE ..."); // ← PROHIBIDO en Controllers/Handlers
 
-  getAll(params = {}): Observable<VentaListResponse> {
-    return this.http.get<VentaListResponse>(this.baseUrl, { params });
-  }
-}
-
-// ✅ La capa presentation consume el servicio con inject()
-// presentation/ventas/ventas.ts
-@Component({ selector: 'app-ventas', standalone: true, ... })
-export class Ventas {
-  private ventaService = inject(VentaService);
-  ventas = signal<Venta[]>([]);
-}
+// ❌ NUNCA: Operaciones de escritura múltiple sin DB::transaction()
+$noticia = Noticia::create($data);
+$noticia->etiquetas()->attach($ids); // ← si falla, la noticia queda sin etiquetas
 ```
 
-### Lo que NO se debe hacer
+### Lo que SIEMPRE se debe hacer
 
-```typescript
-// ❌ No hacer llamadas HTTP directamente en componentes
-export class Ventas {
-  constructor(private http: HttpClient) {
-    this.http.get('/api/v1/ventas').subscribe(...); // ← PROHIBIDO
-  }
-}
-
-// ❌ No importar desde rutas de otro feature en la capa de presentación
-import { VentaCreate } from '../../ventas/presentation/venta-create/venta-create'; // ← PROHIBIDO
-
-// ❌ No usar constructor injection (usar inject() en su lugar)
-constructor(private service: VentaService) {} // ← evitar, usar inject()
-```
-
----
-
-## Configuración Angular
-
-### app.config.ts
-
-```typescript
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideZonelessChangeDetection(),    // ← Zoneless: sin Zone.js
-    provideRouter(routes),
-    provideHttpClient(
-      withFetch(),
-      withInterceptors([authInterceptor]) // ← JWT automático en cada request
-    ),
-  ]
-};
-```
-
-### Implicación del Zoneless
-
-Con `provideZonelessChangeDetection()`, Angular **no detecta cambios automáticamente** en suscripciones RxJS. Regla:
-
-```typescript
-// ✅ Usar Signals para estado reactivo
-ventas = signal<Venta[]>([]);
-
-// ✅ Si usas subscribe(), marcar cambios manualmente
-private cdr = inject(ChangeDetectorRef);
-
-this.service.getAll().subscribe(data => {
-  this.ventas.set(data.data);
-  this.cdr.detectChanges(); // ← obligatorio con zoneless + subscribe
-});
-
-// ✅ Preferir toSignal() para evitar subscribe() manual
-ventas = toSignal(this.service.getAll(), { initialValue: [] });
-```
-
----
-
-## Rutas
-
-### Estructura de rutas
-
-```
-app.routes.ts
-├── /pages/maintenance, /pages/404, /pages/coming-soon, /pages/offline
-├── /auth-modern/login, /auth-modern/register, ...   (sin guard)
-└── MainLayout (canActivate: authGuard)
-    └── views.routes.ts
-        ├── dashboards.routes.ts  → /dashboards/e-commerce
-        ├── ecommerce.routes.ts   → todos los features de negocio
-        └── extra.routes.ts       → /pages/starter, /pages/faqs, etc.
-```
-
-### URLs disponibles
-
-| Módulo | Rutas |
-| --- | --- |
-| Dashboard | `/dashboards/e-commerce` |
-| Ventas | `/e-commerce/listado-ventas`, `/e-commerce/venta-create`, `/e-commerce/venta-detail/:id` |
-| Productos | `/e-commerce/listado-productos`, `/e-commerce/producto-create`, `/e-commerce/producto-edit/:slug` |
-| Clientes | `/e-commerce/listado-clientes`, `/e-commerce/client-create`, `/e-commerce/client-edit/:id` |
-| Proveedores | `/e-commerce/proveedores`, `/e-commerce/proveedor-create`, `/e-commerce/proveedor-edit/:slug` |
-| Compras | `/e-commerce/compras`, `/e-commerce/compra-create` |
-| Caja | `/e-commerce/caja` |
-| Inventario | `/e-commerce/inventario`, `/e-commerce/inventario-ajuste` |
-| Categorías | `/e-commerce/categorias` |
-| Tipos de Pago | `/e-commerce/tipos-pago` |
-| Roles | `/e-commerce/roles`, `/e-commerce/rol-create`, `/e-commerce/rol-edit/:id` |
-| Usuarios | `/e-commerce/usuarios`, `/e-commerce/usuario-create`, `/e-commerce/usuario-edit/:id` |
-| WhatsApp | `/e-commerce/whatsapp-conversaciones`, `/e-commerce/whatsapp-plantillas` |
-| Configuraciones | `/e-commerce/configuraciones` |
-| Reportes | `/e-commerce/reportes` |
-| Perfil | `/e-commerce/mi-perfil` |
-
----
-
-## Autenticación
-
-### Flujo
-
-1. Usuario ingresa a cualquier ruta → `authGuard` verifica `AuthService.isLoggedIn()`
-2. Si no está autenticado → redirige a `/auth-modern/login`
-3. Login exitoso → guarda `token` y `user` en `localStorage` via `AuthService`
-4. `authInterceptor` intercepta cada request HTTP y añade `Authorization: Bearer <token>`
-5. Si el API devuelve `401` → el interceptor llama `auth.logout()` y redirige al login
-
-### Usar AuthService en componentes
-
-```typescript
-export class MiComponente {
-  auth = inject(AuthService);
-
-  // Acceder al usuario logueado (Signal)
-  usuario = this.auth.currentUser(); // AuthUser | null
-
-  // Verificar si está logueado
-  logueado = this.auth.isLoggedIn(); // boolean
-
-  // Logout
-  cerrarSesion() {
-    this.auth.logout();
-  }
-}
-```
-
----
-
-## Componentes comunes
-
-### PageTitle
-
-```html
-<app-page-title title="Listado de Ventas" subtitle="Ventas" />
-```
-
-### Pagination
-
-```html
-<app-pagination
-  [currentPage]="currentPage()"
-  [pageSize]="pageSize"
-  [total]="total()"
-  (pageChange)="onPageChange($event)"
-/>
-```
-
-### ToastService
-
-```typescript
-private toast = inject(ToastService);
-
-// En cualquier acción
-this.toast.success('Venta creada', 'La venta fue registrada correctamente.');
-this.toast.error('Error', 'No se pudo guardar.');
-this.toast.warning('Atención', 'Stock bajo.');
-```
-
-### SearchableSelect
-
-```html
-<app-searchable-select
-  [options]="clientes()"
-  [labelKey]="'nombre'"
-  [valueKey]="'id'"
-  placeholder="Buscar cliente..."
-  (selected)="onClienteSelected($event)"
-/>
-```
-
-### ApexChart
-
-```typescript
-// En el componente:
-chartOptions: (() => ApexOptions) | null = null;
-
-ngOnInit() {
-  this.chartOptions = () => ({
-    chart: { type: 'area', height: 300 },
-    series: [{ name: 'Ventas', data: [10, 25, 30, 18] }],
-    // ...
-  });
-}
-```
-
-```html
-@if (chartOptions) {
-  <app-apexchart [getOptions]="chartOptions" />
-}
-```
-
----
-
-## Cómo crear un nuevo feature
-
-Ejemplo: módulo `descuentos`
-
-### 1. Crear la estructura de carpetas
-
-```bash
-mkdir -p src/app/descuentos/domain/models
-mkdir -p src/app/descuentos/application/services
-mkdir -p src/app/descuentos/presentation/descuentos
-```
-
-### 2. Crear el modelo (`domain/models/descuento.model.ts`)
-
-```typescript
-export interface Descuento {
-  id: number;
-  nombre: string;
-  porcentaje: number;
-  activo: boolean;
-}
-
-export interface DescuentoListResponse {
-  data: Descuento[];
-  total: number;
-}
-```
-
-### 3. Crear el servicio (`application/services/descuento.service.ts`)
-
-```typescript
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Descuento, DescuentoListResponse } from '../../domain/models/descuento.model';
-
-@Injectable({ providedIn: 'root' })
-export class DescuentoService {
-  private http = inject(HttpClient);
-  private readonly baseUrl = '/api/v1/descuentos';
-
-  getAll(): Observable<DescuentoListResponse> {
-    return this.http.get<DescuentoListResponse>(this.baseUrl);
-  }
-
-  create(data: Partial<Descuento>): Observable<Descuento> {
-    return this.http.post<Descuento>(this.baseUrl, data);
-  }
-
-  update(id: number, data: Partial<Descuento>): Observable<Descuento> {
-    return this.http.put<Descuento>(`${this.baseUrl}/${id}`, data);
-  }
-
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
-  }
-}
-```
-
-### 4. Crear el componente (`presentation/descuentos/descuentos.ts`)
-
-```typescript
-import { Component, inject, signal, ChangeDetectorRef, OnInit } from '@angular/core';
-import { NgIcon } from '@ng-icons/core';
-import { DecimalPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { DescuentoService } from '../../application/services/descuento.service';
-import { Descuento } from '../../domain/models/descuento.model';
-import { PageTitle } from '../../../common/components/page-title/page-title';
-import { ToastService } from '../../../common/application/services/toast.service';
-
-@Component({
-  selector: 'app-descuentos',
-  standalone: true,
-  imports: [NgIcon, DecimalPipe, RouterLink, PageTitle],
-  templateUrl: './descuentos.html',
-})
-export class Descuentos implements OnInit {
-  private service  = inject(DescuentoService);
-  private toast    = inject(ToastService);
-  private cdr      = inject(ChangeDetectorRef);
-
-  descuentos = signal<Descuento[]>([]);
-  loading    = signal(true);
-
-  ngOnInit() {
-    this.service.getAll().subscribe({
-      next: (res) => {
-        this.descuentos.set(res.data);
-        this.loading.set(false);
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.toast.error('Error', 'No se pudieron cargar los descuentos.');
-        this.loading.set(false);
-        this.cdr.detectChanges();
-      }
+```php
+// ✅ Handlers con múltiples writes usan DB::transaction()
+public function handle(CreateNoticiaCommand $command): NoticiaDTO
+{
+    return DB::transaction(function () use ($command) {
+        $noticia = $this->noticiaRepository->create([...]);
+        $this->noticiaRepository->syncEtiquetas($noticia->id, $command->etiquetas);
+        return NoticiaDTO::fromModel($noticia);
     });
-  }
 }
+
+// ✅ Controllers inyectan Handlers, no repositorios directamente
+public function __construct(
+    private readonly CreateNoticiaHandler $createHandler,
+    private readonly GetNoticiasQueryHandler $getNoticiasHandler,
+) {}
+
+// ✅ Toda respuesta sale como DTO, nunca como modelo Eloquent raw
+return response()->json(NoticiaDTO::fromModel($model));
 ```
-
-### 5. Registrar la ruta en `views/ecommerce/ecommerce.routes.ts`
-
-```typescript
-import { Descuentos } from "../../descuentos/presentation/descuentos/descuentos";
-
-// Agregar a ECOMMERCE_ROUTES:
-{ path: 'e-commerce/descuentos', component: Descuentos, data: { title: 'Descuentos' } },
-```
-
-### 6. Agregar al menú del sidebar
-
-Editar `layouts/components/sidenav/components/sidebar-menu/sidebar-menu.ts` y agregar la entrada al arreglo del menú.
 
 ---
 
-## Convenciones de código
+## Patrón completo: ejemplo con Noticias
 
-### Componentes (Standalone)
+El módulo Noticias es la referencia canónica para crear nuevos módulos con slug y estado.
 
-```typescript
-@Component({
-  selector: 'app-nombre',
-  standalone: true,           // ← siempre standalone
-  imports: [NgIcon, RouterLink, DecimalPipe, PageTitle, ...],
-  templateUrl: './nombre.html',
-})
-export class NombreComponente {
-  // inject() en lugar de constructor
-  private service = inject(NombreService);
+### 1. DTO (Application layer)
 
-  // Estado con signals
-  items   = signal<Item[]>([]);
-  loading = signal(false);
-  error   = signal<string | null>(null);
+```php
+// app/Application/Noticias/DTOs/NoticiaDTO.php
+final readonly class NoticiaDTO
+{
+    public function __construct(
+        public int $id,
+        public string $titulo,
+        public string $slug,
+        public ?string $entradilla,
+        public string $estado,
+        public bool $destacada,
+        public ?string $fecha_publicacion,
+        public ?string $created_at,
+    ) {}
+
+    public static function fromModel(object $model): self
+    {
+        return new self(
+            id: $model->id,
+            titulo: $model->titulo,
+            slug: $model->slug,
+            entradilla: $model->entradilla,
+            estado: $model->estado,
+            destacada: (bool) $model->destacada,
+            fecha_publicacion: $model->fecha_publicacion?->toIso8601String(),
+            created_at: $model->created_at?->toIso8601String(),
+        );
+    }
 }
 ```
 
-### Templates Angular
+### 2. Interface del repositorio (Domain layer)
 
-```html
-<!-- Condicionales -->
-@if (loading()) {
-  <div>Cargando...</div>
-} @else if (items().length === 0) {
-  <p>Sin resultados</p>
+```php
+// app/Domain/Noticias/Contracts/NoticiaRepositoryInterface.php
+interface NoticiaRepositoryInterface
+{
+    public function paginate(PaginationDTO $pagination): array;
+    public function findById(int $id): mixed;
+    public function findBySlug(string $slug): mixed;
+    public function create(array $data): mixed;
+    public function update(int $id, array $data): mixed;
+    public function delete(int|array $ids): bool;
 }
-
-<!-- Bucles -->
-@for (item of items(); track item.id) {
-  <div>{{ item.nombre }}</div>
-}
-
-<!-- NO usar arrow functions en templates -->
-<!-- ❌ [class]="items.filter(i => i.activo)" -->
-<!-- ✅ usar método del componente: [class]="getActivos()" -->
 ```
 
-### Nombrado de archivos
+### 3. Excepción del dominio (Domain layer)
+
+```php
+// app/Domain/Noticias/Exceptions/NoticiaNotFoundException.php
+class NoticiaNotFoundException extends \RuntimeException
+{
+    public function __construct(int|string $id)
+    {
+        parent::__construct("Noticia '{$id}' no encontrada.", 404);
+    }
+}
+```
+
+### 4. Command (Application layer)
+
+```php
+// app/Application/Noticias/Commands/CreateNoticiaCommand.php
+final readonly class CreateNoticiaCommand
+{
+    public function __construct(
+        public int $categoria_id,
+        public int $autor_id,
+        public string $titulo,
+        public ?string $entradilla,
+        public ?string $cuerpo,
+        public string $estado,
+        public bool $destacada,
+    ) {}
+}
+```
+
+### 5. Handler de escritura (Application layer)
+
+```php
+// app/Application/Noticias/Handlers/CreateNoticiaHandler.php
+class CreateNoticiaHandler
+{
+    public function __construct(
+        private readonly NoticiaRepositoryInterface $repository
+    ) {}
+
+    public function handle(CreateNoticiaCommand $command): NoticiaDTO
+    {
+        $model = $this->repository->create([
+            'categoria_id' => $command->categoria_id,
+            'autor_id'     => $command->autor_id,
+            'titulo'       => $command->titulo,
+            'entradilla'   => $command->entradilla,
+            'cuerpo'       => $command->cuerpo,
+            'estado'       => $command->estado,
+            'destacada'    => $command->destacada,
+        ]);
+
+        return NoticiaDTO::fromModel($model);
+    }
+}
+```
+
+### 6. Query y QueryHandler (Application layer)
+
+```php
+// app/Application/Noticias/Queries/GetNoticiasQuery.php
+final readonly class GetNoticiasQuery
+{
+    public function __construct(public PaginationDTO $pagination) {}
+}
+
+// app/Application/Noticias/QueryHandlers/GetNoticiasQueryHandler.php
+class GetNoticiasQueryHandler
+{
+    public function __construct(
+        private readonly NoticiaRepositoryInterface $repository
+    ) {}
+
+    public function handle(GetNoticiasQuery $query): array
+    {
+        return $this->repository->paginate($query->pagination);
+    }
+}
+```
+
+### 7. Repositorio Eloquent (Infrastructure layer)
+
+```php
+// app/Infrastructure/Noticias/Repositories/EloquentNoticiaRepository.php
+class EloquentNoticiaRepository implements NoticiaRepositoryInterface
+{
+    public function paginate(PaginationDTO $pagination): array
+    {
+        $q = Noticia::query()->whereNull('deleted_at');
+
+        if ($pagination->query) {
+            $q->whereFullText(['titulo', 'entradilla', 'cuerpo'], $pagination->query);
+        }
+
+        $paginated = $q->orderBy('fecha_publicacion', 'desc')
+            ->paginate($pagination->pageSize, ['*'], 'page', $pagination->pageIndex);
+
+        return [
+            'data'  => collect($paginated->items())->map(fn ($n) => NoticiaDTO::fromModel($n))->all(),
+            'total' => $paginated->total(),
+        ];
+    }
+
+    public function findBySlug(string $slug): NoticiaDTO
+    {
+        $noticia = Noticia::where('slug', $slug)->whereNull('deleted_at')->first();
+        if (! $noticia) throw new NoticiaNotFoundException($slug);
+        return NoticiaDTO::fromModel($noticia);
+    }
+
+    // ... resto de métodos
+}
+```
+
+### 8. Modelo Eloquent (Infrastructure layer)
+
+```php
+// app/Infrastructure/Noticias/Models/Noticia.php
+// - Slug se genera automáticamente en boot() usando Str::slug()
+// - SoftDeletes en tablas críticas (deleted_at)
+// - $fillable siempre explícito — nunca $guarded = []
+// - Búsqueda FULLTEXT disponible con whereFullText()
+```
+
+### 9. Controller (Http layer)
+
+```php
+// app/Http/Controllers/Api/NoticiaController.php
+class NoticiaController extends Controller
+{
+    public function __construct(
+        private readonly GetNoticiasQueryHandler $getNoticiasHandler,
+        private readonly GetNoticiaBySlugQueryHandler $getNoticiaBySlugHandler,
+        private readonly CreateNoticiaHandler $createHandler,
+        private readonly UpdateNoticiaHandler $updateHandler,
+        private readonly DeleteNoticiaHandler $deleteHandler,
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $pagination = PaginationDTO::fromArray([
+            'pageIndex' => $request->get('pageIndex', 1),
+            'pageSize'  => $request->get('pageSize', 10),
+            'query'     => $request->get('query', ''),
+            'sortKey'   => $request->input('sort.key', 'fecha_publicacion'),
+            'sortOrder' => $request->input('sort.order', 'desc'),
+        ]);
+
+        return response()->json(
+            $this->getNoticiasHandler->handle(new GetNoticiasQuery($pagination))
+        );
+    }
+
+    public function store(StoreNoticiaRequest $request): JsonResponse
+    {
+        $dto = $this->createHandler->handle(new CreateNoticiaCommand(
+            categoria_id: $request->categoria_id,
+            autor_id:     auth()->id(),
+            titulo:       $request->titulo,
+            entradilla:   $request->entradilla,
+            cuerpo:       $request->cuerpo,
+            estado:       $request->estado ?? 'borrador',
+            destacada:    $request->boolean('destacada', false),
+        ));
+
+        return response()->json($dto, 201);
+    }
+}
+```
+
+### 10. Bindear el repositorio en DomainServiceProvider
+
+```php
+// app/Providers/DomainServiceProvider.php
+$this->app->bind(NoticiaRepositoryInterface::class, EloquentNoticiaRepository::class);
+```
+
+---
+
+## Cómo crear un nuevo módulo paso a paso
+
+Ejemplo: agregar el módulo `Secretarias`:
+
+```text
+1.  Domain/Secretarias/Contracts/SecretariaRepositoryInterface.php
+2.  Domain/Secretarias/Exceptions/SecretariaNotFoundException.php
+3.  Application/Secretarias/DTOs/SecretariaDTO.php
+4.  Application/Secretarias/Commands/CreateSecretariaCommand.php
+5.  Application/Secretarias/Commands/UpdateSecretariaCommand.php
+6.  Application/Secretarias/Commands/DeleteSecretariaCommand.php
+7.  Application/Secretarias/Handlers/CreateSecretariaHandler.php
+8.  Application/Secretarias/Handlers/UpdateSecretariaHandler.php
+9.  Application/Secretarias/Handlers/DeleteSecretariaHandler.php
+10. Application/Secretarias/Queries/GetSecretariasQuery.php
+11. Application/Secretarias/Queries/GetSecretariaBySlugQuery.php
+12. Application/Secretarias/QueryHandlers/GetSecretariasQueryHandler.php
+13. Application/Secretarias/QueryHandlers/GetSecretariaBySlugQueryHandler.php
+14. Infrastructure/Secretarias/Models/Secretaria.php
+15. Infrastructure/Secretarias/Repositories/EloquentSecretariaRepository.php
+16. Http/Controllers/Api/SecretariaController.php
+17. Http/Requests/Secretarias/StoreSecretariaRequest.php
+18. Http/Requests/Secretarias/UpdateSecretariaRequest.php
+19. Bindear en DomainServiceProvider
+20. Registrar rutas en routes/api/v1.php
+```
+
+---
+
+## Convenciones de nomenclatura
 
 | Elemento | Convención | Ejemplo |
 | --- | --- | --- |
-| Componente | `kebab-case.ts` | `venta-create.ts` |
-| Servicio | `<feature>.service.ts` | `venta.service.ts` |
-| Modelo | `<feature>.model.ts` | `venta.model.ts` |
-| Guard | `<nombre>.guard.ts` | `auth.guard.ts` |
-| Interceptor | `<nombre>.interceptor.ts` | `auth.interceptor.ts` |
-| Rutas | `<feature>.routes.ts` | `ecommerce.routes.ts` |
+| Commands | `{Accion}{Modulo}Command` | `CreateNoticiaCommand` |
+| Handlers | `{Accion}{Modulo}Handler` | `CreateNoticiaHandler` |
+| Queries | `Get{Modulo}Query` | `GetNoticiasQuery` |
+| QueryHandlers | `Get{Modulo}QueryHandler` | `GetNoticiasQueryHandler` |
+| DTOs | `{Modulo}DTO` | `NoticiaDTO` |
+| Repositorios | `Eloquent{Modulo}Repository` | `EloquentNoticiaRepository` |
+| Interfaces | `{Modulo}RepositoryInterface` | `NoticiaRepositoryInterface` |
+| Excepciones | `{Modulo}NotFoundException` | `NoticiaNotFoundException` |
+| Modelos | singular PascalCase | `Noticia`, `TipoNorma` |
+| Tablas | snake_case plural | `noticias`, `tipos_norma` |
+| Rutas API | kebab-case plural | `/api/v1/tipos-norma` |
 
 ---
 
-## Reglas de importación
+## Manejo de errores
 
-```typescript
-// ✅ Un feature importando su propio dominio
-import { VentaModel } from '../domain/models/venta.model';
+Las excepciones del dominio se transforman en respuestas HTTP en `bootstrap/app.php`.
 
-// ✅ Un feature importando su propio servicio
-import { VentaService } from '../application/services/venta.service';
+| Código | Significado |
+| --- | --- |
+| `200` | Respuesta exitosa |
+| `201` | Recurso creado |
+| `204` | Eliminación exitosa (sin body) |
+| `401` | No autenticado |
+| `403` | Sin permisos (`permiso:recurso.accion`) |
+| `404` | Recurso no encontrado (`NotFoundException`) |
+| `422` | Validación fallida (Laravel FormRequest) |
+| `500` | Error interno no controlado |
 
-// ✅ Un feature importando common
-import { PageTitle } from '../../../common/components/page-title/page-title';
-import { ToastService } from '../../../common/application/services/toast.service';
+---
 
-// ✅ Un feature importando auth
-import { AuthService } from '../../auth/application/services/auth.service';
+## Sistema de permisos
 
-// ✅ Un feature usando tipos de otro feature (cuando hay dependencia real)
-import { ProductoModel } from '../../productos/domain/models/producto.model';
+Los permisos usan el middleware `permiso:recurso.accion`:
 
-// ❌ Importar componentes de presentación de otro feature
-import { VentaCreate } from '../../ventas/presentation/venta-create/venta-create'; // PROHIBIDO
+```php
+Route::get('/noticias', [NoticiaController::class, 'index'])
+    ->middleware('permiso:noticias.ver');
 
-// ❌ No importar desde rutas core/ (ya no existe)
-import { VentaService } from '../../core/services/venta.service'; // PROHIBIDO
+Route::post('/noticias', [NoticiaController::class, 'store'])
+    ->middleware('permiso:noticias.crear');
 ```
 
+| Módulo | Permisos |
+| --- | --- |
+| usuarios | `usuarios.ver`, `usuarios.crear`, `usuarios.editar`, `usuarios.eliminar` |
+| noticias | `noticias.ver`, `noticias.crear`, `noticias.editar`, `noticias.eliminar` |
+| normas | `normas.ver`, `normas.crear`, `normas.editar` |
+| tramites | `tramites.ver`, `tramites.crear`, `tramites.editar` |
+| transparencia | `transparencia.ver`, `transparencia.crear` |
+| reportes | `reportes.ver` |
+
 ---
 
-## Comandos frecuentes
+## Slugs
 
-```bash
-# Servidor de desarrollo
-npm start
-# o
-npx ng serve
+Los slugs se auto-generan en el `boot()` del modelo Eloquent. **No los pases en el request.**
 
-# Build de desarrollo
-npx ng build --configuration development
+Modelos con slug: `Noticia`, `Comunicado`, `Evento`, `Norma`, `TramiteCatalogo`, `Secretaria`, `Autoridad`, `DocumentoTransparencia`
 
-# Build de producción
-npx ng build --configuration production
+Los endpoints públicos usan `{slug}` como identificador en la URL (nunca `{id}`).
 
-# Verificar errores de compilación sin build completo
-npx ng build --configuration development 2>&1 | grep -E "ERROR|error TS"
+---
+
+## Búsqueda de texto completo
+
+Las tablas principales tienen índices FULLTEXT en MySQL. Usar `whereFullText()` en los repositorios:
+
+```php
+// En el repositorio Eloquent
+if ($pagination->query) {
+    $q->whereFullText(['titulo', 'entradilla', 'cuerpo'], $pagination->query);
+}
 ```
 
-> **Nota sobre Node.js:** Este proyecto requiere Node.js v20+ o v22+.
-> Si tienes nvm: `nvm use --lts` antes de cualquier comando ng.
+Tablas con FULLTEXT: `noticias`, `comunicados`, `normas`, `tramites_catalogo`, `eventos`, `secretarias`, `autoridades`, `documentos_transparencia`
+
+Para búsqueda global en todas las tablas, usar la vista `v_busqueda_global`.
 
 ---
 
-## Estado del proyecto
+## Paginación
 
-- Rama principal: `main`
-- Rama de arquitectura refactorizada: `refactor/feature-based-architecture`
-- Build de producción: ✅ sin errores
-- Módulos implementados: ventas, productos, clientes, proveedores, compras, caja, inventario, categorías, tipos-pago, roles, usuarios, reportes, whatsapp, configuraciones, cuenta/perfil, dashboard
-
----
-
-## Módulo de Pagos — Reglas críticas del frontend
-
-> Este módulo maneja dinero real. Las reglas siguientes no son opcionales.
-
-### Archivos del módulo
+Todos los endpoints de listado aceptan:
 
 ```text
-src/app/
-├── pagos-academicos/
-│   ├── domain/models/pago-academico.model.ts
-│   ├── application/services/pago-academico.service.ts
-│   └── presentation/
-│       ├── pago-create/pago-create.ts
-│       ├── pago-edit/pago-edit.ts
-│       └── pagos-academicos/pagos-academicos.ts
-├── fechas-pago/
-│   ├── domain/models/fecha-pago.model.ts
-│   ├── application/services/fecha-pago.service.ts
-│   └── presentation/
-│       ├── fecha-pago-create/fecha-pago-create.ts
-│       └── fecha-pago-edit/fecha-pago-edit.ts
-└── inscripciones/
-    ├── application/services/inscripcion.service.ts   ← registrarAnticipo, devoluciones
-    └── presentation/inscripcion-detail/              ← resumen de pagos por inscripción
+GET /api/v1/noticias?pageIndex=1&pageSize=15&query=presupuesto&sort[key]=fecha_publicacion&sort[order]=desc
 ```
 
-### Tipos de datos — reglas irrompibles
+La respuesta siempre devuelve:
 
-```typescript
-// ❌ NUNCA: enviar id_pago generado por el frontend
-const payload = {
-  id_pago: Math.floor(Date.now() / 1000),  // ← PROHIBIDO
-  monto_pagado: String(monto),              // ← PROHIBIDO
-};
-
-// ✅ SIEMPRE: el ID lo genera MySQL (AUTO_INCREMENT), el monto viaja como number
-const payload: CreatePagoAcademicoPayload = {
-  id_us:         this.form.value.id_us,
-  id_fechapago:  this.form.value.id_fechapago,
-  monto_pagado:  this.form.value.monto_pagado,  // number, nunca string
-  fecha_deposito: this.form.value.fecha_deposito,
-};
-
-// ❌ NUNCA: enviar id_fechapago generado por el frontend
-const payload = {
-  id_fechapago:  Math.floor(Date.now() / 1000),  // ← PROHIBIDO
-  monto_a_pagar: String(monto),                   // ← PROHIBIDO
-};
-
-// ✅ SIEMPRE: solo los campos que pide el backend
-const payload: CreateFechaPagoPayload = {
-  id_plan:       this.form.value.id_plan,
-  monto_a_pagar: this.form.value.monto_a_pagar,  // number
-  nro_pago:      this.form.value.nro_pago,
-};
-```
-
-### Interfaces actualizadas
-
-`CreatePagoAcademicoPayload` — **sin** `id_pago`, `monto_pagado` es `number`:
-
-```typescript
-export interface CreatePagoAcademicoPayload {
-  id_us:                number;
-  id_fechapago?:        number | null;
-  monto_pagado:         number;          // ← number, nunca string
-  nro_boleta_bancaria?: string | null;
-  fecha_deposito?:      string | null;
-  nro_nit?:             string | null;
-  nombre_nit?:          string | null;
-  observacion_pago?:    string | null;
-  estado?:              number;
+```json
+{
+  "data": [...],
+  "total": 42
 }
 ```
 
-`CreateFechaPagoPayload` — **sin** `id_fechapago`, `monto_a_pagar` es `number`:
-
-```typescript
-export interface CreateFechaPagoPayload {
-  id_plan:        number;
-  nro_pago?:      string | null;
-  tipo_tramite?:  string | null;
-  monto_a_pagar:  number;                // ← number, nunca string
-  fecha_inicio?:  string | null;
-  fecha_fin?:     string | null;
-  obligatorio?:   number;
-  estado?:        number;
-}
-```
-
-### Formularios de pago — configuración correcta
-
-```typescript
-// pago-create.ts — form correcto
-form = this.fb.group({
-  // ← sin id_pago
-  id_us:              [null as number | null, [Validators.required]],
-  id_fechapago:       [null as number | null],
-  monto_pagado:       [null as number | null, [Validators.required, Validators.min(0.01)]],
-  nro_boleta_bancaria:[''],
-  fecha_deposito:     [new Date().toISOString().split('T')[0]],
-  observacion_pago:   [''],
-});
-
-// fecha-pago-create.ts — form correcto
-form = this.fb.group({
-  // ← sin id_fechapago
-  id_plan:       [null as number | null, [Validators.required]],
-  nro_pago:      [''],
-  monto_a_pagar: [null as number | null, [Validators.required, Validators.min(0.01)]],
-  fecha_inicio:  [''],
-  fecha_fin:     [''],
-  obligatorio:   [1],
-});
-```
-
-### Llamadas HTTP del módulo
-
-| Acción             | Método | URL                                     | Payload clave                                    |
-|--------------------|--------|-----------------------------------------|--------------------------------------------------|
-| Crear pago         | POST   | `/api/v1/pagos-academicos`              | `monto_pagado: number` — sin `id_pago`           |
-| Editar pago        | PUT    | `/api/v1/pagos-academicos/{id}`         | `monto_pagado: number` — sin `id_pago`           |
-| Crear cuota        | POST   | `/api/v1/fechas-pago`                   | `monto_a_pagar: number` — sin `id_fechapago`     |
-| Registrar anticipo | POST   | `/api/v1/inscripciones/{id}/anticipo`   | `monto_pagado: number`                           |
-| Resolver devolución| PATCH  | `/api/v1/devoluciones/{id}/resolver`    | `estado`, `nota_respuesta: null\|string`         |
-| Cancelar devolución| PATCH  | `/api/v1/devoluciones/{id}/cancelar`    | `estado: 'cancelada'`, `nota_respuesta: null`    |
-
-### Resumen de pagos por inscripción (`ResumenPagoDTO`)
-
-El endpoint `GET /api/v1/inscripciones/{id}` devuelve un objeto `resumen` con este shape:
-
-```typescript
-interface ResumenPago {
-  plan_no_asignado: boolean;
-  total_pagado:     number;
-  total_anticipos:  number;
-  cuotas_pagadas:   number;
-  cuotas_totales:   number;
-  total_plan:       number;
-  pendiente:        number | null;  // null = sin plan asignado (NO equivale a pagado)
-}
-```
-
-> `pendiente === null` significa que la inscripción no tiene plan asignado, **no que esté pagada**. El frontend debe mostrar una advertencia en ese caso, nunca mostrar "Bs. 0 pendiente".
+Usar siempre `->paginate()` de Eloquent en el repositorio. Nunca `->skip()->take()` manual.
 
 ---
 
-Proyecto cenefco — Sistema Comercial para negocios bolivianos
+## Configuraciones persistentes
+
+El proyecto usa `spatie/laravel-settings` para configuraciones del sistema que el admin puede cambiar sin tocar código:
+
+```php
+// app/Settings/GeneralSettings.php
+class GeneralSettings extends Settings
+{
+    public string $site_name;
+    public bool $site_active;
+    public string $contact_email;
+    public int $items_per_page;
+    public bool $maintenance_mode;
+
+    public static function group(): string { return 'general'; }
+}
+```
+
+Las settings se guardan en la tabla `settings`. No usar `config()` para datos que el negocio debe poder cambiar.
+
+---
+
+## Base de datos cenefco (legado SIASEC)
+
+El proyecto incluye **145 migraciones** generadas a partir del sistema legado SIASEC (`disereco_siasec`) más **~18 migraciones nuevas** para la capa web institucional y el módulo de certificados. Todas conviven en la misma BD.
+
+### Convención de nombres
+
+Todos los archivos de migración del legado siguen el patrón:
+
+```text
+2026_04_14_NNNNNN_create_cenefco_{tabla}_table.php
+```
+
+Ejemplo: `2026_04_14_000134_create_cenefco_t_usuario_table.php`
+
+### Grupos de tablas
+
+| Grupo | Tablas principales |
+| --- | --- |
+| **Moodle** | `mdl_course`, `mdl_user` (+ logs) |
+| **Usuarios** | `t_usuario`, `t_nivel`, `t_grupopermiso`, `t_usuariogrupopermiso`, `t_permiso` |
+| **Académico** | `t_materia`, `t_plan`, `t_materia_plan`, `t_imparte`, `t_inscripcion`, `t_nota`, `t_horario` |
+| **Pagos** | `t_pago`, `t_fechapago`, `t_tipopago`, `t_documento`, `t_fechadoc` |
+| **Permisos** | `t_regcomponente`, `t_regform`, `t_funcionalidadform` |
+| **Contenido web** | `t_pagina`, `t_modulo`, `t_menu`, `t_bloqueplantilla`, `t_bloqueajustable`, `t_seccionbloque` |
+| **Catálogos** | `t_ciudad`, `t_universidad`, `t_carrera`, `t_profesion`, `t_tipoprograma`, `t_programa` |
+| **Relaciones usuario** | `t_usuarioplan`, `t_usuarioprograma`, `t_usuariotipoprograma`, `t_usuarioplandoc` |
+| **Logs** | Todas las tablas tienen su espejo `_log` (registran cambios históricos) |
+
+### Convenciones de tablas legado (`t_*`, `mdl_*`)
+
+- Los nombres originales **se conservan tal cual** (prefijo `t_` o `mdl_`). No se renombran.
+- PKs compuestas: mayoría de tablas usa `PRIMARY KEY (id_campo, id_us_reg)` — se genera con `$table->primary([...])`.
+- **No usar `$table->timestamps()`** en estas tablas — tienen `fecha_reg` propio.
+- **No usar `$table->softDeletes()`** — usan `estado tinyint` (0=inactivo, 1=activo).
+- Las tablas `_log` registran el historial de cambios y tienen un campo `tipo_log` varchar.
+- `id_us_reg` = usuario que registró el dato (auditoría interna del sistema legado).
+
+### Convenciones de tablas nuevas (`web_*`, `t_cert_*`)
+
+Estas tablas siguen convenciones modernas de Laravel y son **incompatibles** con las del legado:
+
+- `bigIncrements('id')` como PK simple — **nunca PK compuesta**.
+- `timestampTz('created_at')`, `timestampTz('updated_at')`, `timestampTz('deleted_at')` — **usar `timestampTz`, no `timestamps()`** (sin timezone).
+- Estado como `string` semántico: `borrador` / `publicado` / `archivado` — **no `tinyint`**.
+- FK constraints declarados con `->foreign()` y `->index()` explícito.
+- Slugs únicos en toda tabla con URL pública (`->unique()`).
+- `boolean('activo')`, `boolean('destacado')`, `integer('orden')` — campos estándar de contenido web.
+
+### Tablas `web_*` por prioridad
+
+| Prioridad | Tablas |
+|-----------|--------|
+| 🔴 Crítico | `web_banner`, `web_configuracion_sitio`, `web_suscriptor`, `web_contacto_mensaje` |
+| 🟠 Alta | `web_testimonio`, `web_faq`, `web_aliado`, `web_preinscripcion`, `web_descargable`, `web_descargable_registro`, `web_cifra_institucional`, `web_acreditacion` |
+| 🟡 Media | `web_evento`, `web_docente_perfil`, `web_popup`, `web_etiqueta`, `web_articulo_etiqueta`, `web_programa_etiqueta`, `web_categoria_programa`, `web_programa_resena`, `web_galeria_video`, `web_hito_institucional`, `web_nota_prensa`, `web_redes_sociales`, `web_calendario_academico`, `web_whatsapp_grupo` |
+| 🟢 Baja | `web_redireccion`, `web_galeria_categoria`, `web_notificacion_push`, `web_descuento_promocion` |
+
+También se agregan campos web a tablas legado existentes: `t_articulo` (slug, SEO, vistas, destacada), `t_programa` (slug, SEO, destacado, orden), `t_pagina` (slug, contenido_html, SEO), `t_foto` (alt, orden), `t_boletin` (slug, imagen, SEO).
+
+### Módulo de Certificados
+
+Tablas propias del módulo (prefijo `t_cert_*`):
+
+```text
+t_cert_plantilla           → Plantilla JPG + configuración visual
+t_cert_plantilla_campo     → Posición X/Y, fuente y estilo por campo
+t_lista_aprobados          → Lista oficial de aprobados por apertura de curso
+t_certificado              → Certificado generado con código único + QR
+t_cert_verificacion        → Log de verificaciones públicas desde la web
+```
+
+- Código único: formato `cenefco-{AÑO}-{6 chars}` (ej: `cenefco-2026-A4X9K2`)
+- Endpoint público: `GET /verificar/{codigo}` — devuelve VÁLIDO / ANULADO / NO ENCONTRADO
+- Generación masiva: `CertificadoService::generarLote(imparteId, plantillaId)`
+- Dependencias: `simplesoftwareio/simple-qrcode`, `intervention/image`
+
+### Integración WhatsApp
+
+Campo `whatsapp_grupo_url` en `t_imparte` (Opción A — un grupo por curso). Si un curso necesita múltiples grupos usar tabla `web_whatsapp_grupo` (Opción B). Campo `whatsapp_unido` en `t_inscripcion` para rastrear si el estudiante accedió al enlace.
+
+### Ejecutar solo migraciones cenefco
+
+```bash
+# Correr únicamente las 145 migraciones del legado
+php artisan migrate --path=database/migrations --filter=cenefco
+```
+
+### Relaciones clave entre tablas legado
+
+```text
+t_usuario         → t_nivel           (id_niv)
+t_usuario         → t_universidad     (id_universidad)
+t_usuario         → t_carrera         (id_carrera)
+t_usuario         → t_tipoprograma    (id_tipoprograma)
+t_usuariogrupopermiso → t_usuario     (id_us)
+t_usuariogrupopermiso → t_grupopermiso(id_grupopermiso)
+t_imparte         → t_usuario         (id_us — docente)
+t_imparte         → t_materia         (id_mat)
+t_inscripcion     → t_usuario         (id_us)
+t_inscripcion     → t_imparte         (id_imp)
+t_nota            → t_imparte + t_usuario + t_materia
+t_pago            → t_usuario + t_fechapago
+t_materia_plan    → t_materia + t_plan
+t_permiso         → t_grupopermiso + t_regform
+t_regform         → t_regcomponente
+```
+
+---
+
+## Tests
+
+```bash
+make test                           # todos los tests
+make test-filter f=CreateNoticiaTest # test específico
+php artisan test --coverage         # con reporte de cobertura
+```
+
+- Tests de **Handlers** → unitarios con Mockery (mockear el repositorio)
+- Tests de **Controllers/Endpoints** → feature tests con `RefreshDatabase`
+- Los tests viven en `tests/Unit/` y `tests/Feature/`
+- Usar factories para datos de prueba (`database/factories/`)
+
+---
+
+## Módulo de Pagos — Referencia completa
+
+> Este módulo maneja dinero real. Cualquier cambio aquí debe respetar todas las reglas que siguen sin excepción.
+
+### Arquitectura DDD del módulo
+
+El módulo Pagos está completamente migrado a DDD. Su estructura es la referencia canónica para módulos que operan sobre tablas legado (`t_*`):
+
+```text
+Domain/Pagos/
+  Contracts/
+    PagoRepositoryInterface.php
+    FechaPagoRepositoryInterface.php
+    DevolucionRepositoryInterface.php
+  Exceptions/
+    PagoNotFoundException.php
+    PagoDuplicadoException.php          ← lanza 422, no 404
+    FechaPagoNotFoundException.php
+    DevolucionNotFoundException.php
+
+Application/Pagos/
+  DTOs/
+    PagoDTO.php                         ← monto_pagado: float (nunca string)
+    FechaPagoDTO.php                    ← monto_a_pagar: float
+    ResumenPagoDTO.php                  ← pendiente: ?float (null = sin plan)
+    DevolucionDTO.php
+  Commands/
+    CreatePagoCommand.php
+    UpdatePagoCommand.php
+    AnularPagoCommand.php
+    RegistrarAnticipoCommand.php
+    CreateFechaPagoCommand.php
+    UpdateFechaPagoCommand.php
+    CreateDevolucionCommand.php
+    ResolverDevolucionCommand.php
+  Handlers/                             ← uno por Command
+  Queries/
+    GetPagosQuery.php
+    GetPagoByIdQuery.php
+    GetFechasPagoQuery.php
+    GetDevolucionesQuery.php
+  QueryHandlers/                        ← uno por Query
+  Services/
+    PagoCalculadorService.php           ← ÚNICA fuente de cálculo de pendiente
+
+Infrastructure/Pagos/
+  Models/
+    Pago.php        → tabla t_pago
+    FechaPago.php   → tabla t_fechapago
+    PagoLog.php     → tabla t_pagolog
+    Devolucion.php  → tabla web_devolucion
+  Repositories/
+    EloquentPagoRepository.php
+    EloquentFechaPagoRepository.php
+    EloquentDevolucionRepository.php
+
+Http/
+  Controllers/Api/
+    PagoController.php          ← solo orquesta, cero SQL
+    FechaPagoController.php
+    DevolucionController.php
+    InscripcionController.php   ← inyecta PagoCalculadorService + RegistrarAnticipoHandler
+    VentaController.php         ← inyecta PagoCalculadorService
+  Requests/Pagos/
+    StorePagoRequest.php
+    UpdatePagoRequest.php
+    StoreFechaPagoRequest.php
+    UpdateFechaPagoRequest.php
+    StoreAnticipoRequest.php
+    StoreDevolucionRequest.php
+    ResolverDevolucionRequest.php
+```
+
+Bindings registrados en `DomainServiceProvider`:
+
+```php
+$this->app->bind(PagoRepositoryInterface::class,       EloquentPagoRepository::class);
+$this->app->bind(FechaPagoRepositoryInterface::class,  EloquentFechaPagoRepository::class);
+$this->app->bind(DevolucionRepositoryInterface::class, EloquentDevolucionRepository::class);
+```
+
+### Tablas involucradas y sus PKs
+
+| Tabla | PK | Auto-increment | Notas |
+|---|---|---|---|
+| `t_pago` | `id_pago` | ✅ Sí (migración 2026_06_01_000001) | `monto_pagado` almacenado como VARCHAR legado — siempre castear a float |
+| `t_fechapago` | `id_fechapago` | ✅ Sí (migración 2026_06_01_000003) | `monto_a_pagar` también VARCHAR — castear a float |
+| `t_pagolog` | `id_pagolog` | ✅ Sí (migración 2026_06_01_000002) | Espejo de `t_pago` para auditoría |
+| `web_devolucion` | `id` (bigint) | ✅ Sí (nativa Laravel) | Estado: `pendiente` / `aprobada` / `rechazada` / `cancelada` |
+
+> **CRÍTICO:** Nunca generar IDs manualmente con `MAX(id) + 1`. Usar siempre `insertGetId()` o `Model::create()` que delega en AUTO_INCREMENT.
+
+### Reglas irrompibles del módulo de Pagos
+
+```php
+// ❌ NUNCA: generar IDs manuales
+$maxId  = DB::table('t_pago')->max('id_pago') ?? 0;
+$idPago = $maxId + 1;
+
+// ✅ SIEMPRE: dejar que MySQL genere el ID
+$pago = Pago::create([...]);  // id_pago lo asigna AUTO_INCREMENT
+
+// ❌ NUNCA: validar o almacenar monto como string
+'monto_pagado' => ['nullable', 'string']
+
+// ✅ SIEMPRE: validar monto como numeric
+'monto_pagado' => ['required', 'numeric', 'min:0.01', 'max:999999.99']
+
+// ❌ NUNCA: registrar un pago sin verificar duplicado de cuota
+DB::table('t_pago')->insertGetId([...]);
+
+// ✅ SIEMPRE: verificar antes de insertar si hay id_fechapago
+if ($repo->existePagoActivo($idUs, $idFechapago)) {
+    throw new PagoDuplicadoException();
+}
+
+// ❌ NUNCA: escribir en t_pago sin DB::transaction()
+DB::table('t_pago')->insert([...]);
+DB::table('t_pagolog')->insert([...]);  // si falla, inconsistencia
+
+// ✅ SIEMPRE: envolver toda escritura de pago en transacción
+DB::transaction(function () use ($command) {
+    $model = $this->repository->create([...]);
+    return PagoDTO::fromModel($model);
+});
+
+// ❌ NUNCA: calcular pendiente duplicando lógica en controllers
+$pendiente = $totalPlan - $totalPagado;  // en VentaController
+$pendiente = $cuotasPendientes - $anticipos;  // en InscripcionController (distinto!)
+
+// ✅ SIEMPRE: usar PagoCalculadorService (única fuente de verdad)
+$resumen = $this->calculador->calcular($planId, $pagosActivos);
+```
+
+### Lógica de cálculo de pendiente (`PagoCalculadorService`)
+
+Esta es la regla de negocio central — no duplicar en ningún otro lugar:
+
+1. **Cuotas cubiertas**: pagos con `id_fechapago` no nulo y `pago_extra = 0`.
+2. **Anticipos** (`pago_extra = 1`, `id_fechapago = null`): reducen el monto pendiente de cuotas no cubiertas.
+3. **Sin cuotas en el plan**: `pendiente = total_plan - total_pagado`.
+4. **Sin plan asignado**: devuelve `plan_no_asignado = true` y `pendiente = null` (nunca 0 — null significa "indeterminado", no "pagado").
+
+```php
+// Uso correcto en cualquier controller que necesite el resumen
+$resumen = $this->calculador->calcular(
+    planId: $planId ? (int) $planId : null,
+    pagosActivos: $pagos->where('estado', 1)
+);
+// $resumen es un ResumenPagoDTO con: total_pagado, pendiente, cuotas_pagadas, etc.
+```
+
+### Auditoría de pagos
+
+Toda modificación o anulación de `t_pago` debe registrarse en `t_pagolog` **antes** de aplicar el cambio, dentro de la misma transacción. El `EloquentPagoRepository::auditarCambio()` lo hace automáticamente cuando se llama desde `UpdatePagoHandler` y `AnularPagoHandler`.
+
+Tipos de log válidos en `t_pagolog.tipo_log`:
+
+| Valor | Cuándo |
+|---|---|
+| `edicion` | `UpdatePagoHandler` — se modifica monto, boleta, fecha u observación |
+| `anulacion` | `AnularPagoHandler` — se pone `estado = 0` |
+| `verificacion` | `VerificarPagoHandler` — se pone `estado_verificacion = 'verificado'` |
+| `observacion` | `ObservarPagoHandler` — se pone `estado_verificacion = 'observado'` con `nota_verificacion`; notifica al cajero (rol Admin marcó el comprobante como inválido/dudoso) |
+
+Al registrar un pago o anticipo (`CreatePagoHandler`, `RegistrarAnticipoHandler`) se notifica automáticamente a los usuarios con permiso `pagos.editar` vía `NotificacionService::enviarAPermiso()` (tipo `pago_registrado`) para que revisen el comprobante y lo marquen como verificado u observado.
+
+### Webhook de pago online — PagosYa (no Stripe)
+
+La pasarela de pago online activa es **PagosYa**, no Stripe. El webhook real está en `POST /pagosya/webhook` (`routes/api.php`, sin `auth:sanctum`, ruta pública), manejado por `PagoOnlineSessionController::webhook()`. Flujo:
+
+```text
+PagosYa → POST /pagosya/webhook
+  → PagoOnlineSessionController::webhook()
+  → PagosYaService::verificarFirmaWebhook()  ← HMAC-SHA256 sobre el body, header X-PagosYa-Signature
+  → evento 'checkout.completed'
+      → resuelve la PagoOnlineSession por checkout_id
+      → verifica idempotencia por transaction_id (nro_boleta_bancaria)
+      → llama CreatePagoHandler con los datos del checkout
+```
+
+`config/pagosya.php` expone `PAGOSYA_API_KEY`/`PAGOSYA_WEBHOOK_SECRET` — si `webhook_secret` está vacío, `verificarFirmaWebhook()` rechaza la request (fail-closed), nunca firma con clave vacía.
+
+> Nota histórica: el proyecto tuvo en algún momento planeado un flujo de Stripe (`stripe/stripe-php` sigue en `composer.json`), pero nunca se completó — no hay `StripeService` ni ruta de webhook registrada. `PagoController::webhook()` (el stub que quedó) fue eliminado; usar siempre PagosYa como referencia de pasarela de pago online.
+
+### Endpoints del módulo
+
+| Método | Ruta | Controller@método | Request |
+|---|---|---|---|
+| GET | `/api/v1/pagos-academicos` | `PagoController@index` | — |
+| POST | `/api/v1/pagos-academicos` | `PagoController@store` | `StorePagoRequest` |
+| GET | `/api/v1/pagos-academicos/{id}` | `PagoController@show` | — |
+| PUT | `/api/v1/pagos-academicos/{id}` | `PagoController@update` | `UpdatePagoRequest` |
+| DELETE | `/api/v1/pagos-academicos/{id}` | `PagoController@destroy` | — |
+| POST | `/pagosya/webhook` | `PagoOnlineSessionController@webhook` | sin auth, firma HMAC |
+| GET | `/api/v1/fechas-pago` | `FechaPagoController@index` | — |
+| POST | `/api/v1/fechas-pago` | `FechaPagoController@store` | `StoreFechaPagoRequest` |
+| PUT | `/api/v1/fechas-pago/{id}` | `FechaPagoController@update` | `UpdateFechaPagoRequest` |
+| DELETE | `/api/v1/fechas-pago/{id}` | `FechaPagoController@destroy` | — |
+| POST | `/api/v1/inscripciones/{id}/anticipo` | `InscripcionController@registrarAnticipo` | `StoreAnticipoRequest` |
+| GET | `/api/v1/inscripciones/{id}/devoluciones` | `DevolucionController@index` | — |
+| POST | `/api/v1/inscripciones/{id}/devoluciones` | `DevolucionController@store` | `StoreDevolucionRequest` |
+| PATCH | `/api/v1/devoluciones/{id}/cancelar` | `DevolucionController@update` | `ResolverDevolucionRequest` |
+| PATCH | `/api/v1/devoluciones/{id}/resolver` | `DevolucionController@update` | `ResolverDevolucionRequest` |
+
+---
+
+## Módulos nuevos — Septiembre 2026
+
+### CRM — Seguimiento de Leads (`campanas_leads`)
+
+Módulo completo para gestión de leads provenientes de campañas de WhatsApp/redes sociales.
+
+**Modelos:** `CampanaLead`, `Lead`, `LeadSeguimiento`
+**Arquitectura:** CQRS completo (Commands, Queries, Handlers, DTOs)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/campanas-leads` | Lista campañas con paginación |
+| POST | `/api/v1/campanas-leads` | Crear campaña |
+| PUT | `/api/v1/campanas-leads/{id}` | Actualizar campaña |
+| DELETE | `/api/v1/campanas-leads/{id}` | Eliminar campaña |
+| GET | `/api/v1/campanas-leads/{id}/leads` | Leads de una campaña |
+| POST | `/api/v1/campanas-leads/{id}/leads` | Agregar lead a campaña |
+| GET | `/api/v1/leads/{id}` | Detalle de un lead |
+| PUT | `/api/v1/leads/{id}` | Actualizar lead (estado, observación) |
+| POST | `/api/v1/leads/{id}/seguimiento` | Registrar seguimiento/contacto |
+
+**Estados de Lead:** `nuevo` → `contactado` → `interesado` → `inscrito` / `no_interesado`
+
+---
+
+### Control Académico — Tareas Dinámicas por Curso
+
+Las tareas académicas ya NO son hardcodeadas. Flujo:
+1. Admin crea plantillas en el **Catálogo de Requisitos** (`catalogo_tareas_academicas`)
+2. Al crear/editar un curso, selecciona qué requisitos aplican (`tareas_catalogo_ids[]`)
+3. El handler inserta registros en `tareas_academicas` vinculados por `catalogo_id`
+4. Al editar: sincronización automática — desmarca = elimina solo las que vienen del catálogo (`catalogo_id NOT NULL`)
+
+**Tabla `catalogo_tareas_academicas`:**
+- `id`, `titulo`, `requiere_archivo` (boolean), `estado` (boolean), `timestamps`
+
+**Tabla `tareas_academicas`** (columna nueva):
+- `catalogo_id` (FK nullable → `catalogo_tareas_academicas.id`, nullOnDelete)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/catalogo-tareas` | Lista todas las plantillas activas |
+| POST | `/api/v1/catalogo-tareas` | Crear plantilla (título único) |
+| PUT | `/api/v1/catalogo-tareas/{id}` | Editar plantilla |
+| DELETE | `/api/v1/catalogo-tareas/{id}` | Eliminar plantilla |
+| GET | `/api/v1/cursos/{programaId}/tareas` | Tareas de un curso |
+| POST | `/api/v1/cursos/{programaId}/tareas` | Agregar tarea manual a curso |
+| POST | `/api/v1/tareas/{id}/completar` | Marcar tarea como completada (sube archivo si requiere_archivo) |
+
+**Handlers involucrados:**
+- `CreateCursoHandler` — inserta tareas del catálogo al crear curso
+- `UpdateCursoHandler` — sincroniza (agrega nuevas, elimina las desmarcadas) al editar curso
+
+**Controller:** `CatalogoTareaController` — CRUD simple Eloquent, sin CQRS (es catálogo de configuración)
+
+> ⚠️ El campo `formulario_id` fue **eliminado del UI** del formulario de creación/edición de cursos (sigue en la BD pero ya no se expone en el admin).
+> Los cursos usan `url_whatsapp` y `url_whatsapp2` para enlazar grupos de WhatsApp de las campañas.
+
+---
+
+### Consideraciones de compatibilidad SQLite (dev local)
+
+El entorno local usa **SQLite** para tests y desarrollo. El entorno de producción usa **MySQL/PostgreSQL**.
+
+**SIEMPRE** usa `App\Shared\Kernel\Support\SqlCompat` para queries que podrían diferir:
+- `CONCAT()` → usa `SqlCompat::concat()`
+- `CAST(x AS DECIMAL)` → usa `SqlCompat::castDecimal()`
+- `GROUP_CONCAT()` → usa `SqlCompat::groupConcat()`
+
+Nunca escribas SQL raw con funciones específicas de MySQL directamente en repositorios.

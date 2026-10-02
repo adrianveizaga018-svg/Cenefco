@@ -1,0 +1,1 @@
+const fs = require('fs'); let f = fs.readFileSync('app/Infrastructure/PlanesAcademicos/Models/PlanAcademico.php', 'utf8'); f = f.replace(/'qr_image_url',/, 'qr_image_url',\n        'modo_fechas',); fs.writeFileSync('app/Infrastructure/PlanesAcademicos/Models/PlanAcademico.php', f);

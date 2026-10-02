@@ -1,155 +1,323 @@
-# =============================================================================
-# Makefile — frontend ventas
-# Stack: React 19 · TypeScript 5.7 · Vite 7 · TailwindCSS 4
-# =============================================================================
-
 .DEFAULT_GOAL := help
-.PHONY: help dev build preview install clean lint lint-fix format \
-        type-check ts-check outdated analyze docker-build docker-run \
-        docker-stop docker-clean nuke
+.PHONY: help setup install update dev serve serve-public watch queue queue-work queue-listen \
+        schedule logs tinker routes models dump tunnel mailserver \
+        migrate migrate-fresh migrate-rollback migrate-status migrate-reset migrate-refresh \
+        seed seed-migrados make-seed fresh db-reset db-refresh \
+        cache-clear cache-warm clear optimize \
+        test test-filter test-coverage lint format format-test format-dirty \
+        key-generate storage-link clean \
+        env-dev env-prod version info \
+        sail-up sail-down sail-build swagger \
+        make-controller make-model make-migration make-seeder make-middleware make-request \
+        restart reset-hard kill-serve
 
-# -----------------------------------------------------------------------------
-# Variables
-# -----------------------------------------------------------------------------
-PKG_MANAGER := npm
-NODE_MODULES := node_modules
-DIST        := dist
-
-# Colores
-BOLD  := \033[1m
-RESET := \033[0m
-GREEN := \033[0;32m
-CYAN  := \033[0;36m
-YELLOW:= \033[0;33m
-RED   := \033[0;31m
-
-# =============================================================================
-# AYUDA
-# =============================================================================
-
-help: ## Muestra esta ayuda
+help:
 	@echo ""
-	@echo "$(BOLD)frontend-ventas$(RESET) — Comandos disponibles"
-	@echo "────────────────────────────────────────────────────"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
+	@echo " cenefco — Comandos disponibles"
+	@echo ""
+	@echo " Setup"
+	@echo "  make setup            Instalacion completa desde cero"
+	@echo "  make install          composer install + key:generate"
+	@echo "  make update           Actualizar dependencias PHP y Node"
+	@echo "  make key-generate     Generar APP_KEY"
+	@echo "  make storage-link     Crear enlace simbolico storage"
+	@echo "  make env-dev          Copiar .env de desarrollo"
+	@echo "  make env-prod         Copiar .env de produccion"
+	@echo "  make clean            Eliminar vendor, node_modules y caches"
+	@echo "  make reset-hard       Limpiar, instalar, migrar y seedear todo"
+	@echo ""
+	@echo " Desarrollo"
+	@echo "  make dev              Servidor + queue + logs en paralelo"
+	@echo "  make serve            Servidor PHP local (upload hasta 20MB)"
+	@echo "  make serve-public     Servidor accesible en red local (0.0.0.0:8000, upload hasta 20MB)"
+	@echo "  make watch            npm run watch"
+	@echo "  make queue            Worker de colas (queue:listen)"
+	@echo "  make queue-work       Worker de colas (queue:work)"
+	@echo "  make queue-listen     Worker de colas (queue:listen)"
+	@echo "  make schedule         Ejecuta el scheduler (jobs programados en routes/console.php)"
+	@echo "  make logs             Visor de logs en tiempo real (pail)"
+	@echo "  make tinker           Consola interactiva REPL"
+	@echo "  make routes           Listar rutas registradas"
+	@echo "  make models           Mostrar informacion de modelos"
+	@echo "  make dump             Servidor de dump"
+	@echo "  make tunnel           Exponer puerto 8000 via Cloudflare Tunnel"
+	@echo "  make mailserver       Iniciar MailHog"
+	@echo "  make version          Version de Laravel"
+	@echo "  make info             Info del entorno (PHP, Node, Composer)"
+	@echo ""
+	@echo " Base de datos"
+	@echo "  make migrate          Ejecutar migraciones pendientes"
+	@echo "  make migrate-fresh    Eliminar y recrear toda la BD"
+	@echo "  make migrate-rollback Revertir ultimo batch"
+	@echo "  make migrate-status   Estado de migraciones"
+	@echo "  make migrate-reset    Revertir todas las migraciones"
+	@echo "  make migrate-refresh  Revertir y volver a migrar"
+	@echo "  make seed             Ejecutar todos los seeders (DatabaseSeeder)"
+	@echo "  make make-seed        Ejecutar todos los seeders (alias de seed)"
+	@echo "  make seed-migrados    Migrar cursos desde cursos_info_cenefco.json (idempotente)"
+	@echo "  make fresh            migrate:fresh + seed completo"
+	@echo "  make db-reset         migrate:fresh + RoleSeeder (dev)"
+	@echo "  make db-refresh       migrate:refresh + seed"
+	@echo ""
+	@echo " Cache y optimizacion"
+	@echo "  make cache-clear      Limpiar config, rutas, vistas y cache"
+	@echo "  make clear            Limpiar todo incluyendo optimize:clear"
+	@echo "  make cache-warm       Cachear config, rutas y vistas"
+	@echo "  make optimize         Optimizar para produccion"
+	@echo "  make restart          clear + cache-warm"
+	@echo ""
+	@echo " Calidad de codigo"
+	@echo "  make test             Ejecutar suite de tests"
+	@echo "  make test-filter f=X  Ejecutar test especifico"
+	@echo "  make test-coverage    Tests con reporte de cobertura"
+	@echo "  make lint             Revisar formato (pint --test)"
+	@echo "  make format           Formatear codigo (pint)"
+	@echo "  make format-test      Verificar formato sin cambios"
+	@echo "  make format-dirty     Formatear solo archivos modificados"
+	@echo ""
+	@echo " Generadores (make make-X NAME=Nombre)"
+	@echo "  make make-controller  Crear controller"
+	@echo "  make make-model       Crear model + migration"
+	@echo "  make make-migration   Crear migration"
+	@echo "  make make-seeder      Crear seeder"
+	@echo "  make make-middleware  Crear middleware"
+	@echo "  make make-request     Crear form request"
+	@echo ""
+	@echo " Docker / Sail"
+	@echo "  make sail-up          Levantar contenedores Docker"
+	@echo "  make sail-down        Detener contenedores Docker"
+	@echo "  make sail-build       Reconstruir imagen Docker"
+	@echo ""
+	@echo " Documentacion"
+	@echo "  make swagger          Regenerar documentacion OpenAPI"
 	@echo ""
 
-# =============================================================================
-# DESARROLLO
-# =============================================================================
+setup:
+	composer install
+	npm install
+	@[ -f .env ] || cp .env.example .env
+	php artisan key:generate
+	php artisan storage:link
+	php artisan migrate
+	php artisan db:seed --class=RoleSeeder
 
-dev: ## Inicia el servidor de desarrollo (Vite)
-	@echo "$(GREEN)Iniciando servidor de desarrollo...$(RESET)"
-	$(PKG_MANAGER) run start
+install:
+	composer install
+	@[ -f .env ] || cp .env.example .env
+	php artisan key:generate
 
-install: ## Instala dependencias de Node
-	@echo "$(GREEN)Instalando dependencias...$(RESET)"
-	$(PKG_MANAGER) install
+update:
+	composer update
+	npm update
 
-install-clean: ## Reinstala dependencias desde cero (borra node_modules)
-	@echo "$(YELLOW)Limpiando node_modules...$(RESET)"
-	rm -rf $(NODE_MODULES)
-	$(PKG_MANAGER) install
+key-generate:
+	php artisan key:generate
 
-# =============================================================================
-# BUILD
-# =============================================================================
+storage-link:
+	php artisan storage:link
 
-build: ## Genera el build de producción en /dist
-	@echo "$(GREEN)Construyendo para producción...$(RESET)"
-	$(PKG_MANAGER) run build
+env-dev:
+	cp -p ./deploy/.env.dev .env
 
-build-dev: ## Build con variables de entorno de desarrollo
-	@echo "$(GREEN)Construyendo con env desarrollo...$(RESET)"
-	$(PKG_MANAGER) run build -- --mode development
+env-prod:
+	cp -r ./deploy/.env.production .env
 
-preview: build ## Build + previsualización local del bundle
-	@echo "$(GREEN)Previsualizando build...$(RESET)"
-	$(PKG_MANAGER) run preview
+clean:
+	rm -rf node_modules
+	rm -rf vendor
+	rm -rf public/hot
+	rm -rf public/storage
+	rm -rf public/build
+	rm -rf bootstrap/cache/*.php
 
-# =============================================================================
-# CALIDAD DE CÓDIGO
-# =============================================================================
+reset-hard: clean install setup migrate seed
 
-lint: ## Ejecuta ESLint (solo reporta)
-	@echo "$(CYAN)Ejecutando ESLint...$(RESET)"
-	$(PKG_MANAGER) run lint
+dev:
+	npx concurrently -c "#93c5fd,#c4b5fd,#fb7185,#facc15" \
+		"PHP_INI_SCAN_DIR=/etc/php/8.3/cli/conf.d:$$(pwd) php artisan serve" \
+		"php artisan queue:listen --tries=1 --timeout=0" \
+		"php artisan pail --timeout=0" \
+		"php artisan schedule:work" \
+		--names=server,queue,logs,schedule --kill-others
 
-lint-fix: ## Ejecuta ESLint y corrige automáticamente
-	@echo "$(CYAN)Corrigiendo errores de ESLint...$(RESET)"
-	$(PKG_MANAGER) run lint:fix
+kill-serve:
+	-kill $$(ps aux | grep "artisan serve\|php.*-S 127" | grep -v grep | awk '{print $$2}') 2>/dev/null; true
 
-prettier: ## Verifica formato con Prettier (solo reporta)
-	@echo "$(CYAN)Verificando formato Prettier...$(RESET)"
-	$(PKG_MANAGER) run prettier
+serve: kill-serve
+	PHP_INI_SCAN_DIR=/etc/php/8.3/cli/conf.d:$$(pwd) php artisan serve
 
-prettier-fix: ## Aplica formato Prettier
-	@echo "$(CYAN)Aplicando formato Prettier...$(RESET)"
-	$(PKG_MANAGER) run prettier:fix
+serve-public: kill-serve
+	PHP_INI_SCAN_DIR=/etc/php/8.3/cli/conf.d:$$(pwd) php artisan serve --host=0.0.0.0 --port=8000
 
-format: ## Aplica Prettier + ESLint (full format)
-	@echo "$(CYAN)Formateando código completo...$(RESET)"
-	$(PKG_MANAGER) run format
+watch:
+	npm run watch
 
-type-check: ## Verifica tipos TypeScript sin emitir archivos
-	@echo "$(CYAN)Verificando tipos TypeScript...$(RESET)"
-	npx tsc --noEmit
+queue:
+	php artisan queue:listen --tries=1 --timeout=0
 
-check: lint type-check ## Lint + type-check (CI local)
-	@echo "$(GREEN)Todas las verificaciones pasaron.$(RESET)"
+queue-work:
+	php artisan queue:work
 
-# =============================================================================
-# ANÁLISIS
-# =============================================================================
+queue-listen:
+	php artisan queue:listen
 
-analyze: build ## Analiza el tamaño del bundle (requiere rollup-plugin-visualizer)
-	@echo "$(CYAN)Analizando bundle...$(RESET)"
-	@echo "$(YELLOW)Tip: instala rollup-plugin-visualizer para visualizar el bundle$(RESET)"
-	$(PKG_MANAGER) run build -- --mode analysis 2>/dev/null || $(PKG_MANAGER) run build
+schedule:
+	php artisan schedule:work
 
-outdated: ## Lista dependencias desactualizadas
-	@echo "$(CYAN)Dependencias desactualizadas:$(RESET)"
-	$(PKG_MANAGER) outdated
+logs:
+	php artisan pail --timeout=0
 
-deps: ## Lista todas las dependencias instaladas
-	$(PKG_MANAGER) list --depth=0
+tinker:
+	php artisan tinker
 
-# =============================================================================
-# LIMPIEZA
-# =============================================================================
+routes:
+	php artisan route:list --columns=method,uri,name,action
 
-clean: ## Elimina el directorio dist/
-	@echo "$(YELLOW)Limpiando dist/...$(RESET)"
-	rm -rf $(DIST)
+models:
+	php artisan model:show
 
-clean-cache: ## Limpia caché de Vite
-	@echo "$(YELLOW)Limpiando caché de Vite...$(RESET)"
-	rm -rf node_modules/.vite
+dump:
+	php artisan dump-server
 
-nuke: ## Limpia dist/ + node_modules/ (reinstalar después con make install)
-	@echo "$(RED)Eliminando dist/ y node_modules/...$(RESET)"
-	rm -rf $(DIST) $(NODE_MODULES)
+tunnel:
+	cloudflared tunnel --url http://localhost:8000
 
-# =============================================================================
-# DOCKER
-# =============================================================================
+mailserver:
+	./tools/bin/mailhog &
 
-docker-build: ## Construye la imagen Docker del frontend
-	@echo "$(GREEN)Construyendo imagen Docker...$(RESET)"
-	docker build -t cenefco-admin:latest .
+version:
+	php artisan --version
 
-docker-run: ## Ejecuta el contenedor del frontend en puerto 80
-	@echo "$(GREEN)Iniciando contenedor frontend en :80...$(RESET)"
-	docker run -d --name cenefco_admin -p 80:80 cenefco-admin:latest
+info:
+	@echo "Laravel Version:"
+	@php artisan --version
+	@echo "PHP Version: $$(php -v | head -n 1)"
+	@echo "Composer Version: $$(composer --version | head -n 1)"
+	@echo "Node Version: $$(node -v)"
+	@echo "NPM Version: $$(npm -v)"
 
-docker-stop: ## Detiene el contenedor del frontend
-	@echo "$(YELLOW)Deteniendo contenedor frontend...$(RESET)"
-	docker stop cenefco_admin && docker rm cenefco_admin
+migrate:
+	php artisan migrate
 
-docker-logs: ## Ver logs del contenedor
-	docker logs -f cenefco_admin
+migrate-fresh:
+	php artisan migrate:fresh
 
-docker-clean: ## Elimina imagen y contenedor del frontend
-	@echo "$(RED)Eliminando imagen cenefco-admin...$(RESET)"
-	docker rmi cenefco-admin:latest 2>/dev/null || true
+migrate-rollback:
+	php artisan migrate:rollback
+
+migrate-status:
+	php artisan migrate:status
+
+migrate-reset:
+	php artisan migrate:reset
+
+migrate-refresh:
+	php artisan migrate:refresh
+
+seed:
+	php artisan db:seed
+
+seed-migrados:
+	php artisan db:seed --class=CursoMigradoSeeder
+
+fresh:
+	php artisan migrate:fresh --seed
+
+db-reset:
+	php artisan migrate:fresh --seed --seeder=RoleSeeder
+
+db-refresh: migrate-refresh seed
+
+cache-clear:
+	php artisan config:clear
+	php artisan route:clear
+	php artisan view:clear
+	php artisan cache:clear
+
+clear:
+	php artisan cache:clear
+	php artisan config:clear
+	php artisan route:clear
+	php artisan view:clear
+	php artisan optimize:clear
+
+cache-warm:
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
+
+optimize:
+	composer install --optimize-autoloader --no-dev
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
+	php artisan event:cache
+
+restart: clear cache-warm
+
+test:
+	php artisan config:clear --ansi
+	php artisan test
+
+test-filter:
+	php artisan test --filter=$(f)
+
+test-coverage:
+	php artisan test --coverage
+
+lint:
+	./vendor/bin/pint --test
+
+format:
+	./vendor/bin/pint
+
+format-test:
+	./vendor/bin/pint --test
+
+format-dirty:
+	./vendor/bin/pint --dirty
+
+make-controller:
+	php artisan make:controller $(NAME)
+
+make-model:
+	php artisan make:model $(NAME) -m
+
+make-migration:
+	php artisan make:migration $(NAME)
+
+make-seeder:
+	php artisan make:seeder $(NAME)
+
+make-middleware:
+	php artisan make:middleware $(NAME)
+
+make-request:
+	php artisan make:request $(NAME)
+
+sail-up:
+	./vendor/bin/sail up -d
+
+sail-down:
+	./vendor/bin/sail down
+
+sail-build:
+	./vendor/bin/sail build --no-cache
+
+docker-build:
+	docker build -t cenefco-api:latest .
+
+docker-run:
+	docker run -d --name cenefco_api --env-file ../.env.docker -p 8000:8000 cenefco-api:latest
+
+docker-stop:
+	docker stop cenefco_api && docker rm cenefco_api
+
+docker-logs:
+	docker logs -f cenefco_api
+
+docker-bash:
+	docker exec -it cenefco_api bash
+
+swagger:
+	php artisan l5-swagger:generate

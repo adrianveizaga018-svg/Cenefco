@@ -1,0 +1,145 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class WebTestimonioSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $now = now();
+
+        $testimonios = [
+            [
+                'nombre'       => 'Carlos Mamani',
+                'cargo'        => 'Analista de Sistemas',
+                'empresa'      => 'Empresa Pública',
+                'testimonio'   => 'El CENEFCO me dio las herramientas que necesitaba para actualizar mis conocimientos. La calidad docente y el material didáctico son excelentes. Muy recomendado para quienes buscan formación continua de alto nivel.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => true,
+                'orden'        => 1,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'María Flores',
+                'cargo'        => 'Administradora de Empresas',
+                'empresa'      => 'Sector Privado',
+                'testimonio'   => 'Gracias al diplomado pude acceder a mejores oportunidades laborales. La formación es práctica y muy aplicable al campo profesional. El cuerpo docente demuestra amplia experiencia.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => true,
+                'orden'        => 2,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Juan Quispe',
+                'cargo'        => 'Contador Público',
+                'empresa'      => 'Estudio Contable Independiente',
+                'testimonio'   => 'Los cursos del CENEFCO son muy completos y los docentes tienen amplia experiencia en el área. El programa de contabilidad superó mis expectativas. Totalmente recomendado.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => false,
+                'orden'        => 3,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Rosa Condori',
+                'cargo'        => 'Docente Universitaria',
+                'empresa'      => 'Universidad Pública',
+                'testimonio'   => 'Como profesional en educación, el CENEFCO me ofreció programas de actualización pedagógica de alta calidad. La atención al estudiante es excepcional y el acompañamiento constante.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => true,
+                'orden'        => 4,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Pedro Vargas',
+                'cargo'        => 'Abogado',
+                'empresa'      => 'Estudio Jurídico Vargas & Asociados',
+                'testimonio'   => 'La modalidad semipresencial me permitió compaginar mis estudios con el trabajo. La plataforma virtual es intuitiva y el acompañamiento docente es constante durante todo el programa.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => false,
+                'orden'        => 5,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Ana Choque',
+                'cargo'        => 'Especialista en Marketing Digital',
+                'empresa'      => 'Agencia Digital',
+                'testimonio'   => 'El curso superó mis expectativas. Aprendí herramientas actuales del mercado y el docente siempre estuvo disponible para resolver dudas. Excelente inversión en mi carrera profesional.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => false,
+                'orden'        => 6,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Luis Huanca',
+                'cargo'        => 'Gerente de Recursos Humanos',
+                'empresa'      => 'Empresa Minera Nacional',
+                'testimonio'   => 'Los talleres del CENEFCO son dinámicos y muy enriquecedores. Se nota la vocación de los organizadores por brindar formación de calidad. El taller de Liderazgo transformó mi visión profesional.',
+                'calificacion' => 4,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => false,
+                'orden'        => 7,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Elena Soria',
+                'cargo'        => 'Médico Especialista en Salud Pública',
+                'empresa'      => 'Ministerio de Salud',
+                'testimonio'   => 'El programa de Salud Pública fue una experiencia transformadora. El cuerpo docente es de alto nivel y el contenido sumamente actualizado. Recomiendo el CENEFCO a todos mis colegas.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => false,
+                'orden'        => 8,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+            [
+                'nombre'       => 'Roberto Calle',
+                'cargo'        => 'Empresario',
+                'empresa'      => 'Grupo Empresarial Calle',
+                'testimonio'   => 'Invertir en formación continua con el CENEFCO fue una de las mejores decisiones de mi carrera. Los conocimientos adquiridos los aplico día a día en la gestión de mi empresa.',
+                'calificacion' => 5,
+                'foto_url'     => null,
+                'foto_alt'     => null,
+                'programa_id'  => null,
+                'destacado'    => true,
+                'orden'        => 9,
+                'estado'       => 'publicado',
+                'created_at'   => $now,
+            ],
+        ];
+
+        DB::table('web_testimonio')->insertOrIgnore($testimonios);
+    }
+}

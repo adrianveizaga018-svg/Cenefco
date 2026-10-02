@@ -1,0 +1,1 @@
+const fs = require('fs'); let f = fs.readFileSync('app/Http/Controllers/Api/CajaController.php', 'utf8'); f = f.replace('es_nuevo'  => !->input('id_us'),\n            ], 201);\n        });, 'es_nuevo'  => !->input('id_us'),\n            ], 201);\n        });); fs.writeFileSync('app/Http/Controllers/Api/CajaController.php', f);

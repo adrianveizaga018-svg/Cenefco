@@ -1,0 +1,1107 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Sistema de Ventas API",
+        "description": "API REST del Sistema de Ventas - Bolivia. Gestión de clientes, proveedores, compras e inventario.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api/v1",
+            "description": "API v1"
+        }
+    ],
+    "paths": {
+        "/clientes": {
+            "get": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Listar clientes paginados",
+                "operationId": "e153fbc9c25fe744d505563f69c68593",
+                "parameters": [
+                    {
+                        "name": "pageIndex",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort[key]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort[order]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Crear un nuevo cliente",
+                "operationId": "15eeb42a22df4c776a2f41a668938f3d",
+                "responses": {
+                    "201": {
+                        "description": "Cliente creado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/clientes/{id}": {
+            "get": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Obtener cliente por ID",
+                "operationId": "04211c4e2aa8238e60e1076ea4cc4dee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cliente encontrado"
+                    },
+                    "404": {
+                        "description": "No encontrado"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Actualizar un cliente",
+                "operationId": "fc1f5b190533882f37567e7ee95578e3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cliente actualizado"
+                    },
+                    "404": {
+                        "description": "No encontrado"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Eliminar cliente(s)",
+                "operationId": "02966d39b6138df1f851983e5e83725d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Eliminado"
+                    }
+                }
+            }
+        },
+        "/compras": {
+            "get": {
+                "tags": [
+                    "Compras"
+                ],
+                "summary": "Listar compras paginadas",
+                "operationId": "a03dc88dbc28353fc7f842b675af9ee8",
+                "parameters": [
+                    {
+                        "name": "pageIndex",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Compras"
+                ],
+                "summary": "Crear una orden de compra",
+                "operationId": "24362adbb5186c56678fcbecc14b9448",
+                "responses": {
+                    "201": {
+                        "description": "Compra creada"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/compras/{id}": {
+            "get": {
+                "tags": [
+                    "Compras"
+                ],
+                "summary": "Obtener compra por ID",
+                "operationId": "6193cac087037adb5d784c78d051dfbc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compra encontrada"
+                    },
+                    "404": {
+                        "description": "No encontrada"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Compras"
+                ],
+                "summary": "Actualizar una compra",
+                "operationId": "29a8bb9d006a1cbd2fcc9e21feb88441",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compra actualizada"
+                    },
+                    "404": {
+                        "description": "No encontrada"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Compras"
+                ],
+                "summary": "Eliminar compra(s)",
+                "operationId": "7d331eda67c09ef5bd525c6a97be0d0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Eliminado"
+                    }
+                }
+            }
+        },
+        "/departamentos": {
+            "get": {
+                "tags": [
+                    "Departamentos"
+                ],
+                "summary": "Listar departamentos paginados",
+                "operationId": "daf69d839fb0787fc719b8262f1b56cc",
+                "parameters": [
+                    {
+                        "name": "pageIndex",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Buscar por nombre",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort[key]",
+                        "in": "query",
+                        "description": "Campo de orden: nombre, nro_habitantes, created_at",
+                        "schema": {
+                            "type": "string",
+                            "default": "nombre"
+                        }
+                    },
+                    {
+                        "name": "sort[order]",
+                        "in": "query",
+                        "description": "Dirección: asc o desc",
+                        "schema": {
+                            "type": "string",
+                            "default": "asc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada de departamentos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DepartamentoItem"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 9
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Departamentos"
+                ],
+                "summary": "Crear un nuevo departamento",
+                "operationId": "904d4aa423caf554d2d0b2d0a52d6474",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "Oruro"
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Departamento minero de Bolivia",
+                                        "nullable": true
+                                    },
+                                    "nro_habitantes": {
+                                        "type": "integer",
+                                        "example": 494587,
+                                        "nullable": true
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "imagen": {
+                                        "type": "string",
+                                        "example": "departamentos/oruro.jpg",
+                                        "nullable": true
+                                    },
+                                    "fecha_festiva": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-02-10",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Departamento creado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DepartamentoItem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Departamentos"
+                ],
+                "summary": "Eliminar departamento(s)",
+                "description": "Eliminación lógica (soft delete). Acepta un ID individual o un array de IDs.",
+                "operationId": "009fe30a0363830ce9d7c6fd18df4d0f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "description": "ID individual o array de IDs",
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "integer"
+                                                },
+                                                "example": [
+                                                    1,
+                                                    2,
+                                                    3
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Eliminado correctamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "boolean"
+                                },
+                                "example": true
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Departamento no encontrado"
+                    }
+                }
+            }
+        },
+        "/departamentos/{id}": {
+            "get": {
+                "tags": [
+                    "Departamentos"
+                ],
+                "summary": "Obtener departamento por ID",
+                "operationId": "e2b094ce9285818c66e47325ad93e496",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Departamento encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DepartamentoItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Departamento no encontrado"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Departamentos"
+                ],
+                "summary": "Actualizar un departamento",
+                "operationId": "c1900dd480b4fe398bb5f1e0ba67e70f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "Oruro"
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "nro_habitantes": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "activo": {
+                                        "type": "boolean"
+                                    },
+                                    "imagen": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "fecha_festiva": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Departamento actualizado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DepartamentoItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Departamento no encontrado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/movimientos-inventario": {
+            "get": {
+                "tags": [
+                    "Inventario"
+                ],
+                "summary": "Listar movimientos paginados",
+                "operationId": "fc7b401a01e514d4419d984c8bebcd6b",
+                "parameters": [
+                    {
+                        "name": "pageIndex",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Inventario"
+                ],
+                "summary": "Registrar movimiento de inventario",
+                "operationId": "e275ce934df4660f6fd680e84e5c8f46",
+                "responses": {
+                    "201": {
+                        "description": "Movimiento registrado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/movimientos-inventario/{id}": {
+            "delete": {
+                "tags": [
+                    "Inventario"
+                ],
+                "summary": "Eliminar movimiento(s)",
+                "operationId": "82cf64ebbb0252631dc71b5c49b85353",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Eliminado"
+                    }
+                }
+            }
+        },
+        "/proveedores": {
+            "get": {
+                "tags": [
+                    "Proveedores"
+                ],
+                "summary": "Listar proveedores paginados",
+                "operationId": "99f3f28d7d85f728f2d2af7df8de74b7",
+                "parameters": [
+                    {
+                        "name": "pageIndex",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort[key]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort[order]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Proveedores"
+                ],
+                "summary": "Crear un nuevo proveedor",
+                "operationId": "8f416d4823875c0a03278d3cca7d2917",
+                "responses": {
+                    "201": {
+                        "description": "Proveedor creado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/proveedores/{id}": {
+            "get": {
+                "tags": [
+                    "Proveedores"
+                ],
+                "summary": "Obtener proveedor por ID",
+                "operationId": "9d2d8c6d38015933e34f08630f8682ab",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proveedor encontrado"
+                    },
+                    "404": {
+                        "description": "No encontrado"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Proveedores"
+                ],
+                "summary": "Actualizar un proveedor",
+                "operationId": "753d2df49757dea804d5e3acdfe51896",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proveedor actualizado"
+                    },
+                    "404": {
+                        "description": "No encontrado"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Proveedores"
+                ],
+                "summary": "Eliminar proveedor(es)",
+                "operationId": "29d90006d5ba0086c913eb3310f99308",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Eliminado"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ClienteItem": {
+                "description": "Cliente en listado paginado",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "example": "Juan Pérez"
+                    },
+                    "tipo": {
+                        "type": "string",
+                        "enum": [
+                            "natural",
+                            "juridico"
+                        ],
+                        "example": "natural"
+                    },
+                    "nit_ci": {
+                        "type": "string",
+                        "example": "12345678",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "juan@ejemplo.com",
+                        "nullable": true
+                    },
+                    "telefono": {
+                        "type": "string",
+                        "example": "76543210",
+                        "nullable": true
+                    },
+                    "direccion": {
+                        "type": "string",
+                        "example": "Av. Principal 123",
+                        "nullable": true
+                    },
+                    "ciudad": {
+                        "type": "string",
+                        "example": "La Paz",
+                        "nullable": true
+                    },
+                    "activo": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CompraItem": {
+                "description": "Compra en listado paginado",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "numero_compra": {
+                        "type": "string",
+                        "example": "COM-2026-0001"
+                    },
+                    "proveedor_nombre": {
+                        "type": "string",
+                        "example": "Distribuidora ABC",
+                        "nullable": true
+                    },
+                    "proveedor_id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "estado": {
+                        "type": "string",
+                        "enum": [
+                            "pendiente",
+                            "recibido",
+                            "cancelado"
+                        ],
+                        "example": "pendiente"
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 1500
+                    },
+                    "descuento": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 1500
+                    },
+                    "fecha_compra": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-02-15",
+                        "nullable": true
+                    },
+                    "observaciones": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DepartamentoItem": {
+                "description": "Departamento de Bolivia",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "example": "La Paz"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "la-paz"
+                    },
+                    "descripcion": {
+                        "type": "string",
+                        "example": "Capital del Estado Plurinacional",
+                        "nullable": true
+                    },
+                    "nro_habitantes": {
+                        "type": "integer",
+                        "example": 2800000,
+                        "nullable": true
+                    },
+                    "activo": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "imagen": {
+                        "type": "string",
+                        "example": "departamentos/la-paz.jpg",
+                        "nullable": true
+                    },
+                    "fecha_festiva": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-07-16",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "MovimientoInventarioItem": {
+                "description": "Movimiento de inventario",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "producto_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "producto_nombre": {
+                        "type": "string",
+                        "example": "Azúcar 1kg",
+                        "nullable": true
+                    },
+                    "tipo_movimiento": {
+                        "type": "string",
+                        "enum": [
+                            "entrada",
+                            "salida",
+                            "ajuste",
+                            "devolucion"
+                        ]
+                    },
+                    "cantidad": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "stock_anterior": {
+                        "type": "integer",
+                        "example": 50,
+                        "nullable": true
+                    },
+                    "stock_nuevo": {
+                        "type": "integer",
+                        "example": 150,
+                        "nullable": true
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "example": "Compra de proveedor",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProveedorItem": {
+                "description": "Proveedor en listado paginado",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "example": "Distribuidora ABC S.R.L."
+                    },
+                    "nit": {
+                        "type": "string",
+                        "example": "123456789",
+                        "nullable": true
+                    },
+                    "contacto": {
+                        "type": "string",
+                        "example": "Carlos Mamani",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "contacto@abc.com",
+                        "nullable": true
+                    },
+                    "telefono": {
+                        "type": "string",
+                        "example": "2234567",
+                        "nullable": true
+                    },
+                    "direccion": {
+                        "type": "string",
+                        "example": "Calle Comercio 456",
+                        "nullable": true
+                    },
+                    "ciudad": {
+                        "type": "string",
+                        "example": "La Paz",
+                        "nullable": true
+                    },
+                    "activo": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Clientes",
+            "description": "Gestión de clientes"
+        },
+        {
+            "name": "Proveedores",
+            "description": "Gestión de proveedores"
+        },
+        {
+            "name": "Compras",
+            "description": "Gestión de órdenes de compra"
+        },
+        {
+            "name": "Inventario",
+            "description": "Movimientos de inventario"
+        },
+        {
+            "name": "Departamentos",
+            "description": "Gestión de departamentos de Bolivia"
+        }
+    ]
+}

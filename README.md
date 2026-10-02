@@ -1,77 +1,65 @@
-# CENEFCO Admin
+# cenefco API
 
-Panel administrativo (Angular) del Sistema de Gestión CENEFCO — de uso interno para el personal del Centro de Formación Continua (administración, cajeros, coordinación académica, docentes). Gestiona cursos y programas, inscripciones, pagos, certificados con QR, docentes, contenido del sitio web institucional, WhatsApp y la configuración general del sistema.
-
-Consume la API REST de [`cenefco-api`](../cenefco-api) (Laravel 12). No accede a la base de datos directamente. El sitio público de cara al estudiante es un proyecto aparte: [`cenefco-portal`](../cenefco-portal).
+API REST para la gestión de cursos, diplomados y programas de formación continua. Centraliza la administración de estudiantes, inscripciones, notas, pagos, docentes y la estructura académica de los programas.
 
 ---
 
-## Módulos principales
+## Módulos
 
-| Área | Incluye |
+| Módulo | Descripción |
 | --- | --- |
-| **Académico** | Cursos/Programas, Áreas, Categorías de Programa, Planes Académicos, Convenios, Grupo Académico (Imparte), Calendario Académico, Cursos Migrados, Docentes, Sueldos Docentes, Documentos Académicos, Citas de Asesoría, Formularios de Inscripción |
-| **Inscripciones y Pagos** | Inscripciones, Inscripciones a Diplomado, Pagos Académicos, Fechas de Pago, Reporte de Cobros, Ingresos, Ventas, Reporte Financiero, Correos Enviados |
-| **Certificados** | Certificados, Plantillas de Certificado, Lista de Aprobados, Verificaciones, Certificados Post-Inscripción |
-| **Catálogos** | Ciudades, Profesiones, Niveles, Tipos de Pago/Universidad/Postgrado, Configuración Académica, Universidades, Grados Académicos, Expedido |
-| **Configuración del Sistema** | Configuraciones generales, Config. del Sitio, Moodle, Zoom, Cartas Modelo/Generadas |
-| **Contenido del Sitio Web** | Banners, Eventos, Artículos, Noticias, Comunicados, Boletines, Popups, Galería, Descargables, Redes Sociales, FAQs, Testimonios, Suscriptores, Mensajes de Contacto, Analytics |
-| **Institucional** | Autoridades, Secretarías, Organigramas, Historia y Cifras Institucionales, Aliados, Acreditaciones, Notas de Prensa, Normas, Transparencia, Tesis/Monografías/Revistas, Menús del Portal |
-| **Usuarios y Seguridad** | Usuarios, Roles, Permisos, Notificaciones del Sistema, Vendedores, Mi Perfil |
-| **WhatsApp** | Bot (estado, NLU, Intents), Asesores, Conversaciones, Plantillas, Grupos por curso, Speech de Ventas |
-| **Finanzas / RRHH** | Gastos, Gastos Recurrentes, Regalía Sociedad de Ingenieros, Empleados, Planillas, Ajustes de Sueldo, Honorarios |
-
-Ver el detalle de cada módulo y su flujo de uso en el `MANUAL_USUARIO.md` de `cenefco-api`.
+| **Programas** | Gestión de programas académicos (diplomados, cursos, especializaciones) |
+| **Planes** | Planes de estudio asociados a cada programa |
+| **Materias** | Catálogo de materias con asignación a planes |
+| **Docentes** | Registro de docentes y asignación a materias (impartición) |
+| **Estudiantes** | Gestión de estudiantes con datos personales y académicos |
+| **Inscripciones** | Inscripción de estudiantes a materias y programas |
+| **Notas** | Registro y consulta de calificaciones por materia e inscripción |
+| **Horarios** | Gestión de horarios de clases por materia y docente |
+| **Pagos** | Registro de pagos, fechas de pago y tipos de pago |
+| **Documentos** | Documentos requeridos y presentados por los estudiantes |
+| **Usuarios y Roles** | Control de acceso con niveles, grupos de permisos y permisos granulares |
+| **Contenido web** | Páginas, módulos, menús y bloques de plantilla del sistema |
+| **Configuración** | Ajustes globales del sistema vía `spatie/laravel-settings` |
+| **Web Institucional** | Banners, testimonios, FAQ, aliados, suscriptores, mensajes de contacto, docente-perfil, eventos, etiquetas, categorías de programas, popups y galerías de video |
+| **Certificados** | Plantillas JPG, lista de aprobados, generación masiva con QR y verificación pública por código único |
+| **Pre-inscripción** | Captación de leads por programa con rastreo UTM y notificación automática al abrir convocatoria |
+| **WhatsApp** | Grupos de WhatsApp por apertura de curso con control de vigencia del enlace |
 
 ---
 
-## Arquitectura del frontend
+## Arquitectura
 
-Cada módulo de negocio sigue el mismo patrón de tres capas, consistente en ~117 módulos (`src/app/{modulo}/`):
+Implementa **DDD (Domain-Driven Design) + CQRS**:
 
 ```text
-src/app/{modulo}/
-├── domain/
-│   └── models/        # Interfaces TypeScript puras — sin lógica, sin HttpClient
-├── application/
-│   └── services/       # Servicios @Injectable, un método por endpoint de la API
-└── presentation/
-    └── {vistas}/         # Componentes standalone (lista, create, edit, detail)
+app/
+├── Domain/          # Interfaces, excepciones — sin dependencias externas
+├── Application/     # Commands, Queries, Handlers, DTOs
+├── Infrastructure/  # Modelos Eloquent, Repositorios
+└── Http/            # Controllers, Requests, Middleware
 ```
 
-Solo `constants/`, `layouts/`, `utils/` y `views/` (contenedor de rutas) quedan fuera de este patrón por ser código transversal. Ver `CLAUDE.md` en la raíz de este repo para el ejemplo paso a paso de cómo crear un módulo nuevo.
-
-### Ruteo
-
-- `app.routes.ts` — carga pública de `auth/presentation/modern-auth/` (login) y protege el resto (`MainLayout`) con `canActivate: [authGuard]`.
-- `views/views.routes.ts` agrupa `dashboards`, `ecommerce` y `extra`. `views/ecommerce/routes/*.routes.ts` reparte los módulos de negocio en 7 grupos: `academico`, `catalogos`, `configuracion`, `contenido`, `institucional`, `usuarios`, `whatsapp`.
-
-### Autenticación
-
-- `POST /api/auth/login` devuelve `{ token, user, expires_at }`. El token (Sanctum, Bearer) se guarda en `localStorage` (`cenefco_token`); `AuthService` expone al usuario actual como **signal** y `hasPermission(codigo)`.
-- El interceptor (`auth/infrastructure/interceptors/auth.interceptor.ts`) agrega `Authorization: Bearer <token>` a cada request y cierra sesión ante un `401`.
-- **La sesión expira sola** cuando se cumple `expires_at` (por defecto 8h desde el login, configurable en `cenefco-api`): `AuthService` programa el cierre automático y redirige a `/auth-modern/login?expired=1` sin esperar a que el usuario haga alguna petición.
-
-### Variables de entorno
-
-**No existe** carpeta `src/environments/` — todas las llamadas a la API usan **rutas relativas** (`/api/...`). En desarrollo, `proxy.conf.json` redirige `/api` y `/storage` hacia `cenefco-api` local (`localhost:8000`) y `/whatsapp-bot` hacia el bot (`localhost:3001`). En producción, es el propio Nginx del build estático el que hace `proxy_pass` de esas rutas hacia `cenefco-api` — no hace falta ni existe un archivo de configuración de entorno que editar.
+- **Commands / Handlers** — escrituras (crear noticia, registrar trámite)
+- **Queries / QueryHandlers** — lecturas (listar, filtrar, paginar)
+- **Repositorios** — abstracción sobre Eloquent, inyectados vía `DomainServiceProvider`
+- **DTOs inmutables** — toda respuesta sale como `readonly class` con `fromModel()`
 
 ---
 
 ## Stack tecnológico
 
-| Tecnología | Versión | Uso |
+| Tecnología | Versión | Descripción |
 | --- | --- | --- |
-| **Angular** | `^20.1.0` | Framework (standalone components, builder `@angular/build:application`) |
-| **TypeScript** | `~5.8.2` | Tipado estático |
-| **Tailwind CSS** | `^4` | Utilidades de estilo, + **Preline** (kit de componentes UI) |
-| **Bun** | — | Gestor de paquetes (el repo trae `bun.lock`, **no** `package-lock.json`) |
-| **ApexCharts** | `ng-apexcharts` | Gráficas y reportes |
-| **FullCalendar** | `@fullcalendar/*` | Calendario Académico |
-| **SweetAlert2** | — | Alertas y confirmaciones |
-| **CKEditor 5** | — | Editor de texto enriquecido (contenido web) |
-| **@ng-select, flatpickr, simplebar, swiper** | — | Selects, datepicker, scroll, carruseles |
-| **xlsx, jsPDF, qrcode** | — | Exportaciones y generación de QR/PDF en cliente |
+| **PHP** | `^8.2` | Lenguaje principal |
+| **Laravel** | `^12.0` | Framework base |
+| **MySQL** | `8+` | Base de datos relacional |
+| **Laravel Sanctum** | `^4.3` | Autenticación por Bearer tokens |
+| **Spatie Laravel Settings** | `^3.7` | Configuraciones persistentes en BD |
+| **DomPDF** | `^3.1` | Generación de documentos PDF |
+| **L5 Swagger** | `^10.1` | Documentación OpenAPI auto-generada |
+| **Intervention Image** | `^1.5` | Procesamiento de imágenes |
+| **Simple QrCode** | `^4.x` | Generación de códigos QR para certificados |
 
 ---
 
@@ -79,65 +67,339 @@ Solo `constants/`, `layouts/`, `utils/` y `views/` (contenedor de rutas) quedan 
 
 ### Prerrequisitos
 
-- Node.js `20+`
-- **Bun** (`curl -fsSL https://bun.sh/install | bash`) — este proyecto usa Bun, no npm
-- [`cenefco-api`](../cenefco-api) corriendo en `http://localhost:8000` (el panel no funciona sin la API)
+- PHP `^8.2` + Composer
+- MySQL `8+`
+- Make
 
 ### Instalación
 
 ```bash
-cd cenefco-admin
-bun install
+# 1. Clonar e instalar dependencias
+git clone <repo>
+cd cenefco_api
+composer install
+
+# 2. Configurar entorno
+cp .env.example .env
+php artisan key:generate
+
+# 3. Configurar base de datos en .env
+# DB_CONNECTION=mysql
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_DATABASE=cenefco
+# DB_USERNAME=<usuario>
+# DB_PASSWORD=<contraseña>
+
+# 4. Migrar y seedear
+php artisan migrate
+php artisan db:seed
+
+# 5. Iniciar servidor
+php artisan serve
 ```
 
-### Servidor de desarrollo
+O con un solo comando:
 
 ```bash
-bun run start   # ng serve, puerto 4200
+make setup   # composer install + .env + migrate + seed
+make dev     # servidor + queue + logs en paralelo
 ```
 
-Abre `http://localhost:4200/`. Las peticiones a `/api`, `/storage` y `/whatsapp-bot` se redirigen automáticamente a los servicios locales vía `proxy.conf.json`.
+### URLs de acceso
 
-### Build de producción
-
-```bash
-bun run build -- --configuration production
-```
-
-El resultado queda en `dist/tailwick/browser/` (nombre interno del proyecto en `angular.json`; nota: `package.json` lo llama `"tailwink"` — es solo una inconsistencia de nombres, no afecta el build).
-
-### Pruebas unitarias
-
-```bash
-bun run test
-```
-
----
-
-## Comandos útiles
-
-| Script | Descripción |
+| Servicio | URL |
 | --- | --- |
-| `bun run start` | Servidor de desarrollo (`ng serve`, puerto 4200) |
-| `bun run build` | Build de producción |
-| `bun run watch` | Build en modo observación (development) |
-| `bun run test` | Pruebas unitarias (Karma) |
+| **API REST** | `http://localhost:8000/api/v1` |
+| **Swagger UI** | `http://localhost:8000/api/documentation` |
+| **Autenticación** | `POST http://localhost:8000/api/login` |
 
 ---
 
-## Notas importantes
+## Desarrollo
 
-- El código de cada módulo vive en `src/app/{modulo}/`, siguiendo siempre el patrón `domain/application/presentation` — ver `CLAUDE.md` antes de crear uno nuevo.
-- No hay `src/environments/` que ajustar: la URL de la API se resuelve por proxy (dev) o por Nginx (producción), siempre con rutas relativas `/api/...`.
-- Para desplegar en el VPS de producción, ver `MANUAL_TECNICO.md` en `cenefco-api` (sección de despliegue) — este proyecto se compila con Bun y se sirve como sitio estático detrás de Nginx.
-- Para crear un componente nuevo dentro de un módulo: `ng generate component nombre` (o `bunx ng generate ...`).
+### Comandos esenciales (Makefile)
+
+```bash
+make help          # Ver todos los comandos disponibles
+```
+
+#### Setup
+
+```bash
+make setup         # Instalación completa desde cero
+make install       # Solo composer install + key:generate
+make fresh         # migrate:fresh + seed completo (desarrollo)
+```
+
+#### Servidor y colas
+
+```bash
+make dev           # Servidor + queue + logs en paralelo
+make serve         # Solo servidor PHP
+make queue         # Worker de colas
+make logs          # Visor de logs en tiempo real
+make tinker        # Consola REPL interactiva
+make routes        # Listar rutas registradas
+```
+
+#### Base de datos
+
+```bash
+make migrate       # Ejecutar migraciones pendientes
+make fresh         # Eliminar y recrear toda la BD con seeders
+make seed          # Ejecutar todos los seeders
+make rollback      # Revertir último batch de migraciones
+```
+
+#### Caché y optimización
+
+```bash
+make cache-clear   # Limpiar config, rutas, vistas y caché
+make cache-warm    # Regenerar config, rutas y vistas en caché
+make optimize      # Optimizar para producción
+```
+
+#### Calidad de código
+
+```bash
+make test                  # Ejecutar suite de tests completa
+make test-filter f=Nombre  # Ejecutar un test específico
+make lint                  # Revisar estilo de código (pint --test)
+make format                # Formatear código automáticamente (pint)
+```
 
 ---
 
-## Recursos
+## Autenticación y permisos
 
-- [Angular CLI](https://angular.io/cli)
-- [Documentación Angular](https://angular.io/)
-- [Bun](https://bun.sh/)
-- `CLAUDE.md` (este repo) — arquitectura completa y guía para crear módulos nuevos
-- `MANUAL_USUARIO.md` / `MANUAL_TECNICO.md` (repo `cenefco-api`) — manuales funcional y técnico de todo el sistema
+### Endpoints de autenticación
+
+```text
+POST   /api/login
+POST   /api/logout
+GET    /api/me
+```
+
+Todas las rutas bajo `/api/v1/` requieren `Authorization: Bearer {token}`.
+
+### Roles y permisos
+
+Los permisos se verifican con el middleware `permiso:recurso.accion`:
+
+```php
+Route::get('/usuarios', [UserController::class, 'index'])
+    ->middleware('permiso:usuarios.ver');
+```
+
+| Módulo | Permisos disponibles |
+| --- | --- |
+| usuarios | `usuarios.ver`, `usuarios.crear`, `usuarios.editar`, `usuarios.eliminar` |
+| noticias | `noticias.ver`, `noticias.crear`, `noticias.editar`, `noticias.eliminar` |
+| normas | `normas.ver`, `normas.crear`, `normas.editar` |
+| trámites | `tramites.ver`, `tramites.crear`, `tramites.editar` |
+| transparencia | `transparencia.ver`, `transparencia.crear` |
+| reportes | `reportes.ver` |
+
+---
+
+## Base de datos cenefco (legado SIASEC)
+
+El proyecto incluye **145 migraciones Laravel** generadas a partir del backup `disereco_siasec_backup.sql` del sistema legado SIASEC, más **~18 migraciones nuevas** para la capa web institucional y el módulo de certificados. Estas migraciones permiten recrear el esquema completo en cualquier entorno.
+
+### Convención de nombres
+
+```text
+2026_04_14_NNNNNN_create_cenefco_{tabla}_table.php
+```
+
+Todas están en `database/migrations/` con el prefijo `cenefco_` en el nombre del archivo (no en el nombre de la tabla — la tabla conserva el nombre original, ej. `t_usuario`).
+
+### Grupos de tablas
+
+| Prefijo | Descripción |
+| --- | --- |
+| `t_` | Tablas de datos principales del sistema SIASEC |
+| `t_reg` | Registros de componentes y formularios del sistema de permisos |
+| `t_grupo*`, `t_usuariogrupopermiso` | Grupos de permisos y asignaciones |
+| `t_nivel` | Niveles de acceso del sistema |
+| `t_bitacora*`, `t_log*` | Auditoría y trazabilidad |
+| `t_config*` | Configuraciones globales del sistema |
+| `web_*` | Tablas nuevas para la web institucional (banners, testimonios, FAQ, etc.) |
+| `t_cert_*` | Módulo de certificados (plantillas, campos, generación, verificación) |
+
+### Convenciones del esquema legado
+
+**Tablas legado (`t_*`, `mdl_*`):**
+- **Sin `timestamps()`** — usan `fecha_reg` propio; no hay `created_at` / `updated_at`
+- **Sin `softDeletes()`** — baja lógica mediante columna `estado` (`tinyint`, `1` = activo, `0` = inactivo)
+- **`id_us_reg`** — columna de auditoría que registra el usuario que creó/modificó el registro
+- **Claves primarias compuestas** — varias tablas usan `$table->primary([...])` con múltiples columnas
+- **Sin `bigIncrements`** — los IDs son `integer` simples
+
+**Tablas nuevas (`web_*`, `t_cert_*`):**
+- Usan `bigIncrements('id')` como PK simple
+- `timestampTz` para `created_at`, `updated_at` y `deleted_at`
+- Estado como `string` semántico (`borrador` / `publicado` / `archivado`), no `tinyint`
+- FK constraints declarados formalmente con `->foreign()`
+- Slugs únicos en tablas de contenido público
+
+### Ejecutar las migraciones cenefco
+
+```bash
+# Aplicar solo las migraciones cenefco (si están en un estado pendiente)
+php artisan migrate --path=database/migrations
+
+# Ver estado de todas las migraciones
+php artisan migrate:status | grep cenefco
+
+# Recrear BD completa desde cero
+php artisan migrate:fresh
+```
+
+---
+
+## Esquema de base de datos
+
+### Esquema destacado
+
+- **Slugs únicos** auto-generados en: noticias, comunicados, eventos, normas, trámites, secretarías, autoridades, documentos de transparencia
+- **Soft deletes** en tablas críticas (`deleted_at`)
+- **Búsqueda FULLTEXT** (MySQL) en noticias, comunicados, normas, trámites, eventos, secretarías, autoridades y documentos
+- **Configuraciones globales** persistidas en tabla `settings` vía `spatie/laravel-settings`
+- **Vista `v_busqueda_global`** — unifica noticias, comunicados, normas, trámites, eventos y documentos para búsqueda global
+
+### Seeders iniciales
+
+| Seeder | Datos que carga |
+| --- | --- |
+| `RolesPermisosSeeder` | Roles base y permisos del sistema |
+| `TiposEventoSeeder` | Tipos de evento (cultural, cívico, deportivo, etc.) |
+| `TiposNormaSeeder` | Tipos de norma (ley, decreto, resolución, etc.) |
+| `TiposTramiteSeeder` | Tipos de trámite |
+| `TiposAuditoriaSeeder` | Tipos de auditoría |
+| `TiposDocumentoTransparenciaSeeder` | Categorías de documentos de transparencia |
+| `CategoriaNoticiaSeeder` | Categorías de noticias |
+| `CategoriaIndicadorSeeder` | Categorías de indicadores de gestión |
+| `ConfiguracionSitioSeeder` | Configuración inicial del portal |
+| `MenusSeeder` | Estructura de menús de navegación |
+| `AdminSeeder` | Usuario administrador inicial |
+
+### Comandos de migración
+
+```bash
+# Aplicar migraciones pendientes
+make migrate
+
+# Recrear BD desde cero con seeders (solo desarrollo)
+make fresh
+
+# Ver estado de migraciones
+php artisan migrate:status
+```
+
+---
+
+## Despliegue a producción
+
+### Variables de entorno requeridas
+
+```env
+APP_NAME="cenefco API"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://api.cenefco.gob.bo
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_DATABASE=cenefco
+DB_USERNAME=<usuario>
+DB_PASSWORD=<password-seguro>
+
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=database
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.proveedor.com
+MAIL_FROM_ADDRESS=noreply@cenefco.gob.bo
+MAIL_FROM_NAME="cenefco"
+```
+
+### Checklist de producción
+
+```bash
+# 1. Instalar dependencias sin dev
+composer install --no-dev --optimize-autoloader
+
+# 2. Generar key y configurar .env
+php artisan key:generate
+
+# 3. Aplicar migraciones
+php artisan migrate --force
+
+# 4. Crear tabla de sesiones (si SESSION_DRIVER=database)
+php artisan session:table
+php artisan migrate --force
+
+# 5. Cargar datos iniciales
+php artisan db:seed --force
+
+# 6. Optimizar para producción
+make optimize
+```
+
+---
+
+## Estándares de calidad
+
+- **Capas estrictas**: Domain no puede importar Infrastructure ni Http
+- **DTOs inmutables**: toda respuesta sale como `readonly class`
+- **Handlers**: toda operación de escritura múltiple dentro de `DB::transaction()`
+- **Repositorios**: toda interacción con BD pasa por la interfaz del dominio
+- **PSR-12**: formateado con Laravel Pint
+
+```bash
+make format    # Formatear código
+make lint      # Verificar linting
+make test      # Correr tests
+```
+
+---
+
+## Solución de problemas
+
+### `Table 'sessions' doesn't exist`
+
+```bash
+php artisan session:table
+php artisan migrate
+```
+
+### `Table 'settings' doesn't exist`
+
+```bash
+php artisan vendor:publish --provider="Spatie\LaravelSettings\LaravelSettingsServiceProvider" --tag="migrations"
+php artisan migrate
+```
+
+### Error 500 en producción
+
+```bash
+tail -f storage/logs/laravel.log
+```
+
+### Las rutas no se actualizan
+
+```bash
+make cache-clear
+make routes
+```
+
+---
+
+## Documentación
+
+| Documento | Descripción |
+| --- | --- |
+| [CLAUDE.md](CLAUDE.md) | Guía técnica para agentes AI y onboarding de desarrolladores |
