@@ -14,6 +14,8 @@ import { Inscripcion, InscripcionListResponse } from '../../domain/models/inscri
 import { ToastService } from '../../../common/application/services/toast.service';
 import { SettingsService } from '../../../common/application/services/settings.service';
 import { CobroEstadoSettings } from '../../../common/domain/models/settings.model';
+import { CursoService } from '../../../cursos/application/services/curso.service';
+import { ProgramaAcademicoService } from '../../../programas-academicos/application/services/programa-academico.service';
 import Swal from 'sweetalert2';
 
 interface ModeloOption { id_cartamod: number; nombremodelo: string; }
@@ -37,15 +39,19 @@ export class Inscripciones {
   private router          = inject(Router);
   private route           = inject(ActivatedRoute);
   private settingsService = inject(SettingsService);
-
-  searchQuery     = signal('');
+  private cursoSvc        = inject(CursoService);
+  private programaAcadSvc = inject(ProgramaAcademicoService);
+  searchQuery     = signal<string>('');
   pageIndex       = signal(1);
   pageSize        = signal(15);
   programaId      = signal<number | null>(null);
+  idImp           = signal<number | null>(null);
   idVendedor      = signal<number | null>(null);
   canalVenta      = signal<string>('');
   modoPago        = signal<string>('');
   vendedores      = signal<any[]>([]);
+  programas       = signal<any[]>([]);
+  versiones       = signal<any[]>([]);
   private refresh = signal(0);
 
   modelos  = signal<ModeloOption[]>([]);
@@ -62,11 +68,37 @@ export class Inscripciones {
 
     this.usuarioSvc.getAll({ pageSize: 200 })
       .subscribe({ next: r => this.vendedores.set(r.data) });
+      
+    this.cursoSvc.getAll({ pageSize: 200 }).subscribe(r => this.programas.set(r.data));
+    
+    if (this.programaId()) {
+      this.cargarVersiones(this.programaId()!);
+    }
 
     this.settingsService.getCobroEstadoSettings().subscribe({
       next: settings => this.cobroEstadoSettings.set(settings),
       error: () => this.cobroEstadoSettings.set(null),
     });
+  }
+
+  cargarVersiones(idPrograma: number) {
+    this.programaAcadSvc.getImparticiones(idPrograma).subscribe(data => this.versiones.set(data));
+  }
+
+  onProgramaChange(e: Event) { 
+    const val = (e.target as HTMLSelectElement).value; 
+    const pid = val ? Number(val) : null;
+    this.programaId.set(pid);
+    this.idImp.set(null); 
+    this.versiones.set([]);
+    if (pid) this.cargarVersiones(pid);
+    this.pageIndex.set(1); 
+  }
+  
+  onVersionChange(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.idImp.set(val ? Number(val) : null);
+    this.pageIndex.set(1);
   }
 
   private params = computed(() => ({
@@ -76,6 +108,7 @@ export class Inscripciones {
     refresh:      this.refresh(),
     conInactivos: true,
     programa_id: this.programaId() ?? undefined,
+    id_imp:      this.idImp() ?? undefined,
     id_vendedor: this.idVendedor() ?? undefined,
     canal_venta: this.canalVenta() || undefined,
     modo_pago:   this.modoPago() || undefined,

@@ -201,6 +201,8 @@ Titular: ${banco.titular || '-'}`;
     const ci = this.searchCi().trim();
     if (ci.length < 3) return;
     this.isSearchingCi.set(true);
+    // Bug 2: limpiar comprobante al buscar un nuevo estudiante
+    this.comprobanteFile.set(null);
     this.cajaSvc.buscarEstudiante(ci).subscribe({
       next: (est) => {
         this.estudianteEncontrado.set(est);
@@ -417,6 +419,24 @@ Titular: ${banco.titular || '-'}`;
         this.resultado.set(res);
         this.isSubmitting.set(false);
 
+        // Bug 4: si es estudiante nuevo, mostrar mensaje con contraseña provisional
+        if (res.es_nuevo) {
+          const ci = this.formEstudiante.value.ci ?? '';
+          Swal.fire({
+            icon: 'success',
+            title: '✅ Estudiante creado exitosamente',
+            html: `
+              <p class="text-sm text-gray-700 mb-3">El estudiante fue registrado y su inscripción fue completada.</p>
+              <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-left text-sm text-green-800">
+                <p>🔑 <strong>Contraseña provisional para ingresar a la plataforma:</strong></p>
+                <p class="text-lg font-bold text-green-700 mt-1">${ci}</p>
+                <p class="text-xs mt-2 text-gray-500">El estudiante puede cambiarla al iniciar sesión.</p>
+              </div>`,
+            confirmButtonText: 'Continuar',
+            confirmButtonColor: '#16a34a',
+          });
+        }
+
         // Si requiere envío, crear el registro de envío con el id_ins recién generado
         if (this.requiereEnvio() && res.id_ins && this.envioDepartamento() && this.envioCiudad()) {
           this.envioSvc.create({
@@ -434,7 +454,23 @@ Titular: ${banco.titular || '-'}`;
         const data = err.error ?? {};
         const errorMsg = data?.message || 'Error al inscribir';
 
-        if (err.status === 422 && data?.boleta_duplicada) {
+        if (err.status === 422 && data?.inscripcion_existente) {
+          // Bug 1: doble inscripción en la misma versión
+          Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Estudiante ya inscrito',
+            html: `
+              <p class="text-sm text-gray-700 mb-3">${errorMsg}</p>
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-left text-xs text-yellow-800 space-y-1">
+                <p><strong>Programa:</strong> ${data.nombre_programa ?? ''}</p>
+                <p><strong>Versión:</strong> ${data.nombre_version ?? ''}</p>
+                <p><strong>Fecha inscripción:</strong> ${data.fecha_ins ?? '—'}</p>
+                <p><strong>N° Inscripción:</strong> #${data.id_ins ?? '—'}</p>
+              </div>`,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#f59e0b',
+          });
+        } else if (err.status === 422 && data?.boleta_duplicada) {
           // Boleta duplicada — mostrar alerta específica con detalles
           Swal.fire({
             icon: 'warning',
@@ -450,9 +486,19 @@ Titular: ${banco.titular || '-'}`;
             confirmButtonColor: '#f59e0b',
             allowOutsideClick: false,
           });
-        } else if (err.error?.errors) {
-          const firstKey = Object.keys(err.error.errors)[0];
-          Swal.fire('Error de validación', err.error.errors[firstKey][0], 'error');
+        } else if (err.status === 422 && data?.errors) {
+          // Bug 4: duplicados CI/celular/email u otros errores de validación
+          const errores = data.errors as Record<string, string[]>;
+          const campos: Record<string, string> = { ci: 'Carnet', celular: 'Celular', email: 'Correo' };
+          const lineas = Object.entries(errores)
+            .map(([k, v]) => `<li><strong>${campos[k] ?? k}:</strong> ${v[0]}</li>`)
+            .join('');
+          Swal.fire({
+            icon: 'error',
+            title: 'Datos duplicados',
+            html: `<p class="mb-2">${errorMsg}</p><ul class="text-left text-sm space-y-1">${lineas}</ul>`,
+            confirmButtonText: 'Corregir',
+          });
         } else {
           Swal.fire('Error', errorMsg, 'error');
         }
@@ -478,6 +524,8 @@ Titular: ${banco.titular || '-'}`;
     this.envioDepartamento.set('');
     this.envioCiudad.set('');
     this.sugerenciasCiudad.set([]);
+    // Bug 2: limpiar comprobante al iniciar nueva inscripción
+    this.comprobanteFile.set(null);
     this.formPago.reset({
       metodo_pago: 'deposito',
       fecha_deposito: new Date().toISOString().split('T')[0]

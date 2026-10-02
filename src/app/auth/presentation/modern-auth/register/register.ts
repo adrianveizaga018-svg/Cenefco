@@ -32,7 +32,7 @@ export class Register implements AfterViewInit {
   ngAfterViewInit(): void {
     if (typeof google !== 'undefined' && google.accounts) {
       google.accounts.id.initialize({
-        client_id: 'TU_CLIENT_ID_DE_GOOGLE', // Reemplazar con ID real
+        client_id: '272016198702-6nn2d1ibdeu73v2dicuh4n0i911ei6sa.apps.googleusercontent.com',
         callback: this.handleGoogleResponse.bind(this),
       });
       google.accounts.id.renderButton(

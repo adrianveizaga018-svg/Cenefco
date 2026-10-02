@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
-import { DecimalPipe, SlicePipe, TitleCasePipe, KeyValuePipe, UpperCasePipe } from '@angular/common';
+import { DecimalPipe, SlicePipe, TitleCasePipe, UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { InscripcionService } from '../../application/services/inscripcion.service';
@@ -37,7 +37,7 @@ export interface SeccionReglamento {
 
 @Component({
   selector: 'app-inscripcion-detail',
-  imports: [NgIcon, PageTitle, RouterLink, DecimalPipe, SlicePipe, TitleCasePipe, KeyValuePipe, FormsModule, UpperCasePipe],
+  imports: [NgIcon, PageTitle, RouterLink, DecimalPipe, SlicePipe, TitleCasePipe, FormsModule, UpperCasePipe],
   templateUrl: './inscripcion-detail.html',
 })
 export class InscripcionDetail implements OnInit, OnDestroy {

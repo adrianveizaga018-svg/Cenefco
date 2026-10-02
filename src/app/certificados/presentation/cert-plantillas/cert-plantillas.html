@@ -1,204 +1,635 @@
 <main>
-  <app-page-title title="Plantillas de Certificado" subtitle="Certificados" />
+  <app-page-title title="Diseñador de Certificados" subtitle="Certificados" />
 
-  <div class="grid grid-cols-1 gap-5 mb-5">
+  <div class="flex gap-4 items-start">
 
-    @if (showForm()) {
-    <div class="card">
-      <div class="card-header">
-        <h5 class="card-title">{{ editando() ? 'Editar Plantilla' : 'Nueva Plantilla' }}</h5>
-      </div>
-      <div class="card-body">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- ══════════════════════════════════════════════════════
+         COLUMNA IZQUIERDA — Lista + formulario plantilla
+         ══════════════════════════════════════════════════════ -->
+    <div class="w-64 shrink-0 flex flex-col gap-3">
 
-          <div class="lg:col-span-2">
-            <label class="block text-sm font-medium mb-1">Nombre <span class="text-danger">*</span></label>
-            <input type="text" class="form-input" [value]="form().nombre"
-              (input)="onInputChange('nombre', $any($event.target).value)"
-              placeholder="Ej: Plantilla Diplomado 2026">
+      <!-- Lista de plantillas -->
+      <div class="card overflow-hidden">
+        <div class="px-3 py-2.5 border-b border-default-100 flex items-center justify-between bg-default-50">
+          <p class="text-xs font-semibold text-default-500 uppercase tracking-wide">Plantillas</p>
+          <button type="button" (click)="toggleFormPlantilla()"
+            class="size-6 rounded flex items-center justify-center transition-colors"
+            [class]="showFormPlantilla() ? 'bg-danger/10 text-danger hover:bg-danger/20' : 'bg-primary/10 text-primary hover:bg-primary/20'"
+            [title]="showFormPlantilla() ? 'Cancelar' : 'Nueva plantilla'">
+            <ng-icon [name]="showFormPlantilla() ? 'lucideX' : 'lucidePlus'" class="size-3.5" />
+          </button>
+        </div>
+
+        @if (cargando()) {
+          <div class="flex items-center justify-center py-8 text-default-400 gap-2">
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div>
           </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1">Tipo</label>
-            <select class="form-input" [value]="form().tipo"
-              (change)="onInputChange('tipo', $any($event.target).value)">
-              <option value="aprobacion">Aprobación</option>
-              <option value="participacion">Participación</option>
-              <option value="merito">Mérito</option>
-            </select>
+        } @else if (plantillas().length === 0 && !showFormPlantilla()) {
+          <div class="py-8 text-center text-default-400 text-xs px-3">
+            Sin plantillas. Haz clic en <strong>+</strong> para crear una.
           </div>
-
-          <div class="sm:col-span-2 lg:col-span-3">
-            <label class="block text-sm font-medium mb-1">Imagen de fondo (JPG/PNG) <span class="text-danger">*</span></label>
-            <input type="file" class="form-input" accept=".jpg,.jpeg,.png" (change)="subirImagen($event)">
-            <div class="flex items-start gap-2 px-3 py-2 mt-2 bg-warning/10 border border-warning/30 rounded-lg">
-              <div class="size-4 text-warning shrink-0 mt-0.5"><ng-icon name="lucideTriangleAlert"></ng-icon></div>
-              <p class="text-xs text-default-600">
-                Tamaño sugerido: <strong>1600×1131 px</strong> (máx. 3 MB). Al ser para certificados imprimibles se recomienda buena resolución, pero evita imágenes excesivamente pesadas ya que ralentizan la generación y descarga.
-              </p>
-            </div>
-            @if (subiendo()) {
-              <p class="text-xs text-default-500 mt-1 flex items-center gap-1">
-                <span class="size-3.5 animate-spin inline-block"><ng-icon name="lucideLoader" /></span>
-                Subiendo imagen...
-              </p>
-            }
-            @if (form().imagen_url) {
-              <div class="mt-3 space-y-2">
-                <p class="text-xs text-success flex items-center gap-1">
-                  <ng-icon name="lucideCheckCircle" /> Imagen cargada
-                  <code class="ml-2 text-default-400 font-mono">{{ form().imagen_url }}</code>
-                </p>
-                <img
-                  [src]="storageUrl(form().imagen_url)"
-                  class="rounded border border-default-200 w-full max-h-48 object-contain bg-default-50"
-                  alt="Preview plantilla">
+        } @else {
+          <div class="divide-y divide-default-100">
+            @for (p of plantillas(); track p.id) {
+              <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-default-50 transition-colors group"
+                   [class.bg-primary/5]="plantillaActiva()?.id === p.id"
+                   [class.border-l-2]="plantillaActiva()?.id === p.id"
+                   [class.border-l-primary]="plantillaActiva()?.id === p.id"
+                   (click)="seleccionarPlantilla(p)">
+                <div class="size-9 rounded border border-default-200 overflow-hidden shrink-0 bg-default-100">
+                  @if (p.imagen_url) {
+                    <img [src]="storageUrl(p.imagen_url)" class="w-full h-full object-cover" alt="">
+                  } @else {
+                    <div class="w-full h-full flex items-center justify-center text-default-300">
+                      <ng-icon name="lucideImage" class="size-4" />
+                    </div>
+                  }
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-default-800 truncate">{{ p.nombre }}</p>
+                  <span class="text-[10px] text-default-400 capitalize">{{ p.tipo }} · {{ p.orientacion }}</span>
+                </div>
+                <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <button type="button" title="Editar" (click)="editarPlantilla(p, $event)"
+                    class="size-6 rounded hover:bg-default-200 flex items-center justify-center text-default-400 hover:text-primary">
+                    <ng-icon name="lucidePencil" class="size-3" />
+                  </button>
+                  <button type="button" title="Eliminar" (click)="eliminarPlantilla(p, $event)"
+                    class="size-6 rounded hover:bg-danger/10 flex items-center justify-center text-default-400 hover:text-danger">
+                    <ng-icon name="lucideTrash2" class="size-3" />
+                  </button>
+                </div>
               </div>
             }
           </div>
+        }
+      </div>
 
-          <div>
-            <label class="block text-sm font-medium mb-1">Ancho (px)</label>
-            <input type="number" class="form-input" [value]="form().ancho_px"
-              (input)="onInputChange('ancho_px', +$any($event.target).value)">
+      <!-- Formulario inline nueva/editar plantilla -->
+      @if (showFormPlantilla()) {
+        <div class="card border border-primary/20">
+          <div class="px-4 py-3 border-b border-default-100 bg-primary/3">
+            <p class="text-xs font-semibold text-primary">
+              {{ editandoPlantilla() ? 'Editar plantilla' : 'Nueva plantilla' }}
+            </p>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Alto (px)</label>
-            <input type="number" class="form-input" [value]="form().alto_px"
-              (input)="onInputChange('alto_px', +$any($event.target).value)">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Orientación</label>
-            <select class="form-input" [value]="form().orientacion"
-              (change)="onInputChange('orientacion', $any($event.target).value)">
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Calidad JPG (%)</label>
-            <input type="number" class="form-input" [value]="form().calidad_jpg" min="50" max="100"
-              (input)="onInputChange('calidad_jpg', +$any($event.target).value)">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Color texto por defecto</label>
-            <div class="flex items-center gap-2">
-              <input type="color" class="form-input w-12 p-1 h-9" [value]="form().color_default"
-                (input)="onInputChange('color_default', $any($event.target).value)">
-              <input type="text" class="form-input w-28" [value]="form().color_default"
-                (input)="onInputChange('color_default', $any($event.target).value)">
+          <div class="p-4 space-y-3">
+
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-input text-sm" [value]="formPlantilla().nombre"
+                (input)="onInputPlantilla('nombre', $any($event.target).value)"
+                placeholder="Ej: Diplomado 2026 — Aprobación">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Tipo</label>
+                <select class="form-input text-xs py-1.5" [value]="formPlantilla().tipo"
+                  (change)="onInputPlantilla('tipo', $any($event.target).value)">
+                  <option value="aprobacion">Aprobación</option>
+                  <option value="participacion">Participación</option>
+                  <option value="merito">Mérito</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Estado</label>
+                <select class="form-input text-xs py-1.5" [value]="formPlantilla().estado"
+                  (change)="onInputPlantilla('estado', $any($event.target).value)">
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-default-600 mb-1">
+                Imagen de fondo <span class="text-danger">*</span>
+              </label>
+              <input type="file" class="form-input text-xs" accept=".jpg,.jpeg,.png" (change)="subirImagen($event)">
+              <p class="text-[10px] text-default-400 mt-1">JPG/PNG, recomendado 1600×1131 px, máx. 3 MB</p>
+              @if (subiendo()) {
+                <div class="flex items-center gap-1 text-xs text-default-500 mt-1">
+                  <div class="size-3 animate-spin"><ng-icon name="lucideLoader" /></div> Subiendo…
+                </div>
+              }
+              @if (formPlantilla().imagen_url) {
+                <div class="mt-2">
+                  <img [src]="storageUrl(formPlantilla().imagen_url)"
+                    class="w-full rounded border border-default-200 max-h-28 object-contain bg-default-50" alt="">
+                </div>
+              }
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Calidad JPG (%)</label>
+                <input type="number" class="form-input text-xs py-1.5" [value]="formPlantilla().calidad_jpg"
+                  min="50" max="100" (input)="onInputPlantilla('calidad_jpg', +$any($event.target).value)">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-default-600 mb-1">Color texto</label>
+                <div class="flex items-center gap-1.5">
+                  <input type="color" class="size-7 rounded border border-default-200 cursor-pointer p-0.5 shrink-0"
+                    [value]="formPlantilla().color_default"
+                    (input)="onInputPlantilla('color_default', $any($event.target).value)">
+                  <input type="text" class="form-input text-xs py-1.5 flex-1" [value]="formPlantilla().color_default"
+                    (input)="onInputPlantilla('color_default', $any($event.target).value)">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2 pt-1">
+              <button type="button" (click)="guardarPlantilla()" [disabled]="guardandoForm()"
+                class="flex-1 btn text-xs py-1.5 bg-primary text-white flex items-center justify-center gap-1.5 disabled:opacity-50">
+                @if (guardandoForm()) { <div class="size-3 animate-spin"><ng-icon name="lucideLoader" /></div> }
+                @else { <ng-icon name="lucideCheck" class="size-3" /> }
+                {{ editandoPlantilla() ? 'Actualizar' : 'Crear y diseñar' }}
+              </button>
+              <button type="button" (click)="toggleFormPlantilla()"
+                class="btn text-xs py-1.5 bg-default-100 text-default-600 px-3">
+                Cancelar
+              </button>
             </div>
           </div>
+        </div>
+      }
+
+      <!-- Asignar a Programa -->
+      @if (plantillaActiva()) {
+        <div class="card p-3 border border-success/20">
+          <p class="text-xs font-semibold text-success mb-2.5 flex items-center gap-1.5">
+            <ng-icon name="lucideLink" class="size-3.5" />
+            Asignar al programa
+          </p>
+
+          <!-- Estado de carga -->
+          @if (cargandoAsig()) {
+            <div class="flex items-center gap-1.5 text-xs text-default-400 mb-2">
+              <div class="size-3 animate-spin"><ng-icon name="lucideLoader" /></div>
+              Buscando asignación…
+            </div>
+          }
+
+          <!-- Asignación actual -->
+          @if (asignacionActual()) {
+            <div class="mb-2.5 px-2.5 py-2 rounded-lg bg-success/8 border border-success/20 text-xs">
+              <p class="text-[10px] font-semibold text-success uppercase tracking-wide mb-0.5">Asignada actualmente a:</p>
+              <p class="font-medium text-default-800 leading-tight">{{ asignacionActual()!.nombre_programa }}</p>
+            </div>
+          } @else if (!cargandoAsig()) {
+            <div class="mb-2.5 px-2.5 py-1.5 rounded-lg bg-default-50 border border-default-100 text-[10px] text-default-400">
+              Sin asignación — elige un programa abajo
+            </div>
+          }
+
+          <div class="space-y-2">
+            <div>
+              <label class="block text-[10px] font-medium text-default-500 mb-1">
+                {{ asignacionActual() ? 'Cambiar a otro programa' : 'Programa' }}
+              </label>
+              <select class="form-input text-xs py-1.5" (change)="onProgramaChange($event)">
+                <option value="">— Seleccionar —</option>
+                @for (prog of programas(); track prog.id_programa) {
+                  <option [value]="prog.id_programa"
+                          [selected]="prog.id_programa === programaId()">
+                    {{ prog.nombre_programa }}
+                  </option>
+                }
+              </select>
+            </div>
+            @if (versiones().length > 0) {
+              <div>
+                <label class="block text-[10px] font-medium text-default-500 mb-1">Versión (opcional)</label>
+                <select class="form-input text-xs py-1.5"
+                  (change)="versionId.set(+$any($event.target).value || null)">
+                  <option value="">— Todas las versiones —</option>
+                  @for (v of versiones(); track v.id_imp) {
+                    <option [value]="v.id_imp">{{ v.nombre || v.periodo || 'Versión ' + v.id_imp }}</option>
+                  }
+                </select>
+              </div>
+            }
+            <button type="button" (click)="guardarAsignacion()"
+              [disabled]="!programaId() || guardandoAsig()"
+              class="w-full btn text-xs py-1.5 bg-success text-white disabled:opacity-50 flex items-center justify-center gap-1.5">
+              @if (guardandoAsig()) { <div class="size-3 animate-spin"><ng-icon name="lucideLoader" /></div> }
+              @else { <ng-icon name="lucideCheck" class="size-3" /> }
+              {{ asignacionActual() ? 'Actualizar asignación' : 'Guardar asignación' }}
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         COLUMNA CENTRAL — Canvas + agregar campo inline
+         ══════════════════════════════════════════════════════ -->
+    <div class="flex-1 min-w-0 flex flex-col gap-3">
+
+      @if (!plantillaActiva()) {
+        <div class="card flex flex-col items-center justify-center py-24 text-center text-default-400 gap-4">
+          <ng-icon name="lucideLayoutTemplate" class="size-16 opacity-20" />
           <div>
-            <label class="block text-sm font-medium mb-1">Estado</label>
-            <select class="form-input" [value]="form().estado"
-              (change)="onInputChange('estado', $any($event.target).value)">
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
+            <p class="text-base font-semibold text-default-500">Selecciona una plantilla</p>
+            <p class="text-sm mt-1">o crea una nueva desde el panel izquierdo</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 mt-5">
-          <button class="btn bg-primary text-white flex items-center gap-2"
-            (click)="guardar()" [disabled]="guardando()">
-            @if (guardando()) { <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div> }
-            Guardar
+      } @else {
+
+        <!-- Barra herramientas -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <h2 class="text-sm font-semibold text-default-800 mr-auto">
+            {{ plantillaActiva()!.nombre }}
+            <span class="text-xs font-normal text-default-400 ml-1.5">
+              {{ plantillaActiva()!.ancho_px }}×{{ plantillaActiva()!.alto_px }}px
+            </span>
+          </h2>
+          <button type="button" (click)="toggleNuevoCampo()"
+            class="btn btn-sm flex items-center gap-1.5 text-xs"
+            [class]="showNuevo() ? 'bg-danger/10 text-danger' : 'bg-default-100 text-default-700 hover:bg-default-200'">
+            <ng-icon [name]="showNuevo() ? 'lucideX' : 'lucidePlus'" class="size-3.5" />
+            {{ showNuevo() ? 'Cancelar' : 'Agregar campo' }}
           </button>
-          <button class="btn bg-default-200 text-default-700" (click)="cancelar()">Cancelar</button>
+          <button type="button" (click)="abrirPreview()" [disabled]="!campos().length || previewLoading()"
+            class="btn btn-sm bg-secondary text-white flex items-center gap-1.5 text-xs disabled:opacity-50">
+            @if (previewLoading()) {
+              <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></div> Generando…
+            } @else {
+              <ng-icon name="lucideEye" class="size-3.5" /> Vista previa
+            }
+          </button>
         </div>
-      </div>
+
+        <!-- Formulario inline — Agregar campo -->
+        @if (showNuevo()) {
+          <div class="card border border-default-200">
+            <div class="px-4 py-3 border-b border-default-100 bg-default-50">
+              <p class="text-xs font-semibold text-default-600">Agregar campo al certificado</p>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-default-600 mb-1">Tipo de campo <span class="text-danger">*</span></label>
+                  <select class="form-input text-sm" [value]="formNuevo().clave"
+                    (change)="onFieldNuevo('clave', $any($event.target).value)">
+                    <option value="">— Seleccionar —</option>
+                    @for (k of clavesSugeridas; track k.value) {
+                      <option [value]="k.value">{{ k.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Visual</label>
+                  <select class="form-input text-sm" [value]="formNuevo().tipo"
+                    (change)="onFieldNuevo('tipo', $any($event.target).value)">
+                    <option value="texto">Texto</option>
+                    <option value="imagen">QR (imagen)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Tamaño (pt)</label>
+                  <input type="number" class="form-input text-sm" [value]="formNuevo().tamano_pt"
+                    min="6" max="300" (input)="onFieldNuevo('tamano_pt', +$any($event.target).value)">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Tipografía</label>
+                  <select class="form-input text-sm" [value]="formNuevo().fuente ?? ''"
+                    (change)="onFieldNuevo('fuente', $any($event.target).value || null)">
+                    @for (f of FUENTES(); track f.value) {
+                      <option [value]="f.value ?? ''" [style.font-family]="f.css">{{ f.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-default-600 mb-1">Color</label>
+                  <div class="flex items-center gap-2">
+                    <input type="color" class="size-9 rounded border border-default-200 cursor-pointer p-0.5 shrink-0"
+                      [value]="formNuevo().color" (input)="onFieldNuevo('color', $any($event.target).value)">
+                    <input type="text" class="form-input text-sm flex-1" [value]="formNuevo().color"
+                      (input)="onFieldNuevo('color', $any($event.target).value)">
+                  </div>
+                </div>
+                <div class="sm:col-span-3 flex items-end gap-2">
+                  <button type="button" (click)="guardarNuevoCampo()" [disabled]="guardandoN()"
+                    class="btn bg-primary text-white text-sm flex items-center gap-1.5 disabled:opacity-50">
+                    @if (guardandoN()) { <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div> }
+                    @else { <ng-icon name="lucidePlus" class="size-4" /> }
+                    Agregar campo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Canvas editor -->
+        <div class="card overflow-hidden">
+          <div
+            #canvasRef
+            class="relative w-full select-none overflow-hidden bg-default-100"
+            [style.aspect-ratio]="plantillaActiva()!.ancho_px + '/' + plantillaActiva()!.alto_px"
+            (mousedown)="deseleccionar()">
+
+            @if (plantillaActiva()!.imagen_url) {
+              <img [src]="storageUrl(plantillaActiva()!.imagen_url)"
+                class="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                (load)="imgLoaded.set(true)" (error)="imgError.set(true)" alt="Fondo plantilla" />
+            } @else {
+              <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-default-400">
+                <ng-icon name="lucideImageOff" class="size-10 opacity-30" />
+                <p class="text-sm">Sin imagen de fondo — edita la plantilla para subir una</p>
+              </div>
+            }
+
+            @if (imgError()) {
+              <div class="absolute inset-0 flex items-center justify-center text-danger/60 text-sm">
+                No se pudo cargar la imagen de fondo
+              </div>
+            }
+
+            @for (c of campos(); track c.id) {
+              @if (c.activo) {
+                <div class="absolute cursor-move group"
+                  [style.left.%]="c.pos_x_pct" [style.top.%]="c.pos_y_pct"
+                  [style.transform]="c.alineacion === 'center' ? 'translateX(-50%)' : c.alineacion === 'right' ? 'translateX(-100%)' : 'none'"
+                  (mousedown)="startDrag($event, c)" (click)="seleccionarCampo(c, $event)">
+
+                  @if (c.tipo === 'imagen') {
+                    <div class="border-2 flex items-center justify-center text-xs font-bold bg-white/70 min-w-10"
+                      [class]="selected()?.id === c.id ? 'border-primary' : 'border-dashed border-default-400 group-hover:border-primary'"
+                      [style.width]="(c.ancho_pct ?? 10) + '%'" [style.aspect-ratio]="'1/1'" [style.color]="c.color">
+                      QR
+                    </div>
+                  } @else {
+                    <span class="whitespace-nowrap block border-b-2"
+                      [class]="selected()?.id === c.id ? 'border-primary ring-1 ring-primary/30 rounded-sm' : 'border-dashed border-transparent group-hover:border-primary/60'"
+                      [style.font-size]="scaledFontSize(c)" [style.color]="c.color"
+                      [style.font-family]="fontFamily(c)"
+                      [style.font-weight]="c.negrita ? 'bold' : 'normal'"
+                      [style.font-style]="c.cursiva ? 'italic' : 'normal'">
+                      {{ previewText(c) }}
+                    </span>
+                  }
+
+                  <span class="absolute -top-6 left-0 text-[10px] bg-gray-900/80 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                    {{ labelFor(c.clave) }}
+                  </span>
+
+                  <button type="button"
+                    class="absolute -top-2 -right-2 size-4 rounded-full bg-danger text-white text-[9px] items-center justify-center opacity-0 group-hover:flex hidden z-10"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="$event.stopPropagation(); eliminarCampo(c)">✕</button>
+                </div>
+              }
+            }
+
+            @if (!campos().length && imgLoaded()) {
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="bg-white/85 rounded-xl px-6 py-4 text-center shadow-sm">
+                  <p class="text-sm font-medium text-default-600">Sin campos configurados</p>
+                  <p class="text-xs text-default-400 mt-1">Usa "Agregar campo" arriba para empezar</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Vista previa inline (si está activa) -->
+        @if (showPreview() && previewUrl()) {
+          <div class="card border border-secondary/20">
+            <div class="px-4 py-3 border-b border-default-100 flex items-center justify-between bg-secondary/3">
+              <div class="flex items-center gap-2">
+                <ng-icon name="lucideEye" class="size-4 text-secondary" />
+                <p class="text-xs font-semibold text-secondary">Vista previa — datos de ejemplo</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" (click)="descargarPreview('jpg')"
+                  class="btn btn-sm bg-success/10 text-success hover:bg-success hover:text-white flex items-center gap-1.5 text-xs">
+                  <ng-icon name="lucideDownload" class="size-3.5" /> JPG
+                </button>
+                <button type="button" (click)="descargarPreview('pdf')"
+                  class="btn btn-sm bg-danger/10 text-danger hover:bg-danger hover:text-white flex items-center gap-1.5 text-xs">
+                  <ng-icon name="lucideFileText" class="size-3.5" /> PDF
+                </button>
+                <button type="button" (click)="showPreview.set(false)"
+                  class="size-6 flex items-center justify-center text-default-400 hover:text-default-600">
+                  <ng-icon name="lucideX" class="size-3.5" />
+                </button>
+              </div>
+            </div>
+            <div class="p-4 bg-default-50 flex justify-center">
+              <img [src]="previewUrl()!" class="max-w-full rounded-lg shadow-md object-contain max-h-96" alt="Vista previa certificado" />
+            </div>
+            <div class="px-4 py-2 border-t border-default-100">
+              <p class="text-[10px] text-default-400">Los datos mostrados son de ejemplo. El certificado real usará los datos del estudiante.</p>
+            </div>
+          </div>
+        }
+        @if (showPreview() && previewLoading()) {
+          <div class="card p-8 flex items-center justify-center gap-3 text-default-500 text-sm">
+            <div class="size-5 animate-spin"><ng-icon name="lucideLoader" /></div>
+            Generando vista previa…
+          </div>
+        }
+
+        <!-- Tabla de campos -->
+        <div class="card">
+          <div class="px-4 py-2.5 border-b border-default-100">
+            <p class="text-xs font-semibold text-default-600">{{ campos().length }} campos configurados</p>
+          </div>
+          <div class="divide-y divide-default-100">
+            @for (c of campos(); track c.id) {
+              <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-default-50 text-xs group"
+                   [class.bg-primary/5]="selected()?.id === c.id"
+                   (click)="seleccionarCampo(c)">
+                <div class="size-3 rounded-full shrink-0 border border-default-200" [style.background]="c.color"></div>
+                <code class="bg-default-100 px-1.5 py-0.5 rounded text-[11px] shrink-0 text-default-600">{{ c.clave }}</code>
+                <span class="text-default-500 truncate flex-1">{{ c.etiqueta }}</span>
+                <span class="text-default-400 shrink-0 tabular-nums">{{ c.pos_x_pct }}% / {{ c.pos_y_pct }}%</span>
+                <span class="text-default-400 shrink-0">{{ c.tamano_pt }}pt</span>
+                @if (!c.activo) {
+                  <span class="text-[10px] bg-default-100 text-default-400 px-1.5 py-0.5 rounded shrink-0">oculto</span>
+                }
+                <button type="button" (click)="$event.stopPropagation(); eliminarCampo(c)"
+                  class="size-5 flex items-center justify-center text-default-200 group-hover:text-default-400 hover:text-danger shrink-0">
+                  <ng-icon name="lucideX" class="size-3" />
+                </button>
+              </div>
+            } @empty {
+              <div class="py-6 text-center text-xs text-default-400">
+                Sin campos. Usa "Agregar campo" para empezar.
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         COLUMNA DERECHA — Propiedades del campo seleccionado
+         ══════════════════════════════════════════════════════ -->
+    @if (plantillaActiva()) {
+      <div class="w-56 shrink-0">
+        @if (selected()) {
+          <div class="card sticky top-4">
+            <div class="px-4 py-3 border-b border-default-100 flex items-center justify-between">
+              <p class="text-xs font-semibold text-default-700">Propiedades</p>
+              <button type="button" (click)="selected.set(null)"
+                class="size-5 text-default-400 hover:text-default-600 flex items-center justify-center">
+                <ng-icon name="lucideX" class="size-3.5" />
+              </button>
+            </div>
+            <div class="p-3 space-y-3 max-h-[calc(100vh-10rem)] overflow-y-auto">
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Campo</label>
+                <select class="form-input text-xs py-1.5" [value]="form().clave"
+                  (change)="onField('clave', $any($event.target).value)">
+                  @for (k of clavesSugeridas; track k.value) {
+                    <option [value]="k.value">{{ k.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Tipografía -->
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Tipografía</label>
+                <select class="form-input text-xs py-1.5" [value]="form().fuente ?? ''"
+                  (change)="onField('fuente', $any($event.target).value || null)">
+                  @for (f of FUENTES(); track f.value) {
+                    <option [value]="f.value ?? ''" [style.font-family]="f.css">{{ f.label }}</option>
+                  }
+                </select>
+                <!-- Preview de la tipografía seleccionada -->
+                <div class="mt-1.5 px-2 py-1 bg-default-50 border border-default-100 rounded text-center overflow-hidden"
+                     [style.font-family]="cssFamilyForFuente(form().fuente)">
+                  <span class="text-default-700" [style.font-size]="'13px'">Aa Bb Cc — CENEFCO</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Posición</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <label class="text-[10px] text-default-400 block mb-0.5">X (%)</label>
+                    <input type="number" class="form-input text-xs py-1" [value]="form().pos_x_pct"
+                      min="0" max="100" step="0.5" (input)="onField('pos_x_pct', +$any($event.target).value)">
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-default-400 block mb-0.5">Y (%)</label>
+                    <input type="number" class="form-input text-xs py-1" [value]="form().pos_y_pct"
+                      min="0" max="100" step="0.5" (input)="onField('pos_y_pct', +$any($event.target).value)">
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Fuente</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <label class="text-[10px] text-default-400 block mb-0.5">Tamaño (pt)</label>
+                    <input type="number" class="form-input text-xs py-1" [value]="form().tamano_pt"
+                      min="6" max="300" (input)="onField('tamano_pt', +$any($event.target).value)">
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-default-400 block mb-0.5">Ancho QR (%)</label>
+                    <input type="number" class="form-input text-xs py-1" [value]="form().ancho_pct ?? ''"
+                      min="1" max="50" step="0.5" placeholder="10"
+                      (input)="onField('ancho_pct', $any($event.target).value ? +$any($event.target).value : null)">
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Color</label>
+                <div class="flex items-center gap-1.5">
+                  <input type="color" class="size-8 rounded border border-default-200 cursor-pointer p-0.5 shrink-0"
+                    [value]="form().color" (input)="onField('color', $any($event.target).value)">
+                  <input type="text" class="form-input text-xs py-1 flex-1" [value]="form().color"
+                    (input)="onField('color', $any($event.target).value)">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Alineación</label>
+                <div class="flex gap-1">
+                  @for (opt of [['left','lucideAlignLeft'],['center','lucideAlignCenter'],['right','lucideAlignRight']]; track opt[0]) {
+                    <button type="button"
+                      class="flex-1 py-1.5 rounded border text-xs flex items-center justify-center transition-colors"
+                      [class]="form().alineacion === opt[0] ? 'bg-primary text-white border-primary' : 'border-default-200 text-default-500 hover:border-primary'"
+                      (click)="onField('alineacion', opt[0])">
+                      <ng-icon [name]="opt[1]" class="size-3" />
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">Capitalización</label>
+                <select class="form-input text-xs py-1.5" [value]="form().mayusculas"
+                  (change)="onField('mayusculas', $any($event.target).value)">
+                  <option value="none">Sin cambio</option>
+                  <option value="upper">MAYÚSCULAS</option>
+                  <option value="lower">minúsculas</option>
+                  <option value="title">Título</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-3 py-0.5">
+                <label class="flex items-center gap-1.5 cursor-pointer text-xs">
+                  <input type="checkbox" class="form-checkbox size-3.5" [checked]="form().negrita"
+                    (change)="onField('negrita', $any($event.target).checked)">
+                  <strong>N</strong>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer text-xs">
+                  <input type="checkbox" class="form-checkbox size-3.5" [checked]="form().cursiva"
+                    (change)="onField('cursiva', $any($event.target).checked)">
+                  <em>K</em>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer text-xs">
+                  <input type="checkbox" class="form-checkbox size-3.5" [checked]="form().activo"
+                    (change)="onField('activo', $any($event.target).checked)">
+                  Visible
+                </label>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-default-500 uppercase tracking-wide mb-1">
+                  Valor fijo
+                </label>
+                <input type="text" class="form-input text-xs py-1" [value]="form().valor_fijo"
+                  (input)="onField('valor_fijo', $any($event.target).value)"
+                  placeholder="Vacío = dato del estudiante">
+              </div>
+
+              <div class="pt-1 space-y-1.5">
+                <button type="button" (click)="guardarCampo()" [disabled]="guardando()"
+                  class="w-full btn text-xs py-2 bg-primary text-white flex items-center justify-center gap-1.5 disabled:opacity-50">
+                  @if (guardando()) { <div class="size-3.5 animate-spin"><ng-icon name="lucideLoader" /></div> }
+                  @else { <ng-icon name="lucideSave" class="size-3.5" /> }
+                  Guardar cambios
+                </button>
+                <button type="button" (click)="eliminarCampo(selected()!)"
+                  class="w-full btn text-xs py-1.5 bg-danger/8 text-danger hover:bg-danger/15 flex items-center justify-center gap-1.5">
+                  <ng-icon name="lucideTrash2" class="size-3.5" />
+                  Eliminar campo
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        } @else {
+          <div class="card p-5 text-center text-default-400 flex flex-col items-center gap-3">
+            <ng-icon name="lucideMousePointer" class="size-8 opacity-25" />
+            <p class="text-xs leading-relaxed">Haz clic en un campo del canvas para editar sus propiedades, o arrástralo para reposicionarlo</p>
+          </div>
+        }
+      </div>
     }
 
-    <div class="card">
-      <div class="card-header">
-        <button class="btn bg-primary text-white flex items-center gap-2 ms-auto" (click)="nuevaPlantilla()">
-          <div class="size-4"><ng-icon name="lucidePlus" /></div>
-          Nueva Plantilla
-        </button>
-      </div>
-      <div class="flex flex-col">
-        <div class="overflow-x-auto">
-          @if (isLoading) {
-            <div class="flex items-center justify-center py-16 text-default-500 text-sm gap-2">
-              <div class="size-4 animate-spin"><ng-icon name="lucideLoader" /></div> Cargando...
-            </div>
-          } @else if (isError) {
-            <div class="flex items-center justify-center py-16 text-danger text-sm gap-2">
-              <ng-icon name="lucideCircleX" /> Error al cargar plantillas.
-            </div>
-          } @else {
-            <table class="min-w-full divide-y divide-default-200">
-              <thead class="bg-default-150">
-                <tr class="text-sm font-normal text-default-700">
-                  <th class="px-3.5 py-3 text-start">Nombre</th>
-                  <th class="px-3.5 py-3 text-start">Tipo</th>
-                  <th class="px-3.5 py-3 text-start">Dimensiones</th>
-                  <th class="px-3.5 py-3 text-start">Vista previa</th>
-                  <th class="px-3.5 py-3 text-start">Estado</th>
-                  <th class="px-3.5 py-3 text-start">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-default-200">
-                @for (p of plantillas; track p.id) {
-                  <tr class="text-default-800 font-normal hover:bg-default-50">
-                    <td class="px-3.5 py-2.5 text-sm font-medium">{{ p.nombre }}</td>
-                    <td class="px-3.5 py-2.5">
-                      <span class="inline-flex items-center py-0.5 px-2.5 rounded text-xs font-medium bg-info/15 text-info capitalize">
-                        {{ p.tipo }}
-                      </span>
-                    </td>
-                    <td class="px-3.5 py-2.5 text-sm text-default-500">{{ p.ancho_px }} × {{ p.alto_px }}</td>
-                    <td class="px-3.5 py-2.5">
-                      @if (p.imagen_url) {
-                        <img [src]="storageUrl(p.imagen_url)"
-                          class="h-10 w-16 rounded border object-contain bg-default-50"
-                          [title]="p.imagen_url">
-                      } @else {
-                        <span class="text-xs text-default-400">Sin imagen</span>
-                      }
-                    </td>
-                    <td class="px-3.5 py-2.5">
-                      <span class="inline-flex items-center py-0.5 px-2.5 rounded text-xs font-medium"
-                        [class]="p.estado === 'activo' ? 'bg-success/15 text-success' : 'bg-default-200 text-default-600'">
-                        {{ p.estado }}
-                      </span>
-                    </td>
-                    <td class="px-3.5 py-2.5">
-                      <div class="flex items-center gap-1.5">
-                        <button class="btn size-7.5 bg-primary/10 hover:bg-primary text-primary hover:text-white"
-                          title="Editar" (click)="editarPlantilla(p)">
-                          <div class="size-4"><ng-icon name="lucidePencil" /></div>
-                        </button>
-                        <button class="btn size-7.5 bg-info/10 hover:bg-info text-info hover:text-white"
-                          title="Configurar campos" (click)="verCampos(p)">
-                          <div class="size-4"><ng-icon name="lucideSliders" /></div>
-                        </button>
-                        <button class="btn size-7.5 bg-danger/10 hover:bg-danger text-danger hover:text-white"
-                          title="Eliminar" (click)="deletePlantilla(p)">
-                          <div class="size-4"><ng-icon name="lucideTrash2" /></div>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="6" class="px-3.5 py-12 text-center text-sm text-default-400">
-                      No hay plantillas creadas. Haga clic en "Nueva Plantilla".
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        </div>
-        <div class="card-footer">
-          <p class="text-default-500 text-sm">{{ total }} plantillas en total</p>
-          <app-pagination [total]="total" [pageSize]="pageSize()" [currentPage]="pageIndex()"
-            (pageChange)="pageIndex.set($event)" />
-        </div>
-      </div>
-    </div>
   </div>
 </main>

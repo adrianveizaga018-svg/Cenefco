@@ -1,8 +1,10 @@
 import { Component, inject, signal, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
+import { switchMap } from 'rxjs/operators';
 import { AuthService } from '../../../../auth/application/services/auth.service';
+import { PostAuthService } from '../../../../auth/application/services/post-auth.service';
 
 declare var google: any;
 
@@ -105,6 +107,27 @@ declare var google: any;
       outline: none;
     }
 
+    .acceso-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .acceso-tab {
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.65);
+      transition: all 0.2s ease;
+    }
+    .acceso-tab.active {
+      background: white;
+      color: var(--color-brand-primary-dark);
+    }
+
     .slide-dot {
       width: 8px;
       height: 8px;
@@ -123,16 +146,24 @@ declare var google: any;
   `
 })
 export class Login implements OnInit, OnDestroy, AfterViewInit {
-  private auth   = inject(AuthService);
-  private router = inject(Router);
-  private route  = inject(ActivatedRoute);
+  private auth     = inject(AuthService);
+  private postAuth = inject(PostAuthService);
+  private route    = inject(ActivatedRoute);
 
+  modo = signal<'login' | 'registro'>('login');
+
+  nombre   = '';
+  apellido = '';
+  apellidoMaterno = '';
+  ci       = '';
+  telefono = '';
   email    = '';
   password = '';
   loading      = signal(false);
   error        = signal('');
   showPassword = signal(false);
   capsLock     = signal(false);
+  vieneDelPortal = signal(false);
 
   readonly fondos = [
     'assets/images/fondos/1.jpg',
@@ -143,10 +174,28 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
   ];
   currentFondo = signal(0);
   private interval: ReturnType<typeof setInterval> | null = null;
+  private googleTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
-    if (this.route.snapshot.queryParamMap.get('expired') === '1') {
+    const params = this.route.snapshot.queryParamMap;
+
+    if (params.get('expired') === '1') {
       this.error.set('Tu sesión expiró. Vuelve a iniciar sesión.');
+    }
+
+    const modo = params.get('modo') ?? this.route.snapshot.data['modo'];
+    if (modo === 'registro') {
+      this.modo.set('registro');
+    }
+
+    // Llegó desde el portal (p. ej. "Inscribirme"): recordar a dónde volver
+    this.postAuth.recordarOrigen(params.get('volver'));
+    this.vieneDelPortal.set(this.postAuth.vieneDelPortal());
+
+    if (this.auth.isLoggedIn()) {
+      this.loading.set(true);
+      this.postAuth.continuar();
+      return;
     }
 
     this.interval = setInterval(() => {
@@ -156,19 +205,40 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     if (this.interval) clearInterval(this.interval);
+    if (this.googleTimer) clearTimeout(this.googleTimer);
   }
 
   ngAfterViewInit(): void {
-    if (typeof google !== 'undefined' && google.accounts) {
+    this.renderGoogleButton();
+  }
+
+  /**
+   * El script de Google carga con async/defer: al llegar desde el portal (carga
+   * completa de página) puede no estar listo todavía, así que se reintenta.
+   */
+  private renderGoogleButton(intentos = 0): void {
+    const contenedor = document.getElementById('google-buttonDiv');
+
+    if (typeof google !== 'undefined' && google.accounts && contenedor) {
       google.accounts.id.initialize({
-        client_id: "TU_CLIENT_ID_DE_GOOGLE", // Reemplazar con ID real
+        client_id: "272016198702-6nn2d1ibdeu73v2dicuh4n0i911ei6sa.apps.googleusercontent.com",
         callback: this.handleGoogleResponse.bind(this)
       });
       google.accounts.id.renderButton(
-        document.getElementById("google-buttonDiv"),
-        { theme: "outline", size: "large", width: "100%" }
+        contenedor,
+        { theme: "outline", size: "large", width: 320, text: "continue_with" }
       );
+      return;
     }
+
+    if (intentos < 50) {
+      this.googleTimer = setTimeout(() => this.renderGoogleButton(intentos + 1), 200);
+    }
+  }
+
+  cambiarModo(modo: 'login' | 'registro'): void {
+    this.modo.set(modo);
+    this.error.set('');
   }
 
   handleGoogleResponse(response: any): void {
@@ -177,13 +247,7 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
 
     this.auth.loginGoogle(response.credential).subscribe({
       next: (res: any) => {
-        if (res.require_profile_completion) {
-          this.router.navigate(['/auth/completar-perfil']);
-        } else if (this.auth.isEstudiante()) {
-          this.router.navigate(['/estudiante/dashboard']);
-        } else {
-          this.router.navigate(['/dashboards/cenefco']);
-        }
+        this.postAuth.continuar(!!res.require_profile_completion);
       },
       error: (err) => {
         this.loading.set(false);
@@ -206,6 +270,11 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
   }
 
   submit(): void {
+    if (this.modo() === 'registro') {
+      this.registrar();
+      return;
+    }
+
     if (!this.email || !this.password) {
       this.error.set('Ingresa tu email y contraseña.');
       return;
@@ -216,15 +285,50 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
 
     this.auth.login(this.email, this.password).subscribe({
       next: () => {
-        if (this.auth.isEstudiante()) {
-          this.router.navigate(['/estudiante/dashboard']);
-        } else {
-          this.router.navigate(['/dashboards/cenefco']);
-        }
+        this.postAuth.continuar();
       },
       error: (err) => {
         this.loading.set(false);
         const msg = err?.error?.message ?? err?.error?.error ?? 'Credenciales incorrectas.';
+        this.error.set(msg);
+      },
+    });
+  }
+
+  private registrar(): void {
+    this.ci       = this.ci.trim();
+    this.telefono = this.telefono.trim();
+
+    if (!this.nombre || !this.apellido || !this.ci || !this.telefono || !this.email || !this.password) {
+      this.error.set('Por favor completa todos los campos.');
+      return;
+    }
+    if (this.password.length < 8) {
+      this.error.set('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set('');
+
+    // La cuenta nace como participante. El CI y celular son los mismos datos que
+    // registra Caja y enlazan la cuenta con sus inscripciones.
+    this.auth.register(this.nombre, this.apellido, this.email, this.password, this.password, this.apellidoMaterno.trim() || null, { ci: this.ci, telefono: this.telefono }).pipe(
+      switchMap(() => this.auth.completeProfile(this.ci, this.telefono))
+    ).subscribe({
+      next: () => {
+        this.postAuth.continuar();
+      },
+      error: (err) => {
+        // La cuenta se creó pero falló guardar CI/celular: se piden en el paso siguiente
+        if (this.auth.isLoggedIn()) {
+          this.postAuth.continuar(true);
+          return;
+        }
+        this.loading.set(false);
+        const errores = err?.error?.errors;
+        const primero = errores ? (Object.values(errores)[0] as string[])?.[0] : null;
+        const msg = primero ?? err?.error?.message ?? err?.error?.error ?? 'No se pudo crear la cuenta.';
         this.error.set(msg);
       },
     });

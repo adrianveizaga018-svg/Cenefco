@@ -1,4 +1,4 @@
-﻿<main>
+<main>
   <app-page-title title="Inscripciones" subtitle="Gestión Académica" />
   <div class="grid grid-cols-1 gap-5 mb-5">
     <div class="card">
@@ -47,6 +47,28 @@
       
       <!-- FILTROS AVANZADOS -->
       <div class="px-6 py-4 border-b border-default-200 bg-default-50 flex flex-wrap gap-4 items-end">
+        <div class="w-full sm:w-auto">
+          <label class="block text-xs font-medium text-default-600 mb-1">Programa</label>
+          <select class="form-input form-input-sm text-sm" (change)="onProgramaChange($event)">
+            <option value="">Todos los programas</option>
+            @for (v of programas(); track v.id_programa) {
+              <option [value]="v.id_programa" [selected]="v.id_programa === programaId()">{{ v.nombre_programa }}</option>
+            }
+          </select>
+        </div>
+        @if (versiones().length > 0) {
+        <div class="w-full sm:w-auto">
+          <label class="block text-xs font-medium text-default-600 mb-1">Versión</label>
+          <select class="form-input form-input-sm text-sm" (change)="onVersionChange($event)">
+            <option value="">Todas las versiones</option>
+            @for (imp of versiones(); track imp.id_imp) {
+              <option [value]="imp.id_imp" [selected]="imp.id_imp === idImp()">
+                {{ imp.nombre_version || imp.periodo }} {{ imp.gestion ? '/ ' + imp.gestion : '' }}
+              </option>
+            }
+          </select>
+        </div>
+        }
         <div class="w-full sm:w-auto">
           <label class="block text-xs font-medium text-default-600 mb-1">Vendedor</label>
           <select class="form-input form-input-sm text-sm" (change)="onVendedorChange($event)">

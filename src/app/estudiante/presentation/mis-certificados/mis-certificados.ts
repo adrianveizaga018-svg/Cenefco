@@ -5,7 +5,7 @@ import { PageTitle } from '../../../common/components/page-title/page-title';
 import { EstudianteService, CertificadoEstudiante } from '../../application/services/estudiante.service';
 
 /** URL del portal público — cambiar en producción */
-const PORTAL_URL = 'http://localhost:4201';
+const PORTAL_URL = window.location.origin;
 
 @Component({
   selector: 'app-mis-certificados',

@@ -1,6 +1,5 @@
 import { Routes } from "@angular/router";
 import { Login } from "./login/login";
-import { Register } from "./register/register";
 import { VerifyEmail } from "./verify-email/verify-email";
 import { TwoSteps } from "./two-steps/two-steps";
 import { Logout } from "./logout/logout";
@@ -18,9 +17,14 @@ export const MODERN_AUTH_ROUTES: Routes = [
     data: { title: 'Iniciar sesión' },
   },
   {
+    path: 'acceso',
+    redirectTo: 'auth-modern/login',
+  },
+  {
     path: 'auth-modern/register',
-    component: Register,
-    data: { title: 'Register' },
+    component: Login,
+    canActivate: [guestGuard],
+    data: { title: 'Crear cuenta', modo: 'registro' },
   },
   {
     path: 'auth-modern/verify-email',

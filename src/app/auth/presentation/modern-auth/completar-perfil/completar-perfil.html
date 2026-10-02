@@ -6,7 +6,7 @@
     <img src="assets/images/modern.svg" alt="" class="w-full h-full object-cover">
   </div>
 
-  <div class="relative z-10 w-full max-w-md px-4">
+  <div class="relative z-10 w-full max-w-md px-4 py-8">
 
     <!-- Card glassmorfismo -->
     <div class="rounded-2xl p-8 text-center"
@@ -20,7 +20,7 @@
       <!-- Título -->
       <h1 class="text-2xl font-bold text-white mb-1">¡Casi listo!</h1>
       <p class="text-white/60 text-sm mb-6">
-        Necesitamos un par de datos más para completar tu perfil de estudiante.
+        Confirma tus datos tal como figuran en tu carnet. Con ellos se emiten tus certificados.
       </p>
 
       <!-- Icono de paso -->
@@ -29,7 +29,7 @@
           <div class="w-6 h-6 rounded-full bg-green-400 flex items-center justify-center">
             <ng-icon name="lucideCheck" class="size-3 text-white"></ng-icon>
           </div>
-          <span>Cuenta Google</span>
+          <span>Cuenta creada</span>
         </div>
         <div class="w-8 h-px bg-white/30"></div>
         <div class="flex items-center gap-2 text-xs text-white font-medium">
@@ -42,13 +42,64 @@
 
       <!-- Error -->
       @if (error()) {
-        <div class="mb-4 rounded-lg bg-red-500/20 border border-red-400/40 px-4 py-3 text-sm text-white text-left">
+        <div role="alert" class="mb-4 rounded-lg bg-red-500/20 border border-red-400/40 px-4 py-3 text-sm text-white text-left">
           {{ error() }}
         </div>
       }
 
       <!-- Formulario -->
       <form (ngSubmit)="submit()" class="text-left space-y-4">
+
+        <div>
+          <label for="nombre" class="block text-white/80 text-sm font-medium mb-1.5">
+            Nombres <span class="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            id="nombre"
+            name="nombre"
+            [(ngModel)]="nombre"
+            placeholder="Juan Carlos"
+            required
+            autocomplete="given-name"
+            class="form-input w-full"
+            style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: white;"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="apellido" class="block text-white/80 text-sm font-medium mb-1.5">
+              Apellido paterno <span class="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              id="apellido"
+              name="apellido"
+              [(ngModel)]="apellido"
+              placeholder="Pérez"
+              required
+              autocomplete="family-name"
+              class="form-input w-full"
+              style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: white;"
+            />
+          </div>
+          <div>
+            <label for="apellidoMaterno" class="block text-white/80 text-sm font-medium mb-1.5">
+              Apellido materno
+            </label>
+            <input
+              type="text"
+              id="apellidoMaterno"
+              name="apellidoMaterno"
+              [(ngModel)]="apellidoMaterno"
+              placeholder="Opcional"
+              autocomplete="off"
+              class="form-input w-full"
+              style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: white;"
+            />
+          </div>
+        </div>
 
         <div>
           <label for="ci" class="block text-white/80 text-sm font-medium mb-1.5">
@@ -61,6 +112,7 @@
             [(ngModel)]="ci"
             placeholder="Ej: 1234567"
             required
+            maxlength="20"
             class="form-input w-full"
             style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: white;"
           />
@@ -80,6 +132,8 @@
             [(ngModel)]="telefono"
             placeholder="Ej: 70000000"
             required
+            maxlength="20"
+            autocomplete="tel"
             class="form-input w-full"
             style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); color: white;"
           />

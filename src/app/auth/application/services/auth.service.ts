@@ -10,6 +10,9 @@ export interface AuthUser {
   id: number;
   nombre: string;
   apellido: string;
+  apellidoMaterno?: string | null;
+  ci?: string | null;
+  telefono?: string | null;
   email: string;
   rolId: number | null;
   rolNombre: string | null;
@@ -76,12 +79,32 @@ export class AuthService {
     );
   }
 
-  completeProfile(ci: string, telefono: string): Observable<any> {
-    return this.http.post<any>('/api/auth/complete-profile', { ci, telefono });
+  /** Código de un solo uso para iniciar la misma sesión en el portal público. */
+  crearHandoff(): Observable<{ code: string; portal_url: string }> {
+    return this.http.post<{ code: string; portal_url: string }>('/api/auth/handoff', {});
   }
 
-  register(nombre: string, apellido: string, email: string, password: string, passwordConfirmation: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/register-publico', { nombre, apellido, email, password, password_confirmation: passwordConfirmation }).pipe(
+  /** `apellido` es el apellido paterno. Los nombres solo se envían si el usuario los confirmó. */
+  completeProfile(
+    ci: string,
+    telefono: string,
+    nombres?: { nombre: string; apellido: string; apellido_materno: string | null },
+  ): Observable<{ user: AuthUser }> {
+    return this.http.post<{ user: AuthUser }>('/api/auth/complete-profile', { ci, telefono, ...nombres }).pipe(
+      tap(res => {
+        localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+        this.currentUser.set(res.user);
+      })
+    );
+  }
+
+  /** `identidad` (CI y celular) se valida antes de crear la cuenta; se guarda luego con completeProfile. */
+  register(
+    nombre: string, apellido: string, email: string, password: string, passwordConfirmation: string,
+    apellidoMaterno: string | null = null,
+    identidad?: { ci: string; telefono: string },
+  ): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>('/api/auth/register-publico', { nombre, apellido, apellido_materno: apellidoMaterno, email, password, password_confirmation: passwordConfirmation, ...identidad }).pipe(
       tap(res => {
         localStorage.setItem(TOKEN_KEY, res.token);
         localStorage.setItem(USER_KEY, JSON.stringify(res.user));

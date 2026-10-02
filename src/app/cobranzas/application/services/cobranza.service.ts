@@ -42,6 +42,10 @@ export class CobranzaService {
     return this.http.get<any[]>(`/api/v1/cobranzas/inscripcion/${idIns}/cuotas`);
   }
 
+  pagarCuota(idCuota: number, payload: FormData): Observable<any> {
+    return this.http.post(`/api/v1/cobranzas/cuotas/${idCuota}/pagar`, payload);
+  }
+
   getResumen(params: Omit<CobranzaFiltros, 'page' | 'per_page' | 'estado'>): Observable<any> {
     let p = new HttpParams();
     if (params.ci?.trim())  p = p.set('ci',          params.ci.trim());

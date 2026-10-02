@@ -31,6 +31,7 @@ export interface CertCampo {
   pos_y_pct: number;
   ancho_pct: number | null;
   tamano_pt: number;
+  fuente: string | null;      // ruta TTF del servidor, ej: 'assets/fonts/Roboto_regular.ttf'
   color: string;
   alineacion: string;
   negrita: boolean;

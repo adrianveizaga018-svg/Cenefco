@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { AuthService } from '../../../application/services/auth.service';
+import { PostAuthService } from '../../../application/services/post-auth.service';
 
 @Component({
   selector: 'app-completar-perfil',
@@ -10,30 +10,59 @@ import { AuthService } from '../../../application/services/auth.service';
   templateUrl: './completar-perfil.html',
 })
 export class CompletarPerfil {
-  private auth   = inject(AuthService);
-  private router = inject(Router);
+  private auth     = inject(AuthService);
+  private postAuth = inject(PostAuthService);
 
+  nombre          = '';
+  apellido        = '';
+  apellidoMaterno = '';
   ci       = '';
   telefono = '';
   loading  = signal(false);
   error    = signal('');
 
+  constructor() {
+    // Google entrega nombres y un solo texto de apellidos: se proponen separados
+    // para que la persona los confirme o corrija.
+    const user = this.auth.currentUser();
+    this.nombre   = user?.nombre ?? '';
+    this.ci       = user?.ci ?? '';
+    this.telefono = user?.telefono ?? '';
+
+    if (user?.apellidoMaterno) {
+      this.apellido        = user.apellido ?? '';
+      this.apellidoMaterno = user.apellidoMaterno;
+    } else {
+      const partes = (user?.apellido ?? '').trim().split(/\s+/).filter(Boolean);
+      if (partes.length === 2) {
+        [this.apellido, this.apellidoMaterno] = partes;
+      } else {
+        this.apellido = partes.join(' ');
+      }
+    }
+  }
+
   submit(): void {
-    if (!this.ci || !this.telefono) {
-      this.error.set('Por favor completa todos los campos.');
+    const nombre   = this.nombre.trim();
+    const apellido = this.apellido.trim();
+    const ci       = this.ci.trim();
+    const telefono = this.telefono.trim();
+
+    if (!nombre || !apellido || !ci || !telefono) {
+      this.error.set('Por favor completa todos los campos obligatorios.');
       return;
     }
 
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.completeProfile(this.ci, this.telefono).subscribe({
+    this.auth.completeProfile(ci, telefono, {
+      nombre,
+      apellido,
+      apellido_materno: this.apellidoMaterno.trim() || null,
+    }).subscribe({
       next: () => {
-        if (this.auth.isEstudiante()) {
-          this.router.navigate(['/estudiante/dashboard']);
-        } else {
-          this.router.navigate(['/dashboards/cenefco']);
-        }
+        this.postAuth.continuar();
       },
       error: (err: any) => {
         this.loading.set(false);

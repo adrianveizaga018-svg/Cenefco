@@ -174,6 +174,7 @@ export class CursoEdit implements OnInit {
 
   submitting       = signal(false);
   togglingEstado   = signal(false);
+  finalizandoCurso = signal(false);
   todosLosPlanes    = signal<any[]>([]);
   planesHabilitados = signal<number[]>([]);
   busquedaPlanes = signal('');
@@ -1445,6 +1446,39 @@ export class CursoEdit implements OnInit {
         error: (err: HttpErrorResponse) => {
           this.togglingEstado.set(false);
           this.toast.error('Error', extractErrorMessage(err, `No se pudo ${accion} el curso`));
+        },
+      });
+    });
+  }
+
+  finalizarCurso(): void {
+    const nombre = this.form.get('nombre_programa')?.value || 'este curso';
+    Swal.fire({
+      title: '¿Finalizar curso?',
+      html: `
+        <p class="text-sm text-gray-700">
+          El curso <strong>${nombre}</strong> pasará a estado <span class="font-semibold text-red-600">Inactivo</span>
+          y dejará de aparecer en el portal web y el chatbot de WhatsApp.
+        </p>
+        <p class="text-xs text-gray-400 mt-2">Esta acción se puede revertir publicando el curso nuevamente.</p>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: '🔒 Sí, finalizar curso',
+      cancelButtonText: 'Cancelar',
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.finalizandoCurso.set(true);
+      this.cursoService.update(this.id, { estado_web: 'inactivo' }).subscribe({
+        next: () => {
+          this.form.get('estado_web')!.setValue('inactivo', { emitEvent: false });
+          this.finalizandoCurso.set(false);
+          this.toast.success('Curso finalizado', 'El curso fue marcado como inactivo y ocultado del portal.');
+        },
+        error: (err: HttpErrorResponse) => {
+          this.finalizandoCurso.set(false);
+          this.toast.error('Error', extractErrorMessage(err, 'No se pudo finalizar el curso.'));
         },
       });
     });

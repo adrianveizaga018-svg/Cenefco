@@ -1,5 +1,5 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
@@ -7,6 +7,7 @@ import { CobranzaService } from '../../application/services/cobranza.service';
 import { CursoService } from '../../../cursos/application/services/curso.service';
 import { UsuarioService } from '../../../usuarios/application/services/usuario.service';
 import { Title } from '@angular/platform-browser';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,26 +21,37 @@ export class Dashboard implements OnInit {
   private usuarioSvc   = inject(UsuarioService);
   private titleService = inject(Title);
 
-  cuotas        = signal<any[]>([]);
-  resumen       = signal<any>(null);
-  metrics       = signal<any>(null);
-  cargando      = signal(false);
+  cuotas         = signal<any[]>([]);
+  resumen        = signal<any>(null);
+  metrics        = signal<any>(null);
+  cargando       = signal(false);
   totalRegistros = signal(0);
-  paginaActual  = signal(1);
+  paginaActual   = signal(1);
 
-  // Acordeón: set de id_ins expandidos
-  expandidos    = signal<Set<number>>(new Set());
-
-  // Cuotas cargadas por inscripción (se cargan al expandir)
-  cuotasPorIns  = signal<Map<number, any[]>>(new Map());
+  // Acordeón
+  expandidos   = signal<Set<number>>(new Set());
+  cuotasPorIns = signal<Map<number, any[]>>(new Map());
 
   // Opciones para filtros
   programas  = signal<{ id_programa: number; nombre_programa: string }[]>([]);
   vendedores = signal<any[]>([]);
 
-  // Modal comprobante
+  // ── Modal comprobante ──────────────────────────────────────────────────────
   comprobanteUrl = signal<string | null>(null);
 
+  // ── Modal pago de cuota ────────────────────────────────────────────────────
+  cuotaPagar    = signal<any | null>(null);
+  pagandoCuota  = signal(false);
+  archivoPago   = signal<File | null>(null);
+  formPagoCuota = new FormGroup({
+    monto_pagado:   new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+    nro_boleta:     new FormControl(''),
+    fecha_deposito: new FormControl(new Date().toISOString().split('T')[0], Validators.required),
+    metodo_pago:    new FormControl('deposito', Validators.required),
+    tipo_banco_id:  new FormControl<number | null>(null),
+  });
+
+  // ── Filtros ────────────────────────────────────────────────────────────────
   filtros = new FormGroup({
     ci:          new FormControl(''),
     estado:      new FormControl(''),
@@ -59,11 +71,9 @@ export class Dashboard implements OnInit {
   }
 
   private cargarOpciones() {
-    // Programas para filtro
     this.cursoSvc.getAll({ pageSize: 200 }).subscribe({
       next: r => this.programas.set(r.data.map(c => ({ id_programa: (c as any).id_programa, nombre_programa: c.nombre_programa })))
     });
-    // Vendedores para filtro
     this.usuarioSvc.getAll({ pageSize: 200 }).subscribe({
       next: r => this.vendedores.set(r.data)
     });
@@ -79,7 +89,7 @@ export class Dashboard implements OnInit {
   private filtrosActuales() {
     const f = this.filtros.value;
     return {
-      ci:          f.ci        ?? '',
+      ci:          f.ci          ?? '',
       programa_id: f.programa_id,
       id_vendedor: f.id_vendedor,
       metodo_pago: f.metodo_pago ?? '',
@@ -110,18 +120,18 @@ export class Dashboard implements OnInit {
         this.cuotas.set(res.data);
         this.totalRegistros.set(res.total);
         this.cargando.set(false);
-        // Reset acordeones al cambiar página
         this.expandidos.set(new Set());
       },
       error: () => this.cargando.set(false)
     });
 
-    // Cargar resumen con los mismos filtros (sin estado ni paginación)
     this.service.getResumen(this.filtrosActuales()).subscribe({
       next: r => this.resumen.set(r),
       error: () => {}
     });
   }
+
+  // ── Acordeón ───────────────────────────────────────────────────────────────
 
   toggleExpandir(idIns: number): void {
     const set = new Set(this.expandidos());
@@ -132,12 +142,12 @@ export class Dashboard implements OnInit {
       set.add(idIns);
       this.expandidos.set(set);
       if (!this.cuotasPorIns().has(idIns)) {
-        this.cargarCuotasInscripcion(idIns);
+        this.cargarCuotasDeInscripcion(idIns);
       }
     }
   }
 
-  private cargarCuotasInscripcion(idIns: number): void {
+  private cargarCuotasDeInscripcion(idIns: number): void {
     this.service.getCuotasInscripcion(idIns).subscribe({
       next: (cuotas) => {
         const map = new Map(this.cuotasPorIns());
@@ -148,28 +158,101 @@ export class Dashboard implements OnInit {
     });
   }
 
-  estaExpandido(idIns: number): boolean {
-    return this.expandidos().has(idIns);
-  }
+  estaExpandido(idIns: number): boolean { return this.expandidos().has(idIns); }
+  cuotasDeIns(idIns: number): any[]     { return this.cuotasPorIns().get(idIns) ?? []; }
 
-  cuotasDeIns(idIns: number): any[] {
-    return this.cuotasPorIns().get(idIns) ?? [];
-  }
-
-  aplicarFiltros() { this.cargarDashboard(1); }
-  limpiarFiltros() { this.filtros.reset(); this.cargarDashboard(1); }
+  aplicarFiltros()  { this.cargarDashboard(1); }
+  limpiarFiltros()  { this.filtros.reset(); this.cargarDashboard(1); }
   cambiarPagina(delta: number) {
     const newPage = this.paginaActual() + delta;
     if (newPage > 0) this.cargarDashboard(newPage);
   }
 
-  // Comprobante modal
-  verComprobante(url: string) { this.comprobanteUrl.set(url); }
-  cerrarComprobante()         { this.comprobanteUrl.set(null); }
-  esPdf(url: string): boolean { return url.toLowerCase().endsWith('.pdf'); }
+  // ── Modal comprobante ──────────────────────────────────────────────────────
+
+  verComprobante(url: string)  { this.comprobanteUrl.set(url); }
+  cerrarComprobante()          { this.comprobanteUrl.set(null); }
+  esPdf(url: string): boolean  { return url.toLowerCase().endsWith('.pdf'); }
   storageUrl(path: string): string {
     if (path.startsWith('http')) return path;
     return `/storage/${path}`;
+  }
+
+  // ── Modal pago de cuota ────────────────────────────────────────────────────
+
+  abrirPagarCuota(cuota: any, event: Event): void {
+    event.stopPropagation();
+    this.cuotaPagar.set(cuota);
+    this.archivoPago.set(null);
+    this.formPagoCuota.reset({
+      monto_pagado:   cuota.monto_a_pagar,
+      nro_boleta:     '',
+      fecha_deposito: new Date().toISOString().split('T')[0],
+      metodo_pago:    'deposito',
+      tipo_banco_id:  null,
+    });
+  }
+
+  cerrarPagarCuota(): void {
+    this.cuotaPagar.set(null);
+    this.archivoPago.set(null);
+  }
+
+  onArchivoPagoChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    this.archivoPago.set(file);
+  }
+
+  confirmarPagoCuota(): void {
+    if (this.formPagoCuota.invalid) {
+      this.formPagoCuota.markAllAsTouched();
+      return;
+    }
+    const cuota = this.cuotaPagar();
+    if (!cuota) return;
+
+    const fd = new FormData();
+    const v  = this.formPagoCuota.value;
+    fd.append('monto_pagado',   String(v.monto_pagado ?? cuota.monto_a_pagar));
+    fd.append('fecha_deposito', v.fecha_deposito ?? '');
+    fd.append('metodo_pago',    v.metodo_pago ?? 'efectivo');
+    if (v.nro_boleta)    fd.append('nro_boleta',    v.nro_boleta);
+    if (v.tipo_banco_id) fd.append('tipo_banco_id', String(v.tipo_banco_id));
+    if (this.archivoPago()) fd.append('comprobante', this.archivoPago()!);
+
+    this.pagandoCuota.set(true);
+    this.service.pagarCuota(cuota.id, fd).subscribe({
+      next: () => {
+        this.pagandoCuota.set(false);
+        this.cerrarPagarCuota();
+        Swal.fire({ icon: 'success', title: 'Pago registrado', text: 'La cuota fue marcada como pagada.', timer: 2000, showConfirmButton: false });
+        // Refrescar cuotas y totales
+        const idIns: number = cuota.id_ins;
+        const map = new Map(this.cuotasPorIns());
+        map.delete(idIns);
+        this.cuotasPorIns.set(map);
+        this.cargarCuotasDeInscripcion(idIns);
+        this.cargarDashboard(this.paginaActual());
+      },
+      error: (err) => {
+        this.pagandoCuota.set(false);
+        const data = err.error ?? {};
+        if (err.status === 422 && data.boleta_duplicada) {
+          Swal.fire({ icon: 'warning', title: 'Boleta duplicada', html: `${data.message ?? ''}<br><small>${data.registrado_por ?? ''} · ${data.registrado_el ?? ''}</small>` });
+        } else {
+          Swal.fire('Error', data.message ?? 'No se pudo registrar el pago', 'error');
+        }
+      },
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  isVencida(fecha: string): boolean {
+    if (!fecha) return false;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const f   = new Date(fecha); f.setHours(0, 0, 0, 0);
+    return f < hoy;
   }
 
   getWhatsAppUrl(alerta: any, tipo: 'vence_pronto' | 'vencido'): string {
@@ -190,31 +273,24 @@ export class Dashboard implements OnInit {
     return `https://wa.me/${cel}?text=${encodeURIComponent(msg)}`;
   }
 
-  isVencida(fecha: string): boolean {
-    if (!fecha) return false;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const f = new Date(fecha); f.setHours(0,0,0,0);
-    return f < hoy;
-  }
-
   badgeEstado(c: any): { label: string; css: string } {
-    if (c.estado === 'pagado')           return { label: 'Pagado',    css: 'bg-success/10 text-success' };
+    if (c.estado === 'pagado')               return { label: 'Pagado',    css: 'bg-success/10 text-success' };
     if (this.isVencida(c.fecha_vencimiento)) return { label: 'Vencida',   css: 'bg-danger/10 text-danger' };
-    return                                      { label: 'Pendiente', css: 'bg-warning/10 text-warning' };
+    return                                          { label: 'Pendiente', css: 'bg-warning/10 text-warning' };
   }
 
   canalLabel(c: string | null): string {
     const map: Record<string, string> = {
       admin: 'Presencial', portal: 'Portal', whatsapp: 'WhatsApp',
-      referido: 'Referido', 'presencial': 'Presencial',
+      referido: 'Referido', presencial: 'Presencial',
     };
     return c ? (map[c] ?? c) : '—';
   }
 
   metodoPagoLabel(m: string | null): string {
     const map: Record<string, string> = {
-      efectivo: 'Efectivo', deposito_bancario: 'Depósito', qr: 'QR',
-      transferencia: 'Transferencia',
+      efectivo: 'Efectivo', deposito_bancario: 'Depósito',
+      deposito: 'Depósito', qr: 'QR', transferencia: 'Transferencia',
     };
     return m ? (map[m] ?? m) : '—';
   }

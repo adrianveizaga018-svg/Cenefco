@@ -52,8 +52,11 @@ export class CertificadoService {
     return this.http.post<{ url: string }>('/api/v1/upload/image', fd);
   }
 
-  getCampos(plantillaId: number): Observable<CertCampoListResponse> {
-    return this.http.get<CertCampoListResponse>('/api/v1/cert-plantilla-campos', {
+  getFuentes(): Observable<{ label: string; value: string | null; css: string; grupo: string }[]> {
+    return this.http.get<{ label: string; value: string | null; css: string; grupo: string }[]>('/api/v1/cert-fuentes');
+  }
+
+  getCampos(plantillaId: number): Observable<CertCampoListResponse> {    return this.http.get<CertCampoListResponse>('/api/v1/cert-plantilla-campos', {
       params: new HttpParams().set('plantilla_id', plantillaId).set('pageSize', 100),
     });
   }
