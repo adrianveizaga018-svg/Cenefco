@@ -174,7 +174,6 @@ export class CursoEdit implements OnInit {
 
   submitting       = signal(false);
   togglingEstado   = signal(false);
-  finalizandoCurso = signal(false);
   todosLosPlanes    = signal<any[]>([]);
   planesHabilitados = signal<number[]>([]);
   busquedaPlanes = signal('');
@@ -1411,74 +1410,45 @@ export class CursoEdit implements OnInit {
     this.form.patchValue({ documento1: '' });
   }
 
-  toggleEstado(): void {
-    const estadoActual  = this.form.get('estado_web')!.value as string;
-    const nuevoEstado   = estadoActual === 'publicado' ? 'inactivo' : 'publicado';
-    const accion        = nuevoEstado === 'publicado' ? 'publicar' : 'desactivar';
-    const titulo        = nuevoEstado === 'publicado' ? '¿Publicar curso?' : '¿Desactivar curso?';
-    const texto         = nuevoEstado === 'publicado'
-      ? 'El curso se publicará y será visible para todos en la web.'
-      : 'El curso pasará a estado Inactivo y ya no será visible en la web.';
+  readonly estadosWeb = [
+    { valor: 'borrador',  etiqueta: 'Borrador'  },
+    { valor: 'publicado', etiqueta: 'Publicado' },
+    { valor: 'inactivo',  etiqueta: 'Finalizado' },
+  ] as const;
+
+  /** Cambia el estado de publicación al instante (con confirmación), sin esperar a "Guardar". */
+  cambiarEstado(nuevoEstado: 'borrador' | 'publicado' | 'inactivo'): void {
+    const control = this.form.get('estado_web')!;
+    if (control.value === nuevoEstado || this.togglingEstado()) return;
+
+    const nombre = this.form.get('nombre_programa')?.value || 'este curso';
+    const textos = {
+      publicado: { titulo: '¿Publicar curso?',  texto: `"${nombre}" será visible en el portal web y en el chatbot de WhatsApp.`, boton: 'Sí, publicar', color: '#16a34a', ok: 'El curso ya es visible en el portal y el chatbot.' },
+      inactivo:  { titulo: '¿Finalizar curso?', texto: `"${nombre}" dejará de aparecer en el portal y el chatbot. Puedes volver a publicarlo cuando quieras.`, boton: 'Sí, finalizar', color: '#dc2626', ok: 'El curso fue ocultado del portal y el chatbot.' },
+      borrador:  { titulo: '¿Pasar a borrador?', texto: `"${nombre}" dejará de ser visible mientras lo sigues editando.`, boton: 'Sí, pasar a borrador', color: '#6b7280', ok: 'El curso quedó como borrador.' },
+    }[nuevoEstado];
 
     Swal.fire({
-      title: titulo,
-      text: texto,
+      title: textos.titulo,
+      text: textos.texto,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: nuevoEstado === 'publicado' ? '#16a34a' : '#dc2626',
+      confirmButtonColor: textos.color,
       cancelButtonColor:  '#6b7280',
-      confirmButtonText:  nuevoEstado === 'publicado' ? 'Sí, publicar' : 'Sí, cerrar',
+      confirmButtonText:  textos.boton,
       cancelButtonText:   'Cancelar',
     }).then(r => {
       if (!r.isConfirmed) return;
       this.togglingEstado.set(true);
       this.cursoService.update(this.id, { estado_web: nuevoEstado }).subscribe({
         next: () => {
-          this.form.get('estado_web')!.setValue(nuevoEstado, { emitEvent: false });
+          control.setValue(nuevoEstado, { emitEvent: false });
           this.togglingEstado.set(false);
-          this.toast.success(
-            nuevoEstado === 'publicado' ? 'Curso publicado' : 'Curso cerrado',
-            nuevoEstado === 'publicado'
-              ? 'El curso ya es visible en el portal y el chatbot.'
-              : 'El curso fue ocultado del portal y el chatbot.'
-          );
+          this.toast.success('Estado actualizado', textos.ok);
         },
         error: (err: HttpErrorResponse) => {
           this.togglingEstado.set(false);
-          this.toast.error('Error', extractErrorMessage(err, `No se pudo ${accion} el curso`));
-        },
-      });
-    });
-  }
-
-  finalizarCurso(): void {
-    const nombre = this.form.get('nombre_programa')?.value || 'este curso';
-    Swal.fire({
-      title: '¿Finalizar curso?',
-      html: `
-        <p class="text-sm text-gray-700">
-          El curso <strong>${nombre}</strong> pasará a estado <span class="font-semibold text-red-600">Inactivo</span>
-          y dejará de aparecer en el portal web y el chatbot de WhatsApp.
-        </p>
-        <p class="text-xs text-gray-400 mt-2">Esta acción se puede revertir publicando el curso nuevamente.</p>`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: '🔒 Sí, finalizar curso',
-      cancelButtonText: 'Cancelar',
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.finalizandoCurso.set(true);
-      this.cursoService.update(this.id, { estado_web: 'inactivo' }).subscribe({
-        next: () => {
-          this.form.get('estado_web')!.setValue('inactivo', { emitEvent: false });
-          this.finalizandoCurso.set(false);
-          this.toast.success('Curso finalizado', 'El curso fue marcado como inactivo y ocultado del portal.');
-        },
-        error: (err: HttpErrorResponse) => {
-          this.finalizandoCurso.set(false);
-          this.toast.error('Error', extractErrorMessage(err, 'No se pudo finalizar el curso.'));
+          this.toast.error('Error', extractErrorMessage(err, 'No se pudo cambiar el estado del curso.'));
         },
       });
     });

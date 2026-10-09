@@ -44,21 +44,22 @@
           </div>
         </div>
 
-        <div class="flex flex-col items-end gap-2">
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <button type="button" class="btn btn-sm border border-default-300 bg-white text-default-700 hover:bg-default-100 gap-1.5"
+              [attr.aria-expanded]="!!menuReportes()" aria-haspopup="menu"
+              (click)="toggleMenuReportes($event)">
+              <div class="size-4"><ng-icon name="lucideFileText"></ng-icon></div>
+              Reportes
+              <div class="size-3.5"><ng-icon name="lucideChevronDown"></ng-icon></div>
+            </button>
+          </div>
           @if (puedeCrear) {
             <a routerLink="/cenefco/curso-create" class="btn btn-sm bg-primary text-white">
               <div class="size-4 me-1"><ng-icon name="lucidePlus"></ng-icon></div>
               Nuevo Curso
             </a>
           }
-          <button type="button" class="btn btn-sm bg-indigo-500 text-white" (click)="abrirReporteDocumentos()">
-            <div class="size-4 me-1"><ng-icon name="lucideFileText"></ng-icon></div>
-            Reporte de Envíos
-          </button>
-          <button type="button" class="btn btn-sm bg-teal-600 text-white" (click)="abrirReporteCuotas()">
-            <div class="size-4 me-1"><ng-icon name="lucideWallet"></ng-icon></div>
-            Reporte de Cuotas
-          </button>
         </div>
       </div>
 
@@ -146,38 +147,6 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="btn btn-sm bg-success/10 hover:bg-success text-success hover:text-white gap-1.5"
-                title="Descargar reporte Excel de inscritos y pagos del período"
-                [disabled]="exportandoExcelStats()"
-                (click)="exportarEstadisticasExcel()">
-                <div class="size-4">
-                  @if (exportandoExcelStats()) {
-                    <ng-icon name="lucideLoader" class="animate-spin"></ng-icon>
-                  } @else {
-                    <ng-icon name="lucideFileSpreadsheet"></ng-icon>
-                  }
-                </div>
-                Reporte Excel
-              </button>
-              <button
-                type="button"
-                class="btn btn-sm bg-danger/10 hover:bg-danger text-danger hover:text-white gap-1.5"
-                title="Descargar reporte PDF de inscritos y pagos del período"
-                [disabled]="exportandoPdfStats()"
-                (click)="exportarEstadisticasPDF()">
-                <div class="size-4">
-                  @if (exportandoPdfStats()) {
-                    <ng-icon name="lucideLoader" class="animate-spin"></ng-icon>
-                  } @else {
-                    <ng-icon name="lucideFileText"></ng-icon>
-                  }
-                </div>
-                Reporte PDF
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -279,20 +248,6 @@
                             </a>
 
                             @if (curso.id_imp) {
-                              <a
-                                [routerLink]="['/cenefco/inscripciones/reportes']"
-                                [queryParams]="{ id_imp: curso.id_imp }"
-                                class="btn size-7.5 bg-indigo-100 hover:bg-indigo-500 text-indigo-600 hover:text-white"
-                                title="Reportes e Ingresos">
-                                <div class="size-4"><ng-icon name="lucideBarChart2"></ng-icon></div>
-                              </a>
-                              <a
-                                [routerLink]="['/cenefco/reporte-cobros']"
-                                [queryParams]="{ id_imp: curso.id_imp }"
-                                class="btn size-7.5 bg-teal-100 hover:bg-teal-500 text-teal-600 hover:text-white"
-                                title="Reporte de Cobros">
-                                <div class="size-4"><ng-icon name="lucideFileSpreadsheet"></ng-icon></div>
-                              </a>
                               <button
                                 type="button"
                                 class="relative btn size-7.5 bg-emerald-100 hover:bg-emerald-500 text-emerald-600 hover:text-white"
@@ -307,27 +262,13 @@
                                   </span>
                                 }
                               </button>
-                              <button
-                                type="button"
-                                class="btn size-7.5 bg-cyan-100 hover:bg-cyan-500 text-cyan-600 hover:text-white disabled:opacity-50"
-                                title="Exportar estudiantes para carga de usuarios en Moodle (CSV)"
-                                [disabled]="exportandoMoodleId() === curso.id_imp"
-                                (click)="exportarMoodleCSV(curso)">
-                                <div class="size-4">
-                                  @if (exportandoMoodleId() === curso.id_imp) {
-                                    <ng-icon name="lucideLoader" class="animate-spin"></ng-icon>
-                                  } @else {
-                                    <ng-icon name="lucideGraduationCap"></ng-icon>
-                                  }
-                                </div>
-                              </button>
                             } @else {
                               <button
                                 type="button"
                                 disabled
                                 class="btn size-7.5 bg-default-100 text-default-300 cursor-not-allowed"
-                                title="El curso no tiene una apertura asignada — no hay datos para reportes">
-                                <div class="size-4"><ng-icon name="lucideBarChart2"></ng-icon></div>
+                                title="Sin versión activa: crea una en Versiones para ver cobros">
+                                <div class="size-4"><ng-icon name="lucideCalendarClock"></ng-icon></div>
                               </button>
                             }
                             <button
@@ -337,18 +278,15 @@
                               (click)="abrirCertificados(curso)">
                               <div class="size-4"><ng-icon name="lucideAward"></ng-icon></div>
                             </button>
-                              @if (puedeEliminar) {
-                                <button
-                                  type="button"
-                                  class="btn size-7.5 bg-warning/10 hover:bg-warning text-warning hover:text-white"
-                                  [title]="curso.estado_web === 'publicado' ? 'Desactivar curso' : 'Publicar curso'"
-                                  (click)="desactivarCurso(curso)">
-                                  <div class="size-4"><ng-icon [name]="curso.estado_web === 'publicado' ? 'lucideEyeOff' : 'lucideEye'"></ng-icon></div>
-                                </button>
-                              }
-
-                            
-
+                            <button
+                              type="button"
+                              class="btn size-7.5 bg-default-100 hover:bg-default-200 text-default-600"
+                              title="Más acciones"
+                              aria-haspopup="menu"
+                              [attr.aria-expanded]="menuFilaAbiertaPara(curso)"
+                              (click)="abrirMenuFila(curso, $event)">
+                              <div class="size-4"><ng-icon name="lucideMoreHorizontal"></ng-icon></div>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -383,6 +321,88 @@
       </div>
     </div>
   </div>
+  <!-- Menú "Reportes" de la cabecera: fuera de la tarjeta, que recorta lo que sobresale -->
+  @if (menuReportes(); as pos) {
+    <div role="menu" class="fixed z-50 w-72 rounded-lg border border-default-200 bg-white py-1.5 shadow-lg text-sm"
+      [style.top.px]="pos.top" [style.right.px]="pos.right"
+      (click)="$event.stopPropagation()">
+      <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100"
+        (click)="cerrarMenus(); abrirReporteDocumentos()">
+        <div class="size-4 text-indigo-500"><ng-icon name="lucideFileText"></ng-icon></div>
+        Reporte de envíos de documentos
+      </button>
+      <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100"
+        (click)="cerrarMenus(); abrirReporteCuotas()">
+        <div class="size-4 text-teal-600"><ng-icon name="lucideWallet"></ng-icon></div>
+        Reporte de cuotas
+      </button>
+      <div class="border-t border-default-200 my-1.5"></div>
+      <p class="px-3.5 pb-1 text-xs text-default-500">Inscritos y pagos de {{ etiquetaPeriodoStats() }}</p>
+      <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 disabled:opacity-50"
+        [disabled]="exportandoExcelStats()"
+        (click)="cerrarMenus(); exportarEstadisticasExcel()">
+        <div class="size-4 text-success">
+          @if (exportandoExcelStats()) { <ng-icon name="lucideLoader" class="animate-spin"></ng-icon> }
+          @else { <ng-icon name="lucideFileSpreadsheet"></ng-icon> }
+        </div>
+        Descargar en Excel
+      </button>
+      <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 disabled:opacity-50"
+        [disabled]="exportandoPdfStats()"
+        (click)="cerrarMenus(); exportarEstadisticasPDF()">
+        <div class="size-4 text-danger">
+          @if (exportandoPdfStats()) { <ng-icon name="lucideLoader" class="animate-spin"></ng-icon> }
+          @else { <ng-icon name="lucideFileText"></ng-icon> }
+        </div>
+        Descargar en PDF
+      </button>
+    </div>
+  }
+
+  <!-- Menú "más acciones" de una fila (posición fija para que la tabla no lo recorte) -->
+  @if (menuFila(); as m) {
+    <div role="menu"
+      class="fixed z-50 w-60 rounded-lg border border-default-200 bg-white py-1.5 shadow-lg text-sm"
+      [style.top.px]="m.top" [style.right.px]="m.right"
+      [style.transform]="m.arriba ? 'translateY(-100%)' : null"
+      (click)="$event.stopPropagation()">
+      @if (m.curso.id_imp) {
+        <a role="menuitem" class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-default-100"
+          [routerLink]="['/cenefco/inscripciones/reportes']" [queryParams]="{ id_imp: m.curso.id_imp }"
+          (click)="cerrarMenus()">
+          <div class="size-4 text-indigo-500"><ng-icon name="lucideBarChart2"></ng-icon></div>
+          Reportes e ingresos
+        </a>
+        <a role="menuitem" class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-default-100"
+          [routerLink]="['/cenefco/reporte-cobros']" [queryParams]="{ id_imp: m.curso.id_imp }"
+          (click)="cerrarMenus()">
+          <div class="size-4 text-teal-600"><ng-icon name="lucideFileSpreadsheet"></ng-icon></div>
+          Reporte de cobros
+        </a>
+        <button type="button" role="menuitem"
+          class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 disabled:opacity-50"
+          [disabled]="exportandoMoodleId() === m.curso.id_imp"
+          (click)="cerrarMenus(); exportarMoodleCSV(m.curso)">
+          <div class="size-4 text-cyan-600"><ng-icon name="lucideGraduationCap"></ng-icon></div>
+          Exportar a Moodle (CSV)
+        </button>
+      } @else {
+        <p class="px-3.5 py-2 text-xs text-default-500">
+          Sin versión activa: crea una en <strong>Versiones</strong> para ver reportes y exportar a Moodle.
+        </p>
+      }
+      @if (puedeEliminar) {
+        <div class="border-t border-default-200 my-1.5"></div>
+        <button type="button" role="menuitem"
+          class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100"
+          [class.text-danger]="m.curso.estado_web === 'publicado'"
+          (click)="cerrarMenus(); desactivarCurso(m.curso)">
+          <div class="size-4"><ng-icon [name]="m.curso.estado_web === 'publicado' ? 'lucideEyeOff' : 'lucideEye'"></ng-icon></div>
+          {{ m.curso.estado_web === 'publicado' ? 'Despublicar curso' : 'Publicar curso' }}
+        </button>
+      }
+    </div>
+  }
 </main>
 
 @if (qrCurso()) {

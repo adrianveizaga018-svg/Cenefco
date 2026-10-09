@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { DecimalPipe, NgClass, SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -230,6 +230,11 @@ export class Cursos {
 
   get fechaStatsAnio(): string {
     return this.fechaStats().slice(0, 4);
+  }
+
+  /** Texto del período elegido en el filtro, p. ej. "octubre de 2026". */
+  etiquetaPeriodoStats(): string {
+    return this.labelPeriodoStats(this.periodoStats(), this.fechaStats(), this.fechaStatsFin());
   }
 
   private labelPeriodoStats(periodo: PeriodoEstadisticas, fechaInicio: string, fechaFin?: string): string {
@@ -2096,6 +2101,53 @@ export class Cursos {
 
   onPageChange(page: number): void {
     this.pageIndex.set(page);
+  }
+
+  // ── Menús desplegables: "más acciones" por fila y "Reportes" de la cabecera ──
+  // El menú de fila usa posición fija para que la tabla (overflow-x-auto) no lo recorte.
+
+  menuFila     = signal<{ curso: Curso; top: number; right: number; arriba: boolean } | null>(null);
+  menuReportes = signal<{ top: number; right: number } | null>(null);
+
+  menuFilaAbiertaPara(curso: Curso): boolean {
+    return this.menuFila()?.curso.id_programa === curso.id_programa;
+  }
+
+  abrirMenuFila(curso: Curso, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.menuFilaAbiertaPara(curso)) {
+      this.menuFila.set(null);
+      return;
+    }
+    const r = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const arriba = r.bottom + 220 > window.innerHeight;
+    this.menuReportes.set(null);
+    this.menuFila.set({
+      curso,
+      top: arriba ? r.top - 4 : r.bottom + 4,
+      right: window.innerWidth - r.right,
+      arriba,
+    });
+  }
+
+  toggleMenuReportes(event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuFila.set(null);
+    if (this.menuReportes()) {
+      this.menuReportes.set(null);
+      return;
+    }
+    const r = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.menuReportes.set({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  @HostListener('window:resize')
+  @HostListener('window:wheel')
+  cerrarMenus(): void {
+    this.menuFila.set(null);
+    this.menuReportes.set(null);
   }
 
   desactivarCurso(curso: any): void {

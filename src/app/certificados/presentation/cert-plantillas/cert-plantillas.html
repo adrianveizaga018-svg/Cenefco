@@ -48,6 +48,18 @@
                 <div class="flex-1 min-w-0">
                   <p class="text-xs font-semibold text-default-800 truncate">{{ p.nombre }}</p>
                   <span class="text-[10px] text-default-400 capitalize">{{ p.tipo }} · {{ p.orientacion }}</span>
+                  @if (!p.imagen_url) {
+                    <span class="block text-[10px] font-semibold text-danger">Incompleta: falta imagen de fondo</span>
+                  }
+                  @if (programasDe(p); as progs) {
+                    @if (progs.length) {
+                      <span class="block text-[10px] text-success truncate" [title]="progs.join(', ')">
+                        ✓ {{ progs.length === 1 ? progs[0] : progs.length + ' programas' }}
+                      </span>
+                    } @else {
+                      <span class="block text-[10px] text-warning">Sin programa asignado</span>
+                    }
+                  }
                 </div>
                 <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button type="button" title="Editar" (click)="editarPlantilla(p, $event)"

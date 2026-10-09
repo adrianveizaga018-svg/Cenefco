@@ -175,6 +175,30 @@ export class CertPlantillas implements AfterViewInit, OnDestroy {
       next: r => { this.plantillas.set(r.data); this.cargando.set(false); },
       error: () => this.cargando.set(false),
     });
+    this.cargarAsignaciones();
+  }
+
+  /** Programas a los que está asignada cada plantilla (para mostrarlo en la lista). */
+  asignacionesPorPlantilla = signal<Record<number, string[]>>({});
+
+  private cargarAsignaciones(): void {
+    this.configSvc.getAll().subscribe({
+      next: ({ data }) => {
+        const mapa: Record<number, string[]> = {};
+        for (const cfg of data) {
+          if (!cfg.activo) continue;
+          for (const item of cfg.items ?? []) {
+            if (!item.plantilla_id || !item.activo) continue;
+            (mapa[item.plantilla_id] ??= []).push(cfg.nombre_programa ?? `Programa #${cfg.programa_id}`);
+          }
+        }
+        this.asignacionesPorPlantilla.set(mapa);
+      },
+    });
+  }
+
+  programasDe(p: CertPlantilla): string[] {
+    return this.asignacionesPorPlantilla()[p.id] ?? [];
   }
 
   private reobservarCanvas(): void {
@@ -264,10 +288,12 @@ export class CertPlantillas implements AfterViewInit, OnDestroy {
 
     this.configSvc.upsert({ programa_id: pid, activo: true }).subscribe({
       next: (config) => {
-        const itemExistente = config.items?.[0];
+        // Un programa puede tener varias plantillas (p. ej. Aprobación y Participación):
+        // se agrega; solo se actualiza si esta misma plantilla ya estaba asignada.
+        const itemExistente = config.items?.find(i => i.plantilla_id === pl.id);
         const payload = {
           nombre_cert: pl.nombre,
-          precio: 0, es_gratuito: true, orden: 1, activo: true,
+          precio: 0, es_gratuito: true, orden: itemExistente?.orden ?? (config.items?.length ?? 0) + 1, activo: true,
           plantilla_id: pl.id,
         };
         const obs = itemExistente
@@ -277,6 +303,7 @@ export class CertPlantillas implements AfterViewInit, OnDestroy {
           next: (item) => {
             this.guardandoAsig.set(false);
             this.toast.success('¡Asignado!', `"${pl.nombre}" asignada a ${nombreProg}.`);
+            this.cargarAsignaciones();
             // Actualizar el estado local de asignación
             this.asignacionActual.set({
               programa_id:    pid,
