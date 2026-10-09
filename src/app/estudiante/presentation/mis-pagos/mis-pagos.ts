@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
@@ -15,6 +16,13 @@ import Swal from 'sweetalert2';
 })
 export class MisPagosEstudianteComponent implements OnInit {
   private service = inject(EstudianteService);
+  private route   = inject(ActivatedRoute);
+  private router  = inject(Router);
+
+  /** Preinscripción del portal (sin plan) cuyo diálogo "elegir plan y pagar" está abierto. */
+  planElegir = signal<PlanPagoEstudiante | null>(null);
+  /** ?pagar=<id_ins>: llega desde el portal después de llenar el formulario de inscripción. */
+  private pagarAlCargar = Number(this.route.snapshot.queryParamMap.get('pagar')) || null;
   planes = signal<PlanPagoEstudiante[]>([]);
   cargando = signal(true);
   error = signal('');
@@ -38,12 +46,26 @@ export class MisPagosEstudianteComponent implements OnInit {
           this.planActivo.set(res.data[0].id_ins); // Expandir el primero por defecto
         }
         this.cargando.set(false);
+        this.abrirPagoPendienteDeUrl();
       },
       error: () => {
         this.error.set('No se pudo cargar la información de pagos.');
         this.cargando.set(false);
       }
     });
+  }
+
+  private abrirPagoPendienteDeUrl(): void {
+    const id = this.pagarAlCargar;
+    if (!id) return;
+    this.pagarAlCargar = null;
+    this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    const plan = this.planes().find(p => p.id_ins === id);
+    if (!plan) return;
+    this.planActivo.set(id);
+    if (plan.requiere_plan) { this.planElegir.set(plan); return; }
+    const cuota = plan.cuotas.find(c => !c.pagado);
+    if (cuota) this.abrirPago(plan, cuota);
   }
 
   togglePlan(id_ins: number) {
@@ -84,6 +106,7 @@ export class MisPagosEstudianteComponent implements OnInit {
 
   comprobanteEnviado(mensaje: string) {
     this.cerrarPago();
+    this.planElegir.set(null);
     Swal.fire({ icon: 'success', title: 'Comprobante enviado', text: mensaje, confirmButtonColor: '#16a34a' });
     this.cargarPagos();
   }

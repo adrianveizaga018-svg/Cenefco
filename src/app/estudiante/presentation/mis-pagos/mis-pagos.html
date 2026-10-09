@@ -39,6 +39,12 @@
                     Comprobante en revisión: Bs {{ plan.comprobantes_en_revision[0].monto | number:'1.2-2' }}{{ plan.comprobantes_en_revision.length > 1 ? ' y ' + (plan.comprobantes_en_revision.length - 1) + ' más' : '' }}
                   </p>
                 }
+                @if (plan.requiere_plan) {
+                  <button type="button" (click)="$event.stopPropagation(); planElegir.set(plan)"
+                    class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+                    <span class="size-3.5 inline-flex"><ng-icon name="lucideWallet"></ng-icon></span> Elegir plan y pagar
+                  </button>
+                }
                 <div class="flex items-center gap-4 mt-2 flex-wrap">
                   <!-- Estado del Pago -->
                   @if (plan.estado_pago === 'gratuito') {
@@ -167,10 +173,10 @@
                       <!-- Botón de Pago -->
                       @if (!cuota.pagado) {
                         <button (click)="abrirPago(plan, cuota)"
-                          class="shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm"
+                          class="shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm text-white"
                           [ngClass]="{
-                            'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20': getEstadoCuota(cuota) === 'vencido',
-                            'bg-slate-800 hover:bg-slate-700 text-white shadow-slate-800/20': getEstadoCuota(cuota) === 'pendiente'
+                            'bg-red-600 hover:bg-red-700 shadow-red-500/20': getEstadoCuota(cuota) === 'vencido',
+                            'bg-slate-800 hover:bg-slate-700 shadow-slate-800/20': getEstadoCuota(cuota) === 'pendiente'
                           }">
                           Pagar
                         </button>
@@ -191,6 +197,9 @@
 </div>
 
 <!-- Pago con comprobante -->
+@if (planElegir(); as pe) {
+  <app-comprobante-pago [idIns]="pe.id_ins" (cerrar)="planElegir.set(null)" (enviado)="comprobanteEnviado($event)" />
+}
 @if (cuotaSeleccionada(); as sel) {
   <app-comprobante-pago [idIns]="sel.plan.id_ins" [montoSugerido]="sel.cuota.saldo"
     (cerrar)="cerrarPago()" (enviado)="comprobanteEnviado($event)" />

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 const VOLVER_KEY = 'cenefco_volver_portal';
+const DESTINO_PANEL_KEY = 'cenefco_destino_panel';
 
 /**
  * Decide a dónde va el usuario después de autenticarse.
@@ -18,6 +19,13 @@ export class PostAuthService {
   recordarOrigen(volver: string | null): void {
     if (volver && /^\/(?!\/)/.test(volver)) {
       sessionStorage.setItem(VOLVER_KEY, volver);
+    }
+  }
+
+  /** Ruta del panel que pidió iniciar sesión (solo rutas internas, no la del propio login). */
+  recordarDestinoPanel(url: string): void {
+    if (/^\/(?!\/)/.test(url) && !url.startsWith('/auth')) {
+      sessionStorage.setItem(DESTINO_PANEL_KEY, url);
     }
   }
 
@@ -44,6 +52,15 @@ export class PostAuthService {
     }
 
     sessionStorage.removeItem(VOLVER_KEY);
+
+    const destino = sessionStorage.getItem(DESTINO_PANEL_KEY);
+    sessionStorage.removeItem(DESTINO_PANEL_KEY);
+    // El estudiante solo vuelve a su área; el personal a cualquier ruta del panel
+    if (destino && (!this.auth.isEstudiante() || destino.startsWith('/estudiante'))) {
+      this.router.navigateByUrl(destino);
+      return;
+    }
+
     this.irAlInicio();
   }
 

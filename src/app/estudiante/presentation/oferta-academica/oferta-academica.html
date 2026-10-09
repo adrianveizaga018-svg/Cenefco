@@ -69,7 +69,13 @@
               }
             </div>
 
-            @if (p.gratuito) {
+            @if (p.requiere_formulario && p.url_portal) {
+              <a [href]="p.url_portal" target="_blank" rel="noopener"
+                class="w-full mt-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 inline-flex items-center justify-center gap-2">
+                Inscribirme <span class="size-4 inline-flex shrink-0"><ng-icon name="lucideExternalLink"></ng-icon></span>
+              </a>
+              <p class="text-[11px] text-default-500 text-center -mt-1">Este programa pide un formulario: lo llenas en el portal y vuelves aquí a pagar.</p>
+            } @else if (p.gratuito) {
               <button type="button" class="w-full mt-2 px-4 py-2.5 rounded-xl bg-success text-white text-sm font-bold hover:bg-success/90 disabled:opacity-60 inline-flex items-center justify-center gap-2"
                 [disabled]="inscribiendo() === p.id_imp" (click)="inscribirGratis(p)">
                 @if (inscribiendo() === p.id_imp) {
@@ -84,7 +90,7 @@
                 <span class="size-4 inline-flex shrink-0"><ng-icon name="lucideWallet"></ng-icon></span> Inscribirme
               </button>
             }
-            @if (p.url_portal) {
+            @if (p.url_portal && !p.requiere_formulario) {
               <a [href]="p.url_portal" target="_blank" rel="noopener" class="text-center text-xs font-semibold text-default-500 hover:text-primary hover:underline">
                 Ver detalles del programa
               </a>

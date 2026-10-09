@@ -70,6 +70,9 @@ export interface BancoCuenta {
 export interface InfoPago {
   id_ins: number;
   programa: string | null;
+  /** Preinscripción del portal: todavía no eligió plan de pago. */
+  requiere_plan: boolean;
+  planes: PlanCatalogo[];
   plan: string | null;
   qr_url: string | null;
   saldo: number;
@@ -92,6 +95,8 @@ export interface ProgramaCatalogo {
   gratuito: boolean;
   precio_desde: number | null;
   url_portal: string | null;
+  /** Pide un formulario propio (datos y documentos): la inscripción se hace en el portal. */
+  requiere_formulario: boolean;
 }
 
 export interface CertificadoEstudiante {
@@ -129,6 +134,7 @@ export interface PlanPagoEstudiante {
   fecha_inicio: string | null;
   fecha_fin: string | null;
   gratuito: boolean;
+  requiere_plan: boolean;
   total_plan: number;
   total_pagado: number;
   saldo: number;
@@ -175,6 +181,11 @@ export class EstudianteService {
   /** Comprobante de una cuota: queda en revisión hasta que Caja lo apruebe. */
   enviarComprobante(datos: FormData): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/comprobantes`, datos);
+  }
+
+  /** Elige el plan de una preinscripción del portal; con plan gratuito queda inscrito. */
+  asignarPlan(idIns: number, idPlan: number): Observable<{ message: string; gratuito: boolean; saldo: number }> {
+    return this.http.post<{ message: string; gratuito: boolean; saldo: number }>(`${this.apiUrl}/inscripciones/${idIns}/plan`, { id_plan: idPlan });
   }
 
   /** Inscripción a un programa de pago con el comprobante del primer pago. */

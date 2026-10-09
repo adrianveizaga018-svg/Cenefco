@@ -5,7 +5,7 @@
     <!-- Cabecera -->
     <div class="px-6 py-5 bg-gradient-to-br from-slate-900 to-slate-700 text-white flex items-start justify-between gap-4">
       <div class="min-w-0">
-        <p class="text-xs text-slate-300 mb-0.5">{{ esInscripcion() ? 'Inscribirme' : 'Pagar cuota' }}</p>
+        <p class="text-xs text-slate-300 mb-0.5">{{ esInscripcion() ? 'Inscribirme' : eligePlan() ? 'Elige tu plan de pago' : 'Pagar cuota' }}</p>
         <h2 id="titulo-pago" class="text-lg font-bold leading-snug">{{ titulo() }}</h2>
       </div>
       <button type="button" class="shrink-0 size-8 rounded-lg hover:bg-white/10 inline-flex items-center justify-center" aria-label="Cerrar" (click)="cerrar.emit()">
@@ -17,8 +17,8 @@
       @if (cargando()) {
         <div class="flex justify-center py-10"><div class="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
       } @else {
-        <!-- Plan (solo al inscribirse) -->
-        @if (esInscripcion()) {
+        <!-- Plan (inscripción nueva o preinscripción del portal) -->
+        @if (eligePlan()) {
           <div>
             <p class="text-sm font-semibold text-slate-800 mb-2">1. Elige tu plan de pago</p>
             <div class="space-y-2">
@@ -28,13 +28,19 @@
                   <input type="radio" name="plan" class="accent-primary" [checked]="planId() === p.id_plan" (change)="elegirPlan(p)">
                   <span class="flex-1 min-w-0">
                     <span class="block text-sm font-semibold text-slate-800">{{ p.titulo }}</span>
-                    <span class="block text-xs text-slate-500">
-                      Total Bs. {{ p.costo | number:'1.2-2' }}{{ p.nro_cuotas > 1 ? ' · ' + p.nro_cuotas + ' pagos' : ' · al contado' }}
-                    </span>
+                    @if (!p.gratuito) {
+                      <span class="block text-xs text-slate-500">
+                        Total Bs. {{ p.costo | number:'1.2-2' }}{{ p.nro_cuotas > 1 ? ' · ' + p.nro_cuotas + ' pagos' : ' · al contado' }}
+                      </span>
+                    }
                   </span>
                   <span class="text-right shrink-0">
-                    <span class="block text-[11px] text-slate-500">Para inscribirte</span>
-                    <span class="block text-sm font-bold text-slate-800">Bs. {{ p.primer_pago | number:'1.2-2' }}</span>
+                    @if (p.gratuito) {
+                      <span class="block text-sm font-bold text-emerald-700">Gratis</span>
+                    } @else {
+                      <span class="block text-[11px] text-slate-500">Para inscribirte</span>
+                      <span class="block text-sm font-bold text-slate-800">Bs. {{ p.primer_pago | number:'1.2-2' }}</span>
+                    }
                   </span>
                 </label>
               }
@@ -58,9 +64,12 @@
           }
         }
 
+        @if (planGratis()) {
+          <p class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">Este plan no tiene costo. Confirma y tu inscripción quedará lista.</p>
+        } @else {
         <!-- Dónde pagar -->
         <div>
-          <p class="text-sm font-semibold text-slate-800 mb-2">{{ esInscripcion() ? '2.' : '1.' }} Paga por QR o en una de estas cuentas</p>
+          <p class="text-sm font-semibold text-slate-800 mb-2">{{ eligePlan() ? '2.' : '1.' }} Paga por QR o en una de estas cuentas</p>
           <div class="flex flex-col sm:flex-row gap-3">
             @if (qrUrl()) {
               <a [href]="qrUrl()" target="_blank" rel="noopener" class="shrink-0 self-center">
@@ -82,7 +91,7 @@
 
         <!-- Datos del pago -->
         <div class="space-y-3">
-          <p class="text-sm font-semibold text-slate-800">{{ esInscripcion() ? '3.' : '2.' }} Cuéntanos tu pago y sube el comprobante</p>
+          <p class="text-sm font-semibold text-slate-800">{{ eligePlan() ? '3.' : '2.' }} Cuéntanos tu pago y sube el comprobante</p>
           <div class="grid grid-cols-2 gap-3">
             <label class="block">
               <span class="block text-xs font-medium text-slate-600 mb-1">Monto pagado (Bs.)</span>
@@ -128,6 +137,7 @@
             <input id="archivo-comprobante" type="file" accept="image/*,.pdf" class="sr-only" (change)="onArchivo($event)">
           </label>
         </div>
+        }
 
         @if (error()) {
           <p class="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2" role="alert">{{ error() }}</p>
@@ -143,7 +153,7 @@
         @if (enviando()) {
           <span class="size-4 inline-flex animate-spin"><ng-icon name="lucideLoader"></ng-icon></span> Enviando...
         } @else {
-          <span class="size-4 inline-flex"><ng-icon name="lucideSend"></ng-icon></span> {{ esInscripcion() ? 'Inscribirme y enviar' : 'Enviar comprobante' }}
+          <span class="size-4 inline-flex"><ng-icon name="lucideSend"></ng-icon></span> {{ planGratis() ? 'Confirmar inscripción' : esInscripcion() ? 'Inscribirme y enviar' : 'Enviar comprobante' }}
         }
       </button>
     </div>

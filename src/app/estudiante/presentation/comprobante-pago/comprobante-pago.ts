@@ -12,6 +12,7 @@ type Metodo = 'qr' | 'transferencia' | 'deposito';
  * Diálogo para pagar con comprobante desde el panel del estudiante.
  * - Con `idIns`: paga una cuota de una inscripción que ya tiene.
  * - Con `programa`: se inscribe a un programa de pago con el primer pago.
+ * - Preinscripción del portal (sin plan): primero elige el plan; si es gratuito queda inscrito.
  * El comprobante queda en revisión hasta que Caja lo apruebe.
  */
 @Component({
@@ -45,11 +46,17 @@ export class ComprobantePagoComponent implements OnInit {
   readonly hoy  = new Date().toISOString().slice(0, 10);
 
   readonly esInscripcion = computed(() => !!this.programa());
-  readonly planesPago = computed(() => (this.programa()?.planes ?? []).filter(p => !p.gratuito));
+  /** Hay que elegir plan: inscripción nueva o preinscripción del portal sin plan. */
+  readonly eligePlan = computed(() => this.esInscripcion() || !!this.info()?.requiere_plan);
+  readonly planesPago = computed(() => this.esInscripcion()
+    ? (this.programa()?.planes ?? []).filter(p => !p.gratuito)
+    : (this.info()?.requiere_plan ? this.info()!.planes : []));
   readonly planSel = computed<PlanCatalogo | null>(() => this.planesPago().find(p => p.id_plan === this.planId()) ?? null);
+  /** Plan gratuito elegido: no hay nada que pagar, solo confirmar. */
+  readonly planGratis = computed(() => !!this.planSel()?.gratuito);
   readonly titulo = computed(() => this.programa()?.nombre ?? this.info()?.programa ?? 'Pago');
-  readonly qrUrl = computed(() => this.esInscripcion() ? this.planSel()?.qr_url ?? null : this.info()?.qr_url ?? null);
-  readonly maximo = computed(() => this.esInscripcion() ? (this.planSel()?.costo ?? null) : (this.info()?.saldo ?? null));
+  readonly qrUrl = computed(() => this.eligePlan() ? this.planSel()?.qr_url ?? null : this.info()?.qr_url ?? null);
+  readonly maximo = computed(() => this.eligePlan() ? (this.planSel()?.costo ?? null) : (this.info()?.saldo ?? null));
 
   ngOnInit(): void {
     if (this.esInscripcion()) {
@@ -69,6 +76,7 @@ export class ComprobantePagoComponent implements OnInit {
         this.info.set(i);
         this.bancos.set(i.bancos);
         this.monto.set(this.montoSugerido() ?? i.proxima?.saldo ?? i.saldo);
+        if (i.requiere_plan && i.planes.length) this.elegirPlan(i.planes[0]);
         this.cargando.set(false);
       },
       error: (err: HttpErrorResponse) => {
@@ -95,12 +103,13 @@ export class ComprobantePagoComponent implements OnInit {
   }
 
   enviar(): void {
+    if (this.planGratis()) { this.confirmarGratis(); return; }
     const monto = Number(this.monto());
     if (!monto || monto <= 0) { this.error.set('Escribe el monto que pagaste.'); return; }
     const max = this.maximo();
     if (max !== null && monto > max + 0.01) { this.error.set(`El monto no puede ser mayor a Bs. ${max.toFixed(2)}.`); return; }
     if (!this.archivo()) { this.error.set('Sube la foto o el PDF de tu comprobante.'); return; }
-    if (this.esInscripcion() && !this.planSel()) { this.error.set('Elige un plan de pago.'); return; }
+    if (this.eligePlan() && !this.planSel()) { this.error.set('Elige un plan de pago.'); return; }
 
     const fd = new FormData();
     fd.append('monto', String(monto));
@@ -117,6 +126,7 @@ export class ComprobantePagoComponent implements OnInit {
       peticion = this.service.inscribirseConComprobante(fd);
     } else {
       fd.append('id_ins', String(this.idIns()));
+      if (this.info()?.requiere_plan) fd.append('id_plan', String(this.planSel()!.id_plan));
       peticion = this.service.enviarComprobante(fd);
     }
 
@@ -127,6 +137,18 @@ export class ComprobantePagoComponent implements OnInit {
       error: (err: HttpErrorResponse) => {
         this.enviando.set(false);
         this.error.set(extractErrorMessage(err, 'No se pudo enviar el comprobante.'));
+      },
+    });
+  }
+
+  private confirmarGratis(): void {
+    this.enviando.set(true);
+    this.error.set('');
+    this.service.asignarPlan(this.idIns()!, this.planSel()!.id_plan).subscribe({
+      next: (res) => { this.enviando.set(false); this.enviado.emit(res.message); },
+      error: (err: HttpErrorResponse) => {
+        this.enviando.set(false);
+        this.error.set(extractErrorMessage(err, 'No se pudo confirmar la inscripción.'));
       },
     });
   }
