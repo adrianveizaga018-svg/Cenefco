@@ -185,6 +185,7 @@ class AreaEstudianteService
                 'fecha_inicio'    => $c->imparte_fecha_inicio,
                 'fecha_fin'       => $c->imparte_fecha_fin,
                 'gratuito'        => $c->gratuito,
+                'requiere_plan'   => ! $c->id_plan, // preinscripción del portal sin plan elegido
                 'total_plan'      => $totalPlan,
                 'total_pagado'    => $totalPagado,
                 'saldo'           => $saldo,
@@ -235,7 +236,7 @@ class AreaEstudianteService
             ->orderBy('imp.imparte_fecha_inicio')
             ->get([
                 'prog.id_programa', 'prog.nombre_programa', 'prog.slug', 'prog.foto', 'prog.descripcion',
-                'prog.creditaje', 'imp.id_imp', 'imp.imparte_fecha_inicio', 'imp.imparte_fecha_fin',
+                'prog.creditaje', 'prog.formulario_id', 'imp.id_imp', 'imp.imparte_fecha_inicio', 'imp.imparte_fecha_fin',
             ])
             ->unique('id_programa');
 
@@ -269,6 +270,8 @@ class AreaEstudianteService
                     'gratuito'     => $planes->contains('gratuito', true),
                     'precio_desde' => $costos->isNotEmpty() ? (float) $costos->min() : null,
                     'url_portal'   => $v->slug ? "{$portal}/cursos/{$v->slug}" : null,
+                    // Con formulario propio (datos y documentos) la inscripción se hace en el portal
+                    'requiere_formulario' => (bool) $v->formulario_id,
                 ];
             })
             ->sortByDesc('gratuito')
@@ -306,10 +309,13 @@ class AreaEstudianteService
             ->where('imp.id_imp', $idImp)
             ->where('imp.estado', 1)
             ->where('prog.estado_web', 'publicado')
-            ->first(['imp.id_imp', 'imp.id_mat', 'imp.imparte_fecha_fin', 'prog.nombre_programa']);
+            ->first(['imp.id_imp', 'imp.id_mat', 'imp.imparte_fecha_fin', 'prog.nombre_programa', 'prog.formulario_id']);
 
         if (! $imp) {
             throw new DomainException('Este programa no está disponible para inscripción.');
+        }
+        if ($imp->formulario_id) {
+            throw new DomainException('Este programa pide completar un formulario: inscríbete desde la página del programa en el portal.');
         }
         if ($imp->imparte_fecha_fin && $imp->imparte_fecha_fin < now()->toDateString()) {
             throw new DomainException('Este programa ya finalizó.');

@@ -98,7 +98,10 @@ class EstudiantePortalController extends Controller
     /** Comprobante para una cuota de una inscripción que ya tiene. */
     public function enviarComprobante(Request $request, ComprobanteEstudianteService $comprobantes): JsonResponse
     {
-        $datos = $request->validate(self::reglasComprobante() + ['id_ins' => 'required|integer']);
+        $datos = $request->validate(self::reglasComprobante() + [
+            'id_ins'  => 'required|integer',
+            'id_plan' => 'nullable|integer', // solo si la inscripción del portal aún no tiene plan
+        ]);
 
         try {
             $comprobantes->enviar($request->user(), (int) $datos['id_ins'], $datos, $request->file('comprobante'));
@@ -107,6 +110,23 @@ class EstudiantePortalController extends Controller
         }
 
         return response()->json(['message' => 'Recibimos tu comprobante. Caja lo revisará y te avisaremos por correo.'], 201);
+    }
+
+    /** Elige el plan de una preinscripción del portal (gratuito: queda inscrito sin pagar). */
+    public function asignarPlan(Request $request, int $idIns, ComprobanteEstudianteService $comprobantes): JsonResponse
+    {
+        $datos = $request->validate(['id_plan' => 'required|integer']);
+
+        try {
+            $res = $comprobantes->asignarPlan($request->user(), $idIns, (int) $datos['id_plan']);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => $res['gratuito'] ? 'Listo, tu inscripción quedó confirmada.' : 'Plan elegido. Ahora sube el comprobante de tu primer pago.',
+            ...$res,
+        ]);
     }
 
     /** Inscripción a un programa de pago con el comprobante del primer pago. */

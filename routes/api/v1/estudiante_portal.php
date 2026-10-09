@@ -19,4 +19,6 @@ Route::middleware(['auth:sanctum'])->prefix('estudiante')->group(function () {
         ->middleware('throttle:10,1');
     Route::post('/inscribirse', [EstudiantePortalController::class, 'inscribirConComprobante'])
         ->middleware('throttle:10,1');
+    Route::post('/inscripciones/{idIns}/plan', [EstudiantePortalController::class, 'asignarPlan'])
+        ->whereNumber('idIns')->middleware('throttle:10,1');
 });

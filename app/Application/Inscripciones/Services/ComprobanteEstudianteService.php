@@ -43,6 +43,9 @@ class ComprobanteEstudianteService
         return [
             'id_ins'   => $idIns,
             'programa' => $ins->programa,
+            // Preinscripción del portal: aún no eligió plan de pago
+            'requiere_plan' => ! $ins->id_plan,
+            'planes'   => $ins->id_plan ? [] : $this->area->planesDe((int) $ins->id_imp, (int) $ins->id_mat)->values()->all(),
             'plan'     => $plan?->titulo,
             'qr_url'   => $plan?->qr_image_url ? '/storage/'.ltrim($plan->qr_image_url, '/') : null,
             'saldo'    => (float) ($cronograma->pendiente ?? 0),
@@ -69,6 +72,13 @@ class ComprobanteEstudianteService
     {
         $ins = $this->inscripcionPropia($user, $idIns);
 
+        if (! $ins->id_plan) {
+            if (empty($datos['id_plan'])) {
+                throw new DomainException('Elige primero tu plan de pago.');
+            }
+            $this->asignarPlan($user, $idIns, (int) $datos['id_plan']);
+        }
+
         $saldo = (float) ($this->cuotas->sincronizar($idIns)->pendiente ?? 0);
         if ($saldo <= 0) {
             throw new DomainException('Esta inscripción no tiene saldo pendiente.');
@@ -84,6 +94,40 @@ class ComprobanteEstudianteService
         $this->avisarCaja($ins->programa, (float) $datos['monto']);
 
         return $idPago;
+    }
+
+    /**
+     * Elige el plan de una preinscripción del portal (que nace sin plan) y crea su cronograma.
+     * Con un plan gratuito la inscripción queda lista y asciende a Estudiante.
+     *
+     * @return array{gratuito: bool, saldo: float}
+     */
+    public function asignarPlan(User $user, int $idIns, int $idPlan): array
+    {
+        $ins = $this->inscripcionPropia($user, $idIns);
+        if ($ins->id_plan) {
+            throw new DomainException('Esta inscripción ya tiene un plan de pago. Para cambiarlo comunícate con CENEFCO.');
+        }
+
+        $plan = $this->area->planesDe((int) $ins->id_imp, (int) $ins->id_mat)->firstWhere('id_plan', $idPlan);
+        if (! $plan) {
+            throw new DomainException('Ese plan de pago no está disponible para este programa.');
+        }
+
+        DB::transaction(function () use ($idIns, $idPlan) {
+            $actualizadas = DB::table('t_inscripcion')->where('id_ins', $idIns)->whereNull('id_plan')->update(['id_plan' => $idPlan]);
+            if (! $actualizadas) {
+                throw new DomainException('Esta inscripción ya tiene un plan de pago.');
+            }
+            $this->cuotas->generarCuotasParaInscripcion($idIns, $idPlan);
+        });
+
+        $gratuito = (bool) $plan['gratuito'] && \App\Shared\Kernel\Support\PlanGratuito::es($idPlan);
+        if ($gratuito) {
+            $this->promocion->promoverPorIdUs((int) $ins->id_us);
+        }
+
+        return ['gratuito' => $gratuito, 'saldo' => (float) ($this->cuotas->sincronizar($idIns)->pendiente ?? 0)];
     }
 
     /** Inscripción a un programa de pago con el comprobante del primer pago. */
@@ -200,7 +244,7 @@ class ComprobanteEstudianteService
             ->leftJoin('t_imparte as imp', 'imp.id_imp', '=', 'i.id_imp')
             ->leftJoin('t_programa as prog', 'prog.id_programa', '=', 'imp.id_mat')
             ->where('i.id_ins', $idIns)->where('i.id_us', $idUs)->where('i.estado', 1)
-            ->first(['i.id_ins', 'i.id_us', 'i.id_plan', DB::raw('COALESCE(prog.nombre_programa, imp.titulo_personalizado) as programa')])
+            ->first(['i.id_ins', 'i.id_us', 'i.id_plan', 'i.id_imp', 'imp.id_mat', DB::raw('COALESCE(prog.nombre_programa, imp.titulo_personalizado) as programa')])
             : null;
 
         if (! $ins) {

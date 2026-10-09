@@ -77,7 +77,10 @@ class InscripcionPortalController extends Controller
                 ]);
             }
 
-            return DB::table('t_inscripcion')->insertGetId([
+            // Igual que Caja: t_inscripcion es tabla legada y no siempre tiene autoincremento
+            $idIns = (int) (DB::table('t_inscripcion')->max('id_ins') ?? 0) + 1;
+            DB::table('t_inscripcion')->insert([
+                'id_ins'      => $idIns,
                 'id_us_reg'   => $idUs,
                 'id_us'       => $idUs,
                 'id_imp'      => $idImp,
@@ -90,7 +93,9 @@ class InscripcionPortalController extends Controller
                 'estado'      => 1,
                 'fecha_ins'   => now()->toDateString(),
                 'fecha_reg'   => now()->toDateTimeString(),
-            ], 'id_ins');
+            ]);
+
+            return $idIns;
         });
 
         // El rol sigue siendo 'participante' hasta que se registre el primer pago
