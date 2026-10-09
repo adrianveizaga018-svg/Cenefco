@@ -136,7 +136,7 @@ class InscripcionPortalController extends Controller
         $programaId = request()->filled('programa_id') ? (int) request()->get('programa_id') : null;
 
         if (strlen($ci) < 4) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         $usuario = DB::table('t_usuario')
@@ -144,7 +144,7 @@ class InscripcionPortalController extends Controller
             ->first(['id_us', 'nombre', 'appaterno', 'apmaterno', 'ci', 'email', 'celular']);
 
         if (! $usuario) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         $yaInscrito = false;

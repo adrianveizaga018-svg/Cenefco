@@ -18,6 +18,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Panel (login, crear contraseña). Se usa en los enlaces de los correos.
+    'frontend_url' => rtrim(env('FRONTEND_URL', 'http://localhost:4200'), '/'),
+
     
 
     'timezone' => 'America/La_Paz',

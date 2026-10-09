@@ -92,7 +92,7 @@ class EnvioCertificadoController extends Controller
         $dto = $this->createHandler->handle(new CreateEnvioCertificadoCommand(
             id_ins:         (int) $request->id_ins,
             departamento:   $request->departamento,
-            ciudad_destino: $this->normalizarCiudad($request->ciudad_destino),
+            ciudad_destino: $this->normalizarCiudad($request->ciudad_destino, $request->departamento),
             fecha_envio:    $request->fecha_envio,
             imagen_guia:    $imagenPath ?? '',
             aclaraciones:   $request->aclaraciones,
@@ -131,7 +131,7 @@ class EnvioCertificadoController extends Controller
 
         // Normalizar ciudad si viene
         if (isset($data['ciudad_destino'])) {
-            $data['ciudad_destino'] = $this->normalizarCiudad($data['ciudad_destino']);
+            $data['ciudad_destino'] = $this->normalizarCiudad($data['ciudad_destino'], $data['departamento'] ?? $envio->departamento);
         }
 
         $data['updated_at'] = now();
@@ -168,12 +168,14 @@ class EnvioCertificadoController extends Controller
             ->orderByDesc('frecuencia')
             ->limit(10);
 
-        if (strlen($query) >= 2) {
-            $q->where('ciudad_destino', 'like', "%{$query}%");
+        // Sin distinguir mayúsculas (PostgreSQL sí las distingue con LIKE)
+        if (mb_strlen($query) >= 2) {
+            $q->whereRaw('LOWER(ciudad_destino) LIKE ?', ['%'.mb_strtolower($query, 'UTF-8').'%']);
         }
 
+        // Incluye destinos antiguos guardados sin departamento
         if ($departamento) {
-            $q->where('departamento', $departamento);
+            $q->where(fn ($w) => $w->where('departamento', $departamento)->orWhereNull('departamento')->orWhere('departamento', ''));
         }
 
         $sugerencias = $q->pluck('ciudad_destino')->values();
@@ -183,9 +185,29 @@ class EnvioCertificadoController extends Controller
 
     // ── Helper: normalizar texto libre para evitar duplicados ─────────────
 
-    private function normalizarCiudad(string $ciudad): string
+    /**
+     * Si ya existe el mismo destino escrito de otra forma ("yanacachi sud yungas" vs
+     * "Yanacachi - Sud Yungas"), se reutiliza el ya registrado para no duplicarlo.
+     */
+    private function normalizarCiudad(string $ciudad, ?string $departamento = null): string
     {
-        // Trim + capitalizar primera letra de cada palabra
-        return mb_convert_case(trim($ciudad), MB_CASE_TITLE, 'UTF-8');
+        $limpia = preg_replace('/\s+/u', ' ', trim($ciudad));
+        $clave  = $this->claveCiudad($limpia);
+
+        $existente = DB::table('envios_certificado')
+            ->when($departamento, fn ($q) => $q->where(fn ($w) => $w->where('departamento', $departamento)->orWhereNull('departamento')->orWhere('departamento', '')))
+            ->distinct()
+            ->pluck('ciudad_destino')
+            ->first(fn ($c) => $this->claveCiudad((string) $c) === $clave);
+
+        return $existente ?? mb_convert_case($limpia, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /** Clave de comparación: sin mayúsculas, tildes, guiones ni espacios. */
+    private function claveCiudad(string $ciudad): string
+    {
+        $sinTildes = strtr(mb_strtolower($ciudad, 'UTF-8'), ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+
+        return preg_replace('/[^a-z0-9]/', '', $sinTildes);
     }
 }

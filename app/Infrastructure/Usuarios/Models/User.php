@@ -44,6 +44,12 @@ class User extends Authenticatable
         return $this->password_hash;
     }
 
+    /** Correo propio de "Olvidé mi contraseña" (el de Laravel apunta a una ruta web que no existe). */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
     public function roles()
     {
         return $this->belongsToMany(

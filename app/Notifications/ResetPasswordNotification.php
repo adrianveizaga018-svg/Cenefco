@@ -20,7 +20,7 @@ class ResetPasswordNotification extends Notification
             .'&email='.urlencode($notifiable->email);
 
         return (new MailMessage)
-            ->subject('Recuperación de contraseña — '.config('app.name'))
+            ->subject('Recuperación de contraseña — '.config('mail.from.name'))
             ->view('emails.reset-password', [
                 'url' => $url,
                 'user' => $notifiable,

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Usuarios;
 
 use App\Application\Usuarios\Services\IdentidadUnicaService;
+use App\Shared\Kernel\Support\FormatoPersona;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -15,10 +16,15 @@ class RegisterPublicoRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(array_map(
-            fn ($valor) => is_string($valor) ? trim($valor) : $valor,
-            $this->only(['email', 'ci', 'telefono']),
-        ));
+        // Mismo formato que Caja: "Keny Kartman", correo en minúsculas, carnet en mayúsculas
+        $this->merge(array_filter([
+            'nombre'           => FormatoPersona::nombre($this->input('nombre')),
+            'apellido'         => FormatoPersona::nombre($this->input('apellido')),
+            'apellido_materno' => FormatoPersona::nombre($this->input('apellido_materno')),
+            'email'            => FormatoPersona::email($this->input('email')),
+            'ci'               => FormatoPersona::ci($this->input('ci')),
+            'telefono'         => trim((string) $this->input('telefono')) ?: null,
+        ], fn ($v) => $v !== null));
     }
 
     public function rules(): array

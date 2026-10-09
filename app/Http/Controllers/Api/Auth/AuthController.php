@@ -18,6 +18,7 @@ use App\Application\Usuarios\Handlers\RegisterUserHandler;
 use App\Application\Usuarios\Handlers\ResetPasswordHandler;
 use App\Application\Usuarios\Handlers\UpdatePerfilHandler;
 use App\Application\Usuarios\Services\IdentidadUnicaService;
+use App\Shared\Kernel\Support\FormatoPersona;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Usuarios\ForgotPasswordRequest;
 use App\Http\Requests\Usuarios\LoginRequest;
@@ -180,9 +181,12 @@ class AuthController extends Controller
 
             return response()->json(['message' => 'Te enviamos un enlace de recuperación a tu correo.']);
         } catch (\RuntimeException $e) {
-            return response()->json(['error' => 'No encontramos una cuenta con ese correo electrónico.'], 404);
+            $status = in_array($e->getCode(), [404, 429], true) ? $e->getCode() : 422;
+
+            return response()->json(['error' => $e->getMessage()], $status);
         }
     }
+
     public function completeProfile(Request $request): JsonResponse
     {
         $request->validate([
@@ -195,10 +199,13 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        $request->merge([
-            'ci'       => trim($request->ci),
-            'telefono' => trim($request->telefono),
-        ]);
+        $request->merge(array_filter([
+            'ci'               => FormatoPersona::ci($request->ci),
+            'telefono'         => trim((string) $request->telefono),
+            'nombre'           => $request->has('nombre') ? FormatoPersona::nombre($request->nombre) : null,
+            'apellido'         => $request->has('apellido') ? FormatoPersona::nombre($request->apellido) : null,
+            'apellido_materno' => $request->has('apellido_materno') ? FormatoPersona::nombre($request->apellido_materno) : null,
+        ], fn ($v) => $v !== null));
 
         // El CI enlaza la cuenta con el historial académico: una vez fijado no se cambia desde aquí
         $errores = (! empty($user->ci) && $user->ci !== $request->ci)
@@ -240,6 +247,10 @@ class AuthController extends Controller
                 'estado' => 1,
                 'fecha_reg' => now(),
             ]);
+        } elseif (\Illuminate\Support\Facades\DB::table('t_pago')->where('id_us', $legacyUser->id_us)->where('estado', 1)->exists()) {
+            // Ya pagó antes de tener cuenta (p. ej. inscrito en Caja): entra directo como Estudiante
+            app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)->promoverPorIdUs($legacyUser->id_us);
+            $user->load('roles');
         }
 
         return response()->json([
@@ -256,6 +267,7 @@ class AuthController extends Controller
                 password: $request->password,
                 passwordConfirmation: $request->password_confirmation,
                 token: $request->token,
+                tipo: $request->input('tipo'),
             ));
 
             return response()->json(['message' => 'Contraseña restablecida exitosamente.']);

@@ -9,5 +9,6 @@ class ResetPasswordCommand
         public readonly string $password,
         public readonly string $passwordConfirmation,
         public readonly string $token,
+        public readonly ?string $tipo = null,
     ) {}
 }

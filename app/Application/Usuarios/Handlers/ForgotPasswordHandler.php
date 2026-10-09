@@ -11,8 +11,15 @@ class ForgotPasswordHandler
     {
         $status = Password::sendResetLink(['email' => $command->email]);
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw new \RuntimeException(__($status));
+        if ($status === Password::RESET_LINK_SENT) {
+            return;
         }
+
+        throw new \RuntimeException(match ($status) {
+            Password::INVALID_USER     => 'No encontramos una cuenta con ese correo electrónico.',
+            // Hay un enlace enviado hace segundos (p. ej. el correo de credenciales de Caja)
+            Password::RESET_THROTTLED  => 'Ya te enviamos un enlace hace un momento. Revisa tu correo, incluida la carpeta de spam, y espera un minuto antes de pedir otro.',
+            default                    => __($status),
+        }, $status === Password::INVALID_USER ? 404 : 429);
     }
 }

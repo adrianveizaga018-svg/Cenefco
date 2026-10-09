@@ -132,7 +132,7 @@ class InscripcionDiplomadoController extends Controller
     {
         $ci = trim((string) $request->get('ci', ''));
         if (strlen($ci) < 3) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         $usuario = DB::table('t_usuario')
@@ -142,7 +142,7 @@ class InscripcionDiplomadoController extends Controller
             ->first();
 
         if (! $usuario) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         return response()->json([
