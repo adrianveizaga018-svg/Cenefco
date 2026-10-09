@@ -207,17 +207,17 @@ export class InscripcionService {
     return this.http.post<any>(`${this.baseUrl}/${id}/reactivar`, {});
   }
 
-  previewTransferencia(id: number, idPlanDestino: number): Observable<PreviewTransferencia> {
+  previewTransferencia(id: number, idImpDestino: number, idPlanDestino: number): Observable<PreviewTransferencia> {
     return this.http.get<PreviewTransferencia>(
       `${this.baseUrl}/${id}/preview-transferencia`,
-      { params: { id_plan_destino: idPlanDestino } }
+      { params: { id_imp_destino: idImpDestino, id_plan_destino: idPlanDestino } }
     );
   }
 
   transferir(id: number, payload: {
     id_imp_destino:  number;
     id_plan_destino: number;
-    motivo?:         string;
+    motivo:          string;
   }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${id}/transferir`, payload);
   }

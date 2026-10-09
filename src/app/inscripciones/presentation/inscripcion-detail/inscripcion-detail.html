@@ -33,100 +33,74 @@
       </a>
       }
       <div class="flex items-center gap-2">
-        <a [routerLink]="['/cenefco/inscripcion-edit', d.inscripcion.id_ins]"
-          class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
-          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
-          Editar Inscripción
-        </a>
         <button type="button" (click)="abrirPago()" class="btn btn-sm bg-success text-white flex items-center gap-1.5">
           <div class="size-4"><ng-icon name="lucidePlus"></ng-icon></div>
           Registrar Pago
         </button>
-        @if (canAprobar()) {
-        <button type="button" (click)="toggleEnvioCertificado()"
-          class="btn btn-sm bg-blue-600 text-white flex items-center gap-1.5">
-          <div class="size-4"><ng-icon name="lucideTruck"></ng-icon></div>
-          Registrar Envíos
-        </button>
-        }
-        @if (!reglamento() && !reglamentoLoading()) {
-        <button type="button" (click)="cargarReglamento()"
-          class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
-          <div class="size-4"><ng-icon name="lucideFileEdit"></ng-icon></div>
-          Editar Reglamento
-        </button>
-        }
-        @if (reglamento() && !showEditor()) {
-        <button type="button" (click)="abrirEditor()"
-          class="btn btn-sm border border-violet-300 text-violet-700 hover:bg-violet-50 flex items-center gap-1.5">
-          <div class="size-4"><ng-icon name="lucidePencil"></ng-icon></div>
-          Editar Reglamento
-        </button>
-        }
-        @if (reglamentoLoading()) {
-        <div class="flex items-center gap-1.5 text-sm text-default-400">
-          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
-          Cargando...
-        </div>
-        }
-        <button type="button" (click)="descargarPdf()" [disabled]="descargandoPdf()"
-          class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
-          @if (descargandoPdf()) {
-          <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
-          Generando...
-          } @else {
-          <div class="size-4"><ng-icon name="lucideFileDown"></ng-icon></div>
-          Generar PDF
-          }
-        </button>
-        <button type="button" (click)="imprimir()"
-          class="btn btn-sm border border-default-300 text-default-600 flex items-center gap-1.5">
-          <div class="size-4"><ng-icon name="lucidePrinter"></ng-icon></div>
-          Imprimir PDF
-        </button>
 
-        <!-- Certificado individual -->
         <button type="button" (click)="emitirCertificadoIndividual()" [disabled]="emitiendoCertificado()"
           class="btn btn-sm bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 flex items-center gap-1.5 disabled:opacity-60">
           @if (emitiendoCertificado()) {
-            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Generando...
+            <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div> Revisando...
           } @else {
             <div class="size-4"><ng-icon name="lucideAward"></ng-icon></div> Emitir Certificado
           }
         </button>
 
-        <!-- Cambio de programa -->
-        @if (detalle()?.inscripcion?.estado === 1) {
-          <button type="button" (click)="abrirTransferencia()"
-            class="btn btn-sm bg-warning/10 text-warning border border-warning/20 hover:bg-warning/20 flex items-center gap-1.5">
-            <div class="size-4"><ng-icon name="lucideArrowLeftRight"></ng-icon></div>
-            Cambiar Programa
-          </button>
-        }
-
-        <!-- Dar de baja / Reactivar -->
-        @if (detalle()?.inscripcion?.estado === 1) {
-          <button type="button" (click)="darDeBaja()" [disabled]="procesandoBaja()"
-            class="btn btn-sm bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 flex items-center gap-1.5 disabled:opacity-60">
-            @if (procesandoBaja()) {
+        <!-- Acciones menos frecuentes -->
+        <div class="relative">
+          <button type="button" class="btn btn-sm border border-default-300 text-default-700 hover:bg-default-100 flex items-center gap-1.5"
+            aria-haspopup="menu" [attr.aria-expanded]="menuAcciones()" (click)="toggleMenuAcciones($event)">
+            @if (descargandoPdf() || reglamentoLoading() || procesandoBaja() || procesandoReactivar()) {
               <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
             } @else {
-              <div class="size-4"><ng-icon name="lucideUserX"></ng-icon></div>
+              <div class="size-4"><ng-icon name="lucideMoreHorizontal"></ng-icon></div>
             }
-            Dar de Baja
+            Más
           </button>
-        } @else if (detalle()?.inscripcion?.estado === 0) {
-          <button type="button" (click)="reactivarInscripcion()" [disabled]="procesandoReactivar()"
-            class="btn btn-sm bg-success/10 text-success border border-success/20 hover:bg-success/20 flex items-center gap-1.5 disabled:opacity-60">
-            @if (procesandoReactivar()) {
-              <div class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></div>
-            } @else {
-              <div class="size-4"><ng-icon name="lucideUserCheck"></ng-icon></div>
-            }
-            Reactivar
-          </button>
-        }
+          @if (menuAcciones()) {
+            <div role="menu" class="absolute end-0 top-full mt-1 z-40 w-64 rounded-lg border border-default-200 bg-white py-1.5 shadow-lg text-sm"
+              (click)="$event.stopPropagation()">
+              <a role="menuitem" [routerLink]="['/cenefco/inscripcion-edit', d.inscripcion.id_ins]"
+                class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-default-100 text-default-700">
+                <div class="size-4 text-default-500"><ng-icon name="lucidePencil"></ng-icon></div> Editar inscripción
+              </a>
+              @if (d.inscripcion.estado === 1) {
+                <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 text-default-700"
+                  (click)="cerrarMenuAcciones(); abrirTransferencia()">
+                  <div class="size-4 text-warning"><ng-icon name="lucideArrowLeftRight"></ng-icon></div> Cambiar de programa
+                </button>
+              }
 
+              <div class="border-t border-default-200 my-1.5"></div>
+              <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 text-default-700 disabled:opacity-50"
+                [disabled]="descargandoPdf()" (click)="cerrarMenuAcciones(); descargarPdf()">
+                <div class="size-4 text-danger"><ng-icon name="lucideFileDown"></ng-icon></div> Comprobante de inscripción (PDF)
+              </button>
+              <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 text-default-700"
+                (click)="cerrarMenuAcciones(); imprimir()">
+                <div class="size-4 text-default-500"><ng-icon name="lucidePrinter"></ng-icon></div> Imprimir ficha con reglamento
+              </button>
+              <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-default-100 text-default-700"
+                (click)="cerrarMenuAcciones(); editarReglamento()">
+                <div class="size-4 text-violet-600"><ng-icon name="lucideFileEdit"></ng-icon></div> Editar reglamento del programa
+              </button>
+
+              <div class="border-t border-default-200 my-1.5"></div>
+              @if (d.inscripcion.estado === 1) {
+                <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-danger/10 text-danger disabled:opacity-50"
+                  [disabled]="procesandoBaja()" (click)="cerrarMenuAcciones(); darDeBaja()">
+                  <div class="size-4"><ng-icon name="lucideUserX"></ng-icon></div> Dar de baja
+                </button>
+              } @else if (d.inscripcion.estado === 0) {
+                <button type="button" role="menuitem" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-start hover:bg-success/10 text-success disabled:opacity-50"
+                  [disabled]="procesandoReactivar()" (click)="cerrarMenuAcciones(); reactivarInscripcion()">
+                  <div class="size-4"><ng-icon name="lucideUserCheck"></ng-icon></div> Reactivar inscripción
+                </button>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
 
@@ -400,7 +374,7 @@
     }
 
     @if (showEditor()) {
-    <div class="card mb-5 border border-violet-200">
+    <div id="editor-reglamento" class="card mb-5 border border-violet-200">
       <div class="card-header border-b border-violet-200">
         <div class="flex items-center gap-2">
           <div class="size-4 text-violet-600"><ng-icon name="lucideFileEdit"></ng-icon></div>
@@ -648,10 +622,46 @@
                 class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0">
                 {{ d.inscripcion.estudiante_nombre ? d.inscripcion.estudiante_nombre[0].toUpperCase() : '?' }}
               </div>
-              <div>
+              <div class="min-w-0">
                 <p class="font-semibold text-default-800">{{ d.inscripcion.estudiante_nombre || '—' }}</p>
+                @if (d.inscripcion.est_ci) {
+                  <p class="text-xs text-default-500">CI {{ d.inscripcion.est_ci }}</p>
+                }
               </div>
             </div>
+
+            <div class="space-y-1.5 text-sm">
+              <div class="flex items-center gap-2 text-default-600 min-w-0">
+                <span class="size-3.5 shrink-0 text-default-400"><ng-icon name="lucideMail"></ng-icon></span>
+                <span class="truncate">{{ d.inscripcion.est_email || 'Sin correo registrado' }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-default-600">
+                <span class="size-3.5 shrink-0 text-default-400"><ng-icon name="lucidePhone"></ng-icon></span>
+                <span>{{ d.inscripcion.est_celular || 'Sin celular registrado' }}</span>
+              </div>
+            </div>
+
+            <a [routerLink]="['/cenefco/estudiantes', d.inscripcion.id_us]"
+              class="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+              <span class="size-3.5"><ng-icon name="lucideUserSearch"></ng-icon></span>
+              Ver ficha completa: todos sus programas y certificados
+            </a>
+
+            @if (puedeEnviarCredenciales) {
+              <div class="pt-3 border-t border-default-200">
+                <button type="button"
+                  class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-default-300 bg-white text-default-700 hover:bg-default-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  [disabled]="!d.inscripcion.est_email || enviandoCredenciales()"
+                  [title]="d.inscripcion.est_email ? 'Envía al estudiante el enlace para crear o cambiar su contraseña' : 'Registra su correo para poder enviarle credenciales'"
+                  (click)="enviarCredenciales(d.inscripcion.id_us, d.inscripcion.est_email)">
+                  @if (enviandoCredenciales()) {
+                    <span class="size-3.5 animate-spin"><ng-icon name="lucideLoader"></ng-icon></span> Enviando...
+                  } @else {
+                    <span class="size-3.5"><ng-icon name="lucideKeyRound"></ng-icon></span> Enviar credenciales de acceso
+                  }
+                </button>
+              </div>
+            }
           </div>
         </div>
 
@@ -919,7 +929,62 @@
           }
         </div>
 
-        @if (d.todas_cuotas.length > 0) {
+        @if (d.cuotas_inscripcion?.length) {
+        <div class="card">
+          <div class="card-header border-b border-default-200">
+            <div class="flex items-center gap-2">
+              <div class="size-4 text-primary"><ng-icon name="lucideCalendarDays"></ng-icon></div>
+              <h6 class="text-sm font-semibold text-default-800">Plan de Cuotas</h6>
+            </div>
+            @if (d.plan) {
+            <span class="text-xs text-default-500">{{ d.plan.titulo }}</span>
+            }
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default-100">
+              <thead class="bg-default-50">
+                <tr class="text-xs text-default-500 uppercase">
+                  <th class="px-4 py-2.5 text-start">Cuota</th>
+                  <th class="px-4 py-2.5 text-start">Concepto</th>
+                  <th class="px-4 py-2.5 text-end">Monto</th>
+                  <th class="px-4 py-2.5 text-end">Pagado</th>
+                  <th class="px-4 py-2.5 text-start">Vence</th>
+                  <th class="px-4 py-2.5 text-center">Estado</th>
+                  <th class="px-4 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default-100">
+                @for (c of d.cuotas_inscripcion; track c.id) {
+                <tr class="text-sm hover:bg-default-50" [class.bg-danger/5]="cuotaVencida(c)">
+                  <td class="px-4 py-2.5 font-medium text-default-700">{{ c.nro_cuota }}</td>
+                  <td class="px-4 py-2.5 text-default-600">{{ c.descripcion }}</td>
+                  <td class="px-4 py-2.5 text-end font-semibold">Bs. {{ c.monto_a_pagar | number:'1.2-2' }}</td>
+                  <td class="px-4 py-2.5 text-end text-default-600">Bs. {{ c.monto_pagado | number:'1.2-2' }}</td>
+                  <td class="px-4 py-2.5 text-xs" [class]="cuotaVencida(c) ? 'text-danger font-semibold' : 'text-default-500'">
+                    {{ c.fecha_vencimiento ? (c.fecha_vencimiento | slice:0:10) : '—' }}{{ cuotaVencida(c) ? ' · vencida' : '' }}
+                  </td>
+                  <td class="px-4 py-2.5 text-center">
+                    @switch (c.estado) {
+                      @case ('pagado') { <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success">Pagada</span> }
+                      @case ('parcial') { <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Parcial · faltan Bs. {{ saldoCuota(c) | number:'1.2-2' }}</span> }
+                      @default { <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-default-100 text-default-600">Pendiente</span> }
+                    }
+                  </td>
+                  <td class="px-4 py-2.5 text-center">
+                    @if (c.estado !== 'pagado') {
+                    <button type="button" (click)="pagarCuotaInscripcion(c)"
+                      class="text-xs px-2 py-1 rounded bg-success/10 border border-success/30 text-success hover:bg-success/20 whitespace-nowrap">
+                      Pagar
+                    </button>
+                    }
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        } @else if (d.todas_cuotas.length > 0) {
         <div class="card">
           <div class="card-header border-b border-default-200">
             <div class="flex items-center gap-2">
@@ -1676,10 +1741,44 @@
           </div>
         }
 
-        @if (transferPreview()) {
+        @if (transferPreview(); as tp) {
+          @for (aviso of tp.advertencias; track aviso) {
+            <div class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+              <ng-icon name="lucideAlertTriangle" class="size-4 shrink-0 mt-px" /> {{ aviso }}
+            </div>
+          }
+
+          <!-- Resumen del dinero -->
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="rounded-lg border border-default-200 px-2 py-2.5">
+              <p class="text-[11px] text-default-500">Ya pagó</p>
+              <p class="text-sm font-bold text-success">Bs. {{ tp.total_pagado_origen | number:'1.2-2' }}</p>
+            </div>
+            <div class="rounded-lg border border-default-200 px-2 py-2.5">
+              <p class="text-[11px] text-default-500">Costo nuevo plan</p>
+              <p class="text-sm font-bold text-default-800">Bs. {{ tp.total_nuevo_plan | number:'1.2-2' }}</p>
+            </div>
+            @if (tp.saldo_a_favor > 0) {
+              <div class="rounded-lg border border-amber-300 bg-amber-50 px-2 py-2.5">
+                <p class="text-[11px] text-amber-700">Saldo a favor</p>
+                <p class="text-sm font-bold text-amber-700">Bs. {{ tp.saldo_a_favor | number:'1.2-2' }}</p>
+              </div>
+            } @else {
+              <div class="rounded-lg border border-default-200 px-2 py-2.5">
+                <p class="text-[11px] text-default-500">Quedará debiendo</p>
+                <p class="text-sm font-bold" [class]="tp.saldo_pendiente > 0 ? 'text-danger' : 'text-success'">Bs. {{ tp.saldo_pendiente | number:'1.2-2' }}</p>
+              </div>
+            }
+          </div>
+          @if (tp.saldo_a_favor > 0) {
+            <p class="text-xs text-amber-700 -mt-1">
+              El sobrante de Bs. {{ tp.saldo_a_favor | number:'1.2-2' }} se registrará como <strong>devolución pendiente</strong> para que se apruebe en Pagos → Devoluciones.
+            </p>
+          }
+
           <div class="rounded-xl border border-default-200 overflow-hidden">
             <div class="px-4 py-2.5 bg-default-50 border-b border-default-100 flex justify-between items-center">
-              <p class="text-xs font-semibold text-default-600 uppercase tracking-wide">Distribución automática</p>
+              <p class="text-xs font-semibold text-default-600 uppercase tracking-wide">Cuotas del nuevo plan</p>
               <div class="flex gap-3 text-xs">
                 <span class="text-default-500">Transferido: <strong class="text-primary">Bs. {{ transferPreview()!.total_pagado_origen | number:'1.2-2' }}</strong></span>
                 <span class="text-default-500">Nuevo plan: <strong>Bs. {{ transferPreview()!.total_nuevo_plan | number:'1.2-2' }}</strong></span>
@@ -1728,9 +1827,9 @@
           <!-- Motivo -->
           <div>
             <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">
-              Motivo del cambio (opcional)
+              Motivo del cambio <span class="text-danger">*</span>
             </label>
-            <input type="text" class="form-input w-full text-sm"
+            <input type="text" class="form-input w-full text-sm" required
                    [ngModel]="transferMotivo()" (ngModelChange)="transferMotivo.set($event)"
                    placeholder="Ej: Solicitud del estudiante, cambio de horario...">
           </div>
@@ -1746,7 +1845,7 @@
         </button>
         <button type="button"
                 class="flex-1 btn bg-warning text-white text-sm font-semibold shadow-sm shadow-warning/30"
-                [disabled]="!transferPreview() || transferProcesando()"
+                [disabled]="!transferPreview() || transferProcesando() || transferMotivo().trim().length < 5"
                 (click)="confirmarTransferencia()">
           @if (transferProcesando()) {
             <div class="size-4 animate-spin me-2"><ng-icon name="lucideLoader" /></div> Procesando...

@@ -53,8 +53,21 @@ export interface CampoFormularioDefinicion {
   clave_raiz?:  ClaveRaiz | null;
 }
 
+/** Cuota del cronograma propio de la inscripción: lo pagado sale de repartir todos sus pagos. */
+export interface CuotaInscripcion {
+  id:                    number;
+  id_fechapago_template: number | null;
+  nro_cuota:             number;
+  descripcion:           string;
+  monto_a_pagar:         number;
+  monto_pagado:          number;
+  fecha_vencimiento:     string | null;
+  estado:                'pagado' | 'parcial' | 'pendiente';
+}
+
 export interface InscripcionDetalle {
   compromiso_cobro: CompromisoCobro | null;
+  cuotas_inscripcion?: CuotaInscripcion[];
   inscripcion: Inscripcion & {
     est_appaterno:   string | null;
     est_apmaterno:   string | null;
@@ -241,5 +254,11 @@ export interface CuotaDistribucion {
 export interface PreviewTransferencia {
   total_pagado_origen: number;
   total_nuevo_plan:    number;
+  /** Lo que el estudiante quedará debiendo en el programa nuevo */
+  saldo_pendiente:     number;
+  /** Lo pagado que excede el costo del programa nuevo: se registra como devolución pendiente */
+  saldo_a_favor:       number;
   distribucion:        CuotaDistribucion[];
+  /** Avisos que no bloquean (p. ej. "el programa de origen ya empezó") */
+  advertencias:        string[];
 }

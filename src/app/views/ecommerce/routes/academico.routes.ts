@@ -35,6 +35,8 @@ import { Inscripciones }         from '../../../inscripciones/presentation/inscr
 import { InscripcionCreate }     from '../../../inscripciones/presentation/inscripcion-create/inscripcion-create'
 import { InscripcionEdit }       from '../../../inscripciones/presentation/inscripcion-edit/inscripcion-edit'
 import { InscripcionDetail }     from '../../../inscripciones/presentation/inscripcion-detail/inscripcion-detail'
+import { FichaEstudianteComponent } from '../../../fichas-estudiante/presentation/ficha-estudiante/ficha-estudiante'
+import { DevolucionesComponent } from '../../../devoluciones/presentation/devoluciones/devoluciones'
 import { InscripcionReportes }   from '../../../inscripciones/presentation/inscripcion-reportes/inscripcion-reportes'
 
 import { PagosAcademicos } from '../../../pagos-academicos/presentation/pagos-academicos/pagos-academicos'
@@ -180,6 +182,9 @@ export const ACADEMICO_ROUTES: Routes = [
     { path: 'cenefco/inscripcion-create',      component: InscripcionCreate,  data: { title: 'Nueva Inscripción' } },
     { path: 'cenefco/inscripcion-edit/:id',    component: InscripcionEdit,    data: { title: 'Editar Inscripción' } },
     { path: 'cenefco/inscripcion-detail/:id',  component: InscripcionDetail,  data: { title: 'Detalle de Inscripción' } },
+    { path: 'cenefco/estudiantes',             component: FichaEstudianteComponent, data: { title: 'Estudiantes' } },
+    { path: 'cenefco/estudiantes/:idUs',       component: FichaEstudianteComponent, data: { title: 'Ficha del Estudiante' } },
+    { path: 'cenefco/devoluciones',            component: DevolucionesComponent, data: { title: 'Devoluciones' } },
 
     { path: 'cenefco/pagos-academicos',    component: PagosAcademicos, data: { title: 'Pagos Académicos' } },
     { path: 'cenefco/pago-create',         component: PagoCreate,      data: { title: 'Registrar Pago' } },

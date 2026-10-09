@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
@@ -6,7 +6,7 @@ import { DecimalPipe, SlicePipe, TitleCasePipe, UpperCasePipe } from '@angular/c
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { InscripcionService } from '../../application/services/inscripcion.service';
-import { InscripcionDetalle, type CuotaItem, type PagoItem } from '../../domain/models/inscripcion.model';
+import { InscripcionDetalle, type CuotaItem, type CuotaInscripcion, type PagoItem } from '../../domain/models/inscripcion.model';
 import { ReglamentoPrograma } from '../../../ventas/domain/models/reglamento.model';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
@@ -17,7 +17,7 @@ import { TipoBanco } from '../../../tipos-banco/domain/models/tipo-banco.model';
 import { EnvioCertificadoService } from '../../../envios-certificado/application/services/envio-certificado.service';
 import { EnvioCertificado } from '../../../envios-certificado/domain/models/envio-certificado.model';
 import { CompromisoCobroService } from '../../../compromisos-cobro/application/services/compromiso-cobro.service';
-import { CertificadoService } from '../../../certificados/application/services/certificado.service';
+import { EmisionCertificadoService } from '../../../fichas-estudiante/application/services/emision-certificado.service';
 import { CajaService } from '../../../caja/application/services/caja.service';
 import {
   CompromisoCobroLog,
@@ -48,14 +48,47 @@ export class InscripcionDetail implements OnInit, OnDestroy {
   private tipoBancoService = inject(TipoBancoService);
   private envioCertService = inject(EnvioCertificadoService);
   private compromisoCobroService = inject(CompromisoCobroService);
-  private certSvc  = inject(CertificadoService);
   private cajaSvc  = inject(CajaService);
+  private emisionCertificado = inject(EmisionCertificadoService);
 
   canAprobar = computed(() => {
     const user = this.auth.currentUser();
     const role = (user as any)?.role_nombre ?? (user as any)?.rolNombre ?? '';
     return role.toLowerCase() === 'admin';
   });
+
+  get puedeEnviarCredenciales(): boolean { return this.auth.hasPermission('inscripciones.crear'); }
+
+  enviandoCredenciales = signal(false);
+
+  /** Envía (o reenvía) al estudiante el correo con el enlace para crear su contraseña. */
+  enviarCredenciales(idUs: number, email: string | null): void {
+    if (!email || this.enviandoCredenciales()) return;
+
+    Swal.fire({
+      title: '¿Enviar credenciales de acceso?',
+      html: `<p class="text-sm text-gray-700">Se enviará a <strong>${email.replace(/[<>&"']/g, '')}</strong> un enlace para crear o cambiar su contraseña.</p>
+             <p class="text-xs text-gray-500 mt-2">Si aún no tiene cuenta en la plataforma, se le crea una.</p>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#16a34a',
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.enviandoCredenciales.set(true);
+      this.cajaSvc.enviarCredenciales(idUs).subscribe({
+        next: (res) => {
+          this.enviandoCredenciales.set(false);
+          this.toast.success('Credenciales enviadas', `Correo enviado a ${res.email}.`);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.enviandoCredenciales.set(false);
+          this.toast.error('No se enviaron', extractErrorMessage(err, 'No se pudieron enviar las credenciales.'));
+        },
+      });
+    });
+  }
 
   get puedeCrearCompromiso(): boolean { return this.auth.hasPermission('compromisos-cobro.crear'); }
   get puedeEditarCompromiso(): boolean { return this.auth.hasPermission('compromisos-cobro.editar'); }
@@ -379,6 +412,28 @@ export class InscripcionDetail implements OnInit, OnDestroy {
     if (!d || total == null) return null;
     const yaPagadoSinEsteRegistro = d.resumen.total_pagado - (this.pagoMontoOriginal() ?? 0);
     return Math.max(0, total - yaPagadoSinEsteRegistro);
+  }
+
+  /** Cobrar el saldo de una cuota del cronograma (la parcial cobra solo lo que falta). */
+  pagarCuotaInscripcion(c: CuotaInscripcion): void {
+    this.abrirPago({
+      id_fechapago:  c.id_fechapago_template ?? 0,
+      nro_pago:      String(c.nro_cuota),
+      monto_a_pagar: this.saldoCuota(c),
+      tipo_tramite:  c.descripcion,
+      fecha_inicio:  null,
+      fecha_fin:     c.fecha_vencimiento,
+      obligatorio:   1,
+    });
+    if (!c.id_fechapago_template) this.pagoIdFechapago.set(null);
+  }
+
+  saldoCuota(c: CuotaInscripcion): number {
+    return Math.max(0, Math.round((Number(c.monto_a_pagar) - Number(c.monto_pagado)) * 100) / 100);
+  }
+
+  cuotaVencida(c: CuotaInscripcion): boolean {
+    return c.estado !== 'pagado' && !!c.fecha_vencimiento && c.fecha_vencimiento < new Date().toISOString().slice(0, 10);
   }
 
   abrirPago(cuota?: CuotaItem): void {
@@ -757,10 +812,13 @@ export class InscripcionDetail implements OnInit, OnDestroy {
     this.transferPreview.set(null);
     // Cargar preview automáticamente
     this.transferCargandoPreview.set(true);
-    this.service.previewTransferencia(this.id, plan.id_plan).subscribe({
+    const imp = this.transferImpSel();
+    if (!imp) { this.transferCargandoPreview.set(false); return; }
+    this.service.previewTransferencia(this.id, imp.id_imp, plan.id_plan).subscribe({
       next: p => { this.transferPreview.set(p); this.transferCargandoPreview.set(false); },
       error: (err: HttpErrorResponse) => {
-        this.toast.error('Error', extractErrorMessage(err, 'No se pudo calcular la transferencia.'));
+        // Bloqueos (ya inscrito, certificado emitido, plan no habilitado…): se muestran tal cual
+        Swal.fire({ icon: 'warning', title: 'No se puede cambiar', text: extractErrorMessage(err, 'No se pudo calcular el cambio.'), confirmButtonColor: '#0B4258' });
         this.transferCargandoPreview.set(false);
       },
     });
@@ -770,7 +828,11 @@ export class InscripcionDetail implements OnInit, OnDestroy {
     const imp  = this.transferImpSel();
     const plan = this.transferPlanSel();
     if (!imp || !plan) return;
-    const motivo = this.transferMotivo().trim() || 'Cambio de programa solicitado por el estudiante';
+    const motivo = this.transferMotivo().trim();
+    if (motivo.length < 5) {
+      this.toast.warning('Falta el motivo', 'Escribe el motivo del cambio de programa.');
+      return;
+    }
 
     this.transferProcesando.set(true);
     this.service.transferir(this.id, {
@@ -785,7 +847,10 @@ export class InscripcionDetail implements OnInit, OnDestroy {
           icon: 'success',
           title: '¡Transferencia completada!',
           html: `<p class="text-sm">La inscripción fue transferida correctamente.<br>
-                 Nueva inscripción: <strong>#${res.id_ins_destino}</strong></p>`,
+                 Nueva inscripción: <strong>#${res.id_ins_destino}</strong></p>
+                 ${res.saldo_a_favor > 0
+                   ? `<p class="text-sm mt-3 text-amber-700">Se registró una <strong>devolución pendiente de Bs. ${Number(res.saldo_a_favor).toFixed(2)}</strong>. Revísala en <strong>Inscripciones y Pagos → Devoluciones</strong>.</p>`
+                   : ''}`,
           confirmButtonText: 'Ver nueva inscripción',
           showCancelButton: true,
           cancelButtonText: 'Cerrar',
@@ -806,99 +871,20 @@ export class InscripcionDetail implements OnInit, OnDestroy {
 
   // ── CERTIFICADO INDIVIDUAL ────────────────────────────────────────────
 
-  emitirCertificadoIndividual(): void {
-    const d = this.detalle();
-    if (!d) return;
-    const ins = d.inscripcion;
+  /**
+   * Emite el certificado SOLO de esta inscripción, con las plantillas asignadas a su programa.
+   * La API valida que no deba nada (antes se generaba para todo el grupo de la versión).
+   */
+  async emitirCertificadoIndividual(): Promise<void> {
+    const ins = this.detalle()?.inscripcion;
+    if (!ins || this.emitiendoCertificado()) return;
 
-    // Verificar pago completo
-    const resumen = d.resumen as any;
-    const pendiente = resumen?.pendiente ?? resumen?.total_pendiente ?? null;
-    const pagoCompleto = pendiente !== null ? pendiente <= 0 : false;
-
-    if (!pagoCompleto) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Pago incompleto',
-        html: `<p class="text-sm">El estudiante tiene un saldo pendiente de <strong>Bs. ${Math.abs(pendiente ?? 0).toFixed(2)}</strong>.<br>
-               Solo se emiten certificados a estudiantes con pago completo.</p>`,
-        confirmButtonText: 'Entendido',
-      });
-      return;
+    this.emitiendoCertificado.set(true);
+    try {
+      await this.emisionCertificado.emitir(ins.id_ins, ins.estudiante_nombre ?? "el estudiante");
+    } finally {
+      this.emitiendoCertificado.set(false);
     }
-
-    // Cargar plantillas
-    Swal.fire({ title: 'Cargando plantillas...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
-
-    this.certSvc.getPlantillas({ soloActivos: true }).subscribe({
-      next: (plantRes) => {
-        Swal.close();
-        if (!plantRes.data.length) {
-          Swal.fire({
-            icon: 'error',
-            title: '🚫 Sin plantilla',
-            html: '<p class="text-sm">No hay plantillas de certificado configuradas. Ve a <b>Certificados → Plantillas</b> y crea una.</p>',
-            confirmButtonText: 'Entendido',
-            confirmButtonColor: '#e74c3c',
-          });
-          return;
-        }
-
-        const opciones = plantRes.data.reduce<Record<number, string>>((acc, p) => {
-          acc[p.id] = p.nombre ?? `Plantilla #${p.id}`;
-          return acc;
-        }, {});
-
-        Swal.fire({
-          icon: 'question',
-          title: '¿Emitir certificado?',
-          html: `<p class="text-sm text-gray-700 mb-3">Se generará un certificado para <strong>${ins.estudiante_nombre}</strong>.</p>
-                 <div class="text-left">
-                   <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Plantilla</label>
-                   <select id="plantilla-ind" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                     ${Object.entries(opciones).map(([id, nombre]) => `<option value="${id}">${nombre}</option>`).join('')}
-                   </select>
-                 </div>`,
-          showCancelButton: true,
-          confirmButtonText: '🎓 Emitir',
-          cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#2563eb',
-          allowOutsideClick: false,
-          preConfirm: () => {
-            const sel = document.getElementById('plantilla-ind') as HTMLSelectElement;
-            return sel ? Number(sel.value) : null;
-          },
-        }).then(result => {
-          if (!result.isConfirmed || !result.value) return;
-
-          this.emitiendoCertificado.set(true);
-          Swal.fire({ title: 'Generando...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
-
-          this.certSvc.generarLote(ins.id_imp as number, result.value).subscribe({
-            next: (res: any) => {
-              this.emitiendoCertificado.set(false);
-              Swal.fire({
-                icon: 'success',
-                title: '¡Certificado emitido!',
-                html: `<p class="text-sm">El certificado de <strong>${ins.estudiante_nombre}</strong> fue generado correctamente.</p>`,
-                confirmButtonText: 'Ver certificados',
-                showCancelButton: true,
-                cancelButtonText: 'Cerrar',
-              }).then(r2 => {
-                if (r2.isConfirmed) {
-                  window.open(`/cenefco/certificados?imparte_id=${ins.id_imp}`, '_blank');
-                }
-              });
-            },
-            error: (err: any) => {
-              this.emitiendoCertificado.set(false);
-              Swal.fire('Error', err?.error?.message ?? 'No se pudo generar el certificado.', 'error');
-            },
-          });
-        });
-      },
-      error: () => { Swal.close(); Swal.fire('Error', 'No se pudieron cargar las plantillas.', 'error'); },
-    });
   }
 
   guardarDevolucion(): void {
@@ -1231,6 +1217,37 @@ export class InscripcionDetail implements OnInit, OnDestroy {
   }
 
   cerrarEditor(): void { this.showEditor.set(false); }
+
+  // ── Menú "Más" de la barra superior ────────────────────────────────────────
+  menuAcciones = signal(false);
+
+  toggleMenuAcciones(event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuAcciones.update(v => !v);
+  }
+
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  cerrarMenuAcciones(): void {
+    this.menuAcciones.set(false);
+  }
+
+  /** Carga el reglamento del programa (si hace falta) y abre el editor. */
+  editarReglamento(): void {
+    const abrir = () => {
+      this.abrirEditor();
+      setTimeout(() => document.getElementById('editor-reglamento')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    };
+    if (this.reglamento()) { abrir(); return; }
+
+    const idRef = this.idProgramaRef();
+    if (!idRef) { this.toast.warning('Sin programa', 'No se encontró el programa de esta inscripción.'); return; }
+    this.reglamentoLoading.set(true);
+    this.service.getReglamento(idRef).subscribe({
+      next: r => { this.reglamento.set(r); this.reglamentoLoading.set(false); abrir(); },
+      error: () => { this.reglamentoLoading.set(false); this.toast.error('Error', 'No se pudo cargar el reglamento.'); },
+    });
+  }
 
   getDraft(campo: string): string {
     return (this.draft() as Record<string, string>)[campo] ?? '';

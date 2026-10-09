@@ -1,0 +1,93 @@
+<main>
+  <app-page-title title="Devoluciones" subtitle="Pagos" />
+
+  <!-- Resumen -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 max-w-2xl">
+    <div class="rounded-xl border px-5 py-4"
+      [class]="pendientes() > 0 ? 'border-amber-300 bg-amber-50' : 'border-default-200 bg-white'">
+      <p class="text-xs" [class]="pendientes() > 0 ? 'text-amber-700' : 'text-default-500'">Por resolver</p>
+      <p class="text-2xl font-bold" [class]="pendientes() > 0 ? 'text-amber-700' : 'text-success'">
+        {{ pendientes() > 0 ? pendientes() + ' devolución(es)' : 'Ninguna' }}
+      </p>
+    </div>
+    <div class="rounded-xl border border-default-200 bg-white px-5 py-4">
+      <p class="text-xs text-default-500">Monto pendiente de devolver</p>
+      <p class="text-2xl font-bold text-default-800">Bs. {{ montoPendiente() | number:'1.2-2' }}</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header flex flex-wrap items-center justify-between gap-3">
+      <div class="inline-flex rounded-lg border border-default-200 overflow-hidden" role="tablist" aria-label="Filtrar por estado">
+        @for (f of filtros; track f.valor) {
+          <button type="button" role="tab" class="px-3.5 py-1.5 text-xs font-semibold transition-colors"
+            [attr.aria-selected]="filtro() === f.valor"
+            [class]="filtro() === f.valor ? 'bg-primary text-white' : 'bg-white text-default-600 hover:bg-default-100'"
+            (click)="cambiarFiltro(f.valor)">
+            {{ f.etiqueta }}
+            @if (f.valor === 'pendiente' && pendientes() > 0) {
+              <span class="ms-1 px-1.5 rounded-full text-[10px]"
+                [class]="filtro() === f.valor ? 'bg-white/25' : 'bg-amber-100 text-amber-700'">{{ pendientes() }}</span>
+            }
+          </button>
+        }
+      </div>
+      <p class="text-xs text-default-500">Se crean solas al cambiar de programa cuando el estudiante pagó más de lo que cuesta el nuevo.</p>
+    </div>
+
+    @if (cargando()) {
+      <div class="flex items-center justify-center gap-2 py-14 text-sm text-default-500">
+        <span class="size-4 animate-spin"><ng-icon name="lucideLoader"></ng-icon></span> Cargando...
+      </div>
+    } @else if (devoluciones().length === 0) {
+      <div class="py-14 text-center">
+        <span class="size-10 inline-block text-success/50"><ng-icon name="lucideCheckCircle"></ng-icon></span>
+        <p class="mt-2 text-sm text-default-600">
+          {{ filtro() === 'pendiente' ? 'No hay devoluciones por resolver.' : 'No hay devoluciones en este estado.' }}
+        </p>
+      </div>
+    } @else {
+      <div class="divide-y divide-default-200">
+        @for (d of devoluciones(); track d.id) {
+          <div class="flex flex-wrap items-start gap-4 px-5 py-4">
+            <div class="flex-1 min-w-60">
+              <div class="flex items-center gap-2">
+                <a [routerLink]="['/cenefco/estudiantes', d.id_us]" class="font-semibold text-default-800 hover:text-primary hover:underline">
+                  {{ d.estudiante || 'Estudiante' }}
+                </a>
+                <span class="text-xs text-default-500">CI {{ d.ci || '—' }}</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize" [class]="claseEstado(d.estado)">{{ d.estado }}</span>
+              </div>
+              <p class="text-sm text-default-600 mt-0.5">{{ d.programa || 'Programa' }}</p>
+              @if (d.motivo) {
+                <p class="text-xs text-default-500 mt-1">{{ d.motivo }}</p>
+              }
+              <p class="text-[11px] text-default-400 mt-1">
+                Registrada el {{ d.created_at | date:'dd/MM/yyyy HH:mm' }}{{ d.registrado_por_nombre ? ' por ' + d.registrado_por_nombre : '' }}
+                · <a [routerLink]="['/cenefco/inscripcion-detail', d.id_ins]" class="hover:underline">Inscripción #{{ d.id_ins }}</a>
+              </p>
+              @if (d.nota_respuesta) {
+                <p class="text-xs mt-1.5 px-2.5 py-1.5 rounded bg-default-50 text-default-600">
+                  <strong>Respuesta:</strong> {{ d.nota_respuesta }}
+                  @if (d.fecha_respuesta) { <span class="text-default-400">({{ d.fecha_respuesta | date:'dd/MM/yyyy' }})</span> }
+                </p>
+              }
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-lg font-bold text-default-800">Bs. {{ d.monto | number:'1.2-2' }}</span>
+              @if (d.estado === 'pendiente' && puedeResolver) {
+                <button type="button" class="btn btn-sm bg-success text-white" [disabled]="procesandoId() === d.id" (click)="resolver(d, 'aprobada')">
+                  Aprobar
+                </button>
+                <button type="button" class="btn btn-sm border border-danger/30 text-danger hover:bg-danger/10" [disabled]="procesandoId() === d.id" (click)="resolver(d, 'rechazada')">
+                  Rechazar
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</main>
