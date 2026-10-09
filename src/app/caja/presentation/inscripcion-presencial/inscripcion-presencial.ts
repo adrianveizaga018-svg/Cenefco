@@ -8,6 +8,7 @@ import { AuthService } from '../../../auth/application/services/auth.service';
 import { SettingsService } from '../../../common/application/services/settings.service';
 import { EnvioCertificadoService } from '../../../envios-certificado/application/services/envio-certificado.service';
 import { DEPARTAMENTOS_BOLIVIA } from '../../../envios-certificado/domain/models/envio-certificado.model';
+import { portalUrl } from '../../../constants';
 
 @Component({
   selector: 'app-inscripcion-presencial',
@@ -24,6 +25,9 @@ export default class InscripcionPresencialComponent implements OnInit {
 
   siteLogo   = signal<string | null>(null);
   siteNombre = signal<string>('CENEFCO');
+
+  /** Dirección del portal para indicar al estudiante dónde crear su cuenta, p. ej. "cenefco.com". */
+  readonly portalAcceso = portalUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
   // ── Sección de Envío a provincia ─────────────────────────────────────────
   readonly DEPARTAMENTOS = DEPARTAMENTOS_BOLIVIA;
@@ -228,7 +232,119 @@ Titular: ${banco.titular || '-'}`;
     });
   }
 
+  /**
+   * Al escribir el carnet a mano (sin "Buscar"), avisa si ya existe alguien con ese carnet
+   * y ofrece cargar sus datos, para no llegar al final con un error de duplicado.
+   */
+  verificarCiExistente() {
+    const ci = (this.formEstudiante.value.ci ?? '').trim();
+    if (this.estudianteEncontrado() || ci.length < 3 || ci === this.ultimoCiVerificado) return;
+    this.ultimoCiVerificado = ci;
+
+    this.cajaSvc.buscarEstudiante(ci).subscribe({
+      next: (est) => {
+        if (!est) return;
+        const nombre = [est.nombre, est.apellido_paterno, est.apellido_materno].filter(Boolean).join(' ');
+        Swal.fire({
+          icon: 'info',
+          title: 'Este carnet ya está registrado',
+          html: `<p class="text-sm text-gray-700">Pertenece a <strong>${this.escaparHtml(nombre)}</strong>.</p>
+                 <p class="text-sm text-gray-500 mt-2">¿Cargar sus datos para inscribirlo?</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cargar sus datos',
+          cancelButtonText: 'No, corregir el carnet',
+          confirmButtonColor: '#16a34a',
+        }).then(r => {
+          if (r.isConfirmed) {
+            this.searchCi.set(ci);
+            this.buscarCi();
+          }
+        });
+      },
+      error: () => {},
+    });
+  }
+
+  private ultimoCiVerificado = '';
+
+  /** Hora del registro para el comprobante (la API no la devuelve). */
+  horaRegistro = signal('');
+
+  // ── Credenciales de acceso a la plataforma ────────────────────────────────
+  // Caja crea la ficha académica; aquí se crea su cuenta y se le envía por correo
+  // un enlace para que cree su contraseña. El cajero nunca ve ni define contraseñas.
+
+  credenciales = signal<{ estado: 'pendiente' | 'enviando' | 'enviado' | 'error'; email?: string; mensaje?: string }>({ estado: 'pendiente' });
+
+  get emailEstudiante(): string {
+    return (this.formEstudiante.value.email ?? '').trim();
+  }
+
+  /** Al terminar la inscripción de un estudiante nuevo: preguntar si se le envían sus credenciales. */
+  private ofrecerCredenciales() {
+    const v = this.formEstudiante.value;
+    const nombre = this.escaparHtml([v.nombre, v.apellido_paterno].filter(Boolean).join(' '));
+
+    if (!this.emailEstudiante) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Estudiante nuevo registrado',
+        html: `<p class="text-sm text-gray-700"><strong>${nombre}</strong> quedó registrado e inscrito.</p>
+               <p class="text-sm text-gray-500 mt-3">No tiene correo, así que no se le pueden enviar credenciales.
+               Puede crear su cuenta en <strong>${this.portalAcceso}</strong> con su carnet y el celular registrado.</p>`,
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#16a34a',
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Estudiante nuevo registrado',
+      html: `<p class="text-sm text-gray-700"><strong>${nombre}</strong> quedó registrado e inscrito.</p>
+             <p class="text-sm text-gray-700 mt-4">¿Enviar sus credenciales de acceso a la plataforma a
+             <strong>${this.escaparHtml(this.emailEstudiante)}</strong>?</p>
+             <p class="text-xs text-gray-500 mt-2">Recibirá un correo con un botón para crear su propia contraseña.</p>`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Ahora no',
+      confirmButtonColor: '#16a34a',
+    }).then(r => {
+      if (r.isConfirmed) this.enviarCredenciales();
+    });
+  }
+
+  enviarCredenciales() {
+    const idUs = this.resultado()?.id_us;
+    if (!idUs || this.credenciales().estado === 'enviando') return;
+
+    this.credenciales.set({ estado: 'enviando' });
+    this.cajaSvc.enviarCredenciales(idUs).subscribe({
+      next: (res) => {
+        this.credenciales.set({ estado: 'enviado', email: res.email });
+        Swal.fire({
+          icon: 'success',
+          title: 'Credenciales enviadas',
+          html: `<p class="text-sm text-gray-700">Enviamos el correo a <strong>${this.escaparHtml(res.email)}</strong>.</p>
+                 <p class="text-xs text-gray-500 mt-2">Si no lo ve en unos minutos, que revise la carpeta de spam.</p>`,
+          confirmButtonColor: '#16a34a',
+          timer: 6000,
+        });
+      },
+      error: (err) => {
+        const mensaje = err?.error?.message ?? 'No se pudieron enviar las credenciales.';
+        this.credenciales.set({ estado: 'error', mensaje });
+        Swal.fire({ icon: 'error', title: 'No se enviaron las credenciales', text: mensaje, confirmButtonColor: '#6b7280' });
+      },
+    });
+  }
+
+  private escaparHtml(texto: string): string {
+    return texto.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  }
+
   nuevoEstudiante() {
+    this.ultimoCiVerificado = '';
     this.estudianteEncontrado.set(null);
     this.haBuscado.set(false);
     this.formEstudiante.reset({ genero: 2 });
@@ -419,22 +535,10 @@ Titular: ${banco.titular || '-'}`;
         this.resultado.set(res);
         this.isSubmitting.set(false);
 
-        // Bug 4: si es estudiante nuevo, mostrar mensaje con contraseña provisional
+        this.horaRegistro.set(new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }));
+        this.credenciales.set({ estado: 'pendiente' });
         if (res.es_nuevo) {
-          const ci = this.formEstudiante.value.ci ?? '';
-          Swal.fire({
-            icon: 'success',
-            title: '✅ Estudiante creado exitosamente',
-            html: `
-              <p class="text-sm text-gray-700 mb-3">El estudiante fue registrado y su inscripción fue completada.</p>
-              <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-left text-sm text-green-800">
-                <p>🔑 <strong>Contraseña provisional para ingresar a la plataforma:</strong></p>
-                <p class="text-lg font-bold text-green-700 mt-1">${ci}</p>
-                <p class="text-xs mt-2 text-gray-500">El estudiante puede cambiarla al iniciar sesión.</p>
-              </div>`,
-            confirmButtonText: 'Continuar',
-            confirmButtonColor: '#16a34a',
-          });
+          this.ofrecerCredenciales();
         }
 
         // Si requiere envío, crear el registro de envío con el id_ins recién generado

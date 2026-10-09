@@ -23,16 +23,23 @@ export class CreatePassword implements OnInit, OnDestroy {
   success              = signal(false);
   error                = signal('');
 
+  enlaceVencido        = signal(false);
+
+  /** true = viene del correo de credenciales enviado desde Caja ("Crear mi contraseña"). */
+  esActivacion         = false;
+  email                = '';
   private token        = '';
-  private email        = '';
   private navTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
-    this.email = this.route.snapshot.queryParamMap.get('email') ?? '';
+    const params = this.route.snapshot.queryParamMap;
+    this.token        = params.get('token') ?? '';
+    this.email        = params.get('email') ?? '';
+    this.esActivacion = params.get('tipo') === 'activacion';
 
     if (!this.token || !this.email) {
-      this.error.set('Enlace inválido o expirado. Solicita uno nuevo.');
+      this.error.set('Enlace inválido o incompleto. Solicita uno nuevo.');
+      this.enlaceVencido.set(true);
     }
   }
 
@@ -53,7 +60,7 @@ export class CreatePassword implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.resetPassword(this.token, this.email, this.password, this.passwordConfirmation).subscribe({
+    this.auth.resetPassword(this.token, this.email, this.password, this.passwordConfirmation, this.esActivacion ? 'activacion' : undefined).subscribe({
       next: () => {
         this.loading.set(false);
         this.success.set(true);
@@ -62,6 +69,7 @@ export class CreatePassword implements OnInit, OnDestroy {
       error: (err) => {
         this.loading.set(false);
         this.error.set(err?.error?.error ?? 'El enlace es inválido o ha expirado.');
+        this.enlaceVencido.set(err?.status === 422 && !err?.error?.errors);
       },
     });
   }

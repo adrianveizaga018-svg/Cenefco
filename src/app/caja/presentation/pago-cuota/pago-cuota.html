@@ -38,44 +38,87 @@
               <span class="block text-default-500 mb-1">Celular</span>
               <span class="font-medium text-default-800">{{ estudiante()!.celular || 'No registrado' }}</span>
             </div>
+            <a [routerLink]="['/cenefco/estudiantes', estudiante()!.id_us]"
+              class="flex items-center gap-1.5 pt-3 border-t border-default-200 text-xs font-semibold text-primary hover:underline">
+              <span class="size-3.5"><ng-icon name="lucideUserSearch"></ng-icon></span>
+              Ver ficha completa
+            </a>
           </div>
         </div>
 
-        <!-- Cuotas Pendientes -->
+        <!-- Cuotas pendientes agrupadas por programa -->
         <div class="md:col-span-2">
-          <h3 class="text-lg font-bold text-default-800 mb-4">Cuotas Pendientes</h3>
-          
           @if (cuotas().length === 0) {
             <div class="bg-default-50 border border-default-200 rounded-lg p-8 text-center text-default-500">
               <ng-icon name="lucideCheckCircle" class="size-12 text-success/50 mx-auto mb-3"></ng-icon>
               <p>El estudiante no tiene cuotas pendientes de pago.</p>
             </div>
           } @else {
-            <div class="space-y-4">
-              @for (c of cuotas(); track c.id) {
-                <div class="card hover:border-primary/50 transition-colors border-l-4" 
-                     [class.border-l-warning]="isVencida(c.fecha_vencimiento)"
-                     [class.border-l-primary]="!isVencida(c.fecha_vencimiento)">
-                  <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="font-bold text-default-800">{{ c.descripcion }}</span>
-                        @if (isVencida(c.fecha_vencimiento)) {
-                          <span class="badge bg-danger/10 text-danger text-xs px-2 py-0.5 rounded">Vencida</span>
-                        }
-                      </div>
-                      <p class="text-sm text-default-600 mb-1">{{ c.nombre_programa }}</p>
-                      <p class="text-xs text-default-500">Vence: <span class="font-medium">{{ c.fecha_vencimiento }}</span></p>
+            <!-- Resumen -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+              <div class="rounded-xl border border-default-200 bg-white px-4 py-3">
+                <p class="text-xs text-default-500">Debe en total</p>
+                <p class="text-xl font-bold text-default-800">Bs. {{ totales().deuda | number:'1.2-2' }}</p>
+                <p class="text-xs text-default-400">{{ cuotas().length }} cuota(s) en {{ grupos().length }} programa(s)</p>
+              </div>
+              <div class="rounded-xl border px-4 py-3"
+                [class]="totales().vencidas > 0 ? 'border-danger/30 bg-danger/5' : 'border-default-200 bg-white'">
+                <p class="text-xs" [class]="totales().vencidas > 0 ? 'text-danger' : 'text-default-500'">Vencido</p>
+                <p class="text-xl font-bold" [class]="totales().vencidas > 0 ? 'text-danger' : 'text-success'">
+                  {{ totales().vencidas > 0 ? 'Bs. ' + (totales().montoVencido | number:'1.2-2') : 'Al día' }}
+                </p>
+                <p class="text-xs text-default-400">{{ totales().vencidas }} cuota(s) vencida(s)</p>
+              </div>
+            </div>
+
+            <div class="space-y-5">
+              @for (g of grupos(); track g.id_ins) {
+                <div class="card overflow-hidden">
+                  <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-3 bg-default-50 border-b border-default-200">
+                    <div class="min-w-0">
+                      <p class="font-semibold text-default-800">{{ g.programa }}</p>
+                      <p class="text-xs text-default-500">{{ g.plan || 'Plan de pago' }} · {{ g.cuotas.length }} cuota(s) pendiente(s)</p>
                     </div>
-                    <div class="flex items-center gap-4">
-                      <div class="text-right">
-                        <span class="block text-xs text-default-500">A pagar</span>
-                        <span class="block text-lg font-bold text-primary">Bs. {{ c.monto_a_pagar }}</span>
-                      </div>
-                      <button type="button" class="btn bg-primary text-white whitespace-nowrap" (click)="abrirModalPago(c)">
-                        Registrar Pago
-                      </button>
+                    <div class="flex items-center gap-2">
+                      @if (g.vencidas > 0) {
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-danger/10 text-danger">{{ g.vencidas }} vencida(s)</span>
+                      }
+                      <span class="text-sm font-bold text-default-800">Bs. {{ g.total | number:'1.2-2' }}</span>
                     </div>
+                  </div>
+
+                  <div class="divide-y divide-default-200">
+                    @for (c of g.cuotas; track c.id) {
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-l-4"
+                        [class.border-l-danger]="isVencida(c.fecha_vencimiento)"
+                        [class.border-l-transparent]="!isVencida(c.fecha_vencimiento)">
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <span class="font-semibold text-default-800">{{ c.descripcion }}</span>
+                            @if (isVencida(c.fecha_vencimiento)) {
+                              <span class="text-xs px-2 py-0.5 rounded bg-danger/10 text-danger font-semibold">Vencida</span>
+                            } @else if (esSiguiente(g, c)) {
+                              <span class="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold">Siguiente</span>
+                            }
+                          </div>
+                          <p class="text-xs mt-0.5" [class]="isVencida(c.fecha_vencimiento) ? 'text-danger' : 'text-default-500'">
+                            Vence: <span class="font-medium">{{ c.fecha_vencimiento }}</span>
+                          </p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                          <span class="text-lg font-bold" [class]="isVencida(c.fecha_vencimiento) ? 'text-danger' : 'text-default-800'">
+                            Bs. {{ c.monto_a_pagar | number:'1.2-2' }}
+                          </span>
+                          <button type="button" class="btn whitespace-nowrap"
+                            [class]="esSiguiente(g, c) || isVencida(c.fecha_vencimiento)
+                              ? 'bg-primary text-white'
+                              : 'border border-default-300 text-default-700 hover:bg-default-100'"
+                            (click)="abrirModalPago(c)">
+                            Registrar Pago
+                          </button>
+                        </div>
+                      </div>
+                    }
                   </div>
                 </div>
               }

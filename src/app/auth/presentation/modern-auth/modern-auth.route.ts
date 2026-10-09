@@ -44,12 +44,12 @@ export const MODERN_AUTH_ROUTES: Routes = [
   {
     path: 'auth-modern/reset-password',
     component: ResetPassword,
-    data: { title: 'Reset Password' },
+    data: { title: 'Recuperar contraseña' },
   },
   {
     path: 'auth-modern/create-password',
     component: CreatePassword,
-    data: { title: 'Create Password' },
+    data: { title: 'Crear contraseña' },
   },
   {
     path: 'auth/completar-perfil',

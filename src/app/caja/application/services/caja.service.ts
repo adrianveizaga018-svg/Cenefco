@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 export interface CajaEstudiante {
   id_us: number;
@@ -62,8 +62,18 @@ export class CajaService {
   private http = inject(HttpClient);
   private api = '/api/v1/caja';
 
+  /** null si no existe. Laravel responde `{}` (no `null`) cuando no encuentra a nadie, así que se normaliza aquí. */
   buscarEstudiante(ci: string): Observable<CajaEstudiante | null> {
-    return this.http.get<CajaEstudiante | null>(`${this.api}/buscar-estudiante`, { params: new HttpParams().set('ci', ci) });
+    return this.http
+      .get<CajaEstudiante | null>(`${this.api}/buscar-estudiante`, { params: new HttpParams().set('ci', ci) })
+      .pipe(map(est => (est?.id_us ? est : null)));
+  }
+
+  /** Crea (si no existe) la cuenta del estudiante y le envía por correo el enlace para crear su contraseña. */
+  enviarCredenciales(idUs: number): Observable<{ message: string; email: string; cuenta_nueva: boolean }> {
+    return this.http.post<{ message: string; email: string; cuenta_nueva: boolean }>(
+      `${this.api}/estudiantes/${idUs}/enviar-credenciales`, {},
+    );
   }
 
   buscarProgramas(q: string = ''): Observable<CajaPrograma[]> {

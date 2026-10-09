@@ -1,4 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators, FormBuilder } from '@angular/forms';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
@@ -11,7 +13,7 @@ import { Title } from '@angular/platform-browser';
 @Component({
   selector: 'app-pago-cuota',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIcon, PageTitle],
+  imports: [ReactiveFormsModule, NgIcon, PageTitle, RouterLink, DecimalPipe],
   templateUrl: './pago-cuota.html',
 })
 export class PagoCuota {
@@ -28,6 +30,34 @@ export class PagoCuota {
   bancos = signal<CajaBanco[]>([]);
 
   cuotaSeleccionada = signal<any | null>(null);
+
+  /** Cuotas agrupadas por programa (inscripción), en orden de vencimiento. */
+  grupos = computed(() => {
+    const porIns = new Map<number, { id_ins: number; programa: string; plan: string | null; cuotas: any[]; total: number; vencidas: number }>();
+    for (const c of this.cuotas()) {
+      const g = porIns.get(c.id_ins) ?? { id_ins: c.id_ins, programa: c.nombre_programa, plan: c.nombre_plan ?? null, cuotas: [] as any[], total: 0, vencidas: 0 };
+      g.cuotas.push(c);
+      g.total += Number(c.monto_a_pagar) || 0;
+      if (this.isVencida(c.fecha_vencimiento)) g.vencidas++;
+      porIns.set(c.id_ins, g);
+    }
+    // Primero los programas con cuotas vencidas
+    return [...porIns.values()].sort((a, b) => b.vencidas - a.vencidas);
+  });
+
+  totales = computed(() => {
+    const gs = this.grupos();
+    return {
+      deuda:    gs.reduce((s, g) => s + g.total, 0),
+      vencidas: gs.reduce((s, g) => s + g.vencidas, 0),
+      montoVencido: this.cuotas().filter(c => this.isVencida(c.fecha_vencimiento)).reduce((s, c) => s + (Number(c.monto_a_pagar) || 0), 0),
+    };
+  });
+
+  /** La cuota más antigua sin pagar de cada programa: es la que corresponde cobrar primero. */
+  esSiguiente(grupo: { cuotas: any[] }, cuota: any): boolean {
+    return grupo.cuotas[0]?.id === cuota.id;
+  }
   procesando = signal(false);
   comprobanteFile: File | null = null;
 

@@ -209,8 +209,9 @@ export class AuthService {
     return this.http.post<{ message: string }>('/api/auth/forgot-password', { email });
   }
 
-  resetPassword(token: string, email: string, password: string, password_confirmation: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>('/api/auth/reset-password', { token, email, password, password_confirmation });
+  /** `tipo: 'activacion'` = enlace "Crear mi contraseña" del correo de credenciales de Caja. */
+  resetPassword(token: string, email: string, password: string, password_confirmation: string, tipo?: 'activacion'): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/reset-password', { token, email, password, password_confirmation, tipo });
   }
 
   private loadUser(): AuthUser | null {
