@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { EstudianteService, PlanPagoEstudiante, CuotaEstudiante } from '../../application/services/estudiante.service';
+import { ComprobantePagoComponent } from '../comprobante-pago/comprobante-pago';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-mis-pagos-estudiante',
   standalone: true,
-  imports: [CommonModule, NgIcon, PageTitle],
+  imports: [CommonModule, NgIcon, PageTitle, ComprobantePagoComponent],
   templateUrl: './mis-pagos.html',
   styles: ``
 })
@@ -54,7 +56,8 @@ export class MisPagosEstudianteComponent implements OnInit {
 
   getPorcentajePago(plan: PlanPagoEstudiante): number {
     if (plan.total_plan === 0) return 100;
-    return Math.min(100, Math.round((plan.total_pagado / plan.total_plan) * 100));
+    // Lo cubierto según el saldo: un anticipo o crédito transferido cuenta aunque no sea "pago de cuota"
+    return Math.max(0, Math.min(100, Math.round(((plan.total_plan - plan.saldo) / plan.total_plan) * 100)));
   }
 
   getEstadoCuota(cuota: CuotaEstudiante): 'pagado' | 'vencido' | 'pendiente' {
@@ -77,5 +80,11 @@ export class MisPagosEstudianteComponent implements OnInit {
   cerrarPago() {
     this.showComprobanteModal.set(false);
     this.cuotaSeleccionada.set(null);
+  }
+
+  comprobanteEnviado(mensaje: string) {
+    this.cerrarPago();
+    Swal.fire({ icon: 'success', title: 'Comprobante enviado', text: mensaje, confirmButtonColor: '#16a34a' });
+    this.cargarPagos();
   }
 }

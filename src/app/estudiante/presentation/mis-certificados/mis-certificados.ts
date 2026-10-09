@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { EstudianteService, CertificadoEstudiante } from '../../application/services/estudiante.service';
+import { portalUrl } from '../../../constants';
 
-/** URL del portal público — cambiar en producción */
-const PORTAL_URL = window.location.origin;
+/** La verificación pública del certificado vive en el portal, no en este panel. */
+const PORTAL_URL = portalUrl.replace(/\/$/, '');
 
 @Component({
   selector: 'app-mis-certificados',

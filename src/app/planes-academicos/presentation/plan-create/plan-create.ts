@@ -47,6 +47,19 @@ export class PlanCreate {
 
   costoNum = signal<number>(0);
 
+  gratuito = signal(false);
+
+  /** Plan gratuito = costo 0: sin precio, cuotas ni QR. Caja inscribe sin registrar pago. */
+  setGratuito(valor: boolean): void {
+    this.gratuito.set(valor);
+    if (valor) {
+      this.form.patchValue({ costo: '0', nro_cuotas: '1' });
+      this.quitarQr();
+    } else if (this.form.value.costo === '0') {
+      this.form.patchValue({ costo: '' });
+    }
+  }
+
   totalCuotas = computed(() => {
     return this.cuotas().reduce((a, c) => a + (c.monto || 0), 0);
   });

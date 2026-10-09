@@ -38,9 +38,20 @@ export const routes: Routes = [
         loadChildren: () => import('./auth/presentation/modern-auth/modern-auth.route').then((mod) => mod.MODERN_AUTH_ROUTES)
     },
     {
+        // Área del estudiante: a donde llega un participante/estudiante al iniciar sesión
+        path: 'estudiante',
+        component: MainLayout,
+        canActivate: [authGuard],
+        loadChildren: () => import('./estudiante/estudiante.routes').then((mod) => mod.ESTUDIANTE_ROUTES)
+    },
+    {
         path: '',
         component: MainLayout,
         canActivate: [authGuard, adminGuard],
         loadChildren: () => import('./views/views.routes').then((mod) => mod.VIEWS_ROUTES)
+    },
+    {
+        path: '**',
+        redirectTo: 'pages/404',
     }
 ];

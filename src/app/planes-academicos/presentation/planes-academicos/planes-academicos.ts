@@ -39,4 +39,9 @@ export class PlanesAcademicos {
       if (r.isConfirmed) { this.service.delete(id).subscribe({ next: () => { this.toast.success('Eliminado', 'Plan eliminado'); this.refresh.update(n => n + 1); }, error: (err) => this.toast.error('Error', err.error?.message || 'No se pudo eliminar') }); }
     });
   }
+
+  /** Un plan con costo 0 es gratuito: Caja inscribe sin registrar pago. */
+  esGratuito(costo: string | number | null | undefined): boolean {
+    return costo !== null && costo !== undefined && costo !== '' && Number(costo) === 0;
+  }
 }

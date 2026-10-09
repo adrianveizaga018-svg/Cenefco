@@ -123,6 +123,20 @@ export class PlanEdit {
 
   costoNum = signal<number>(0);
 
+  gratuito = signal(false);
+
+  /** Plan gratuito = costo 0: sin precio, cuotas ni QR. Caja inscribe sin registrar pago. */
+  setGratuito(valor: boolean): void {
+    if (this.totalInscripciones() > 0) return;
+    this.gratuito.set(valor);
+    if (valor) {
+      this.form.patchValue({ costo: '0', nro_cuotas: '1' });
+      this.quitarQr();
+    } else if (this.form.value.costo === '0') {
+      this.form.patchValue({ costo: '' });
+    }
+  }
+
   totalCuotas = computed(() => {
     return this.cuotas().reduce((a, c) => a + (c.monto || 0), 0);
   });
@@ -152,6 +166,7 @@ export class PlanEdit {
         this.modoCuotas.set(d.modo_fechas === 'relativo' ? 'dias' : 'fecha');
         this.nroCuotasNum.set(Number(d.nro_cuotas || 1));
         this.costoNum.set(Number(d.costo || 0));
+        this.gratuito.set(d.costo !== null && d.costo !== '' && Number(d.costo) === 0);
 
         this.service.getCuotas(this.id).subscribe({
           next: (res) => {

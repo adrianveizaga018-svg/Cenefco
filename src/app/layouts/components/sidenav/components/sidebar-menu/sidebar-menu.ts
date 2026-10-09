@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from "@ng-icons/core";
 import { CertConfigProgramaService } from '../../../../../cert-config-programas/application/services/cert-config-programa.service';
 import { AuthService } from '../../../../../auth/application/services/auth.service';
+import { ComprobantesCajaService } from '../../../../../caja/application/services/comprobantes-caja.service';
 
 type MenuItem = {
   type: 'title' | 'item' | 'accordion';
@@ -109,8 +110,11 @@ export class SidebarMenu implements OnInit {
       link: '/caja/inscripcion',
       permission: 'inscripciones.crear',
     },
+    { type: 'item', label: 'Estudiantes',                icon: 'lucideUserSearch',     color: 'text-indigo-600',  link: '/cenefco/estudiantes', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Inscripciones',              icon: 'lucideClipboardCheck', color: 'text-teal-600',    link: '/cenefco/inscripciones', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Pago de Cuotas',             icon: 'lucideReceiptText',    color: 'text-sky-600',     link: '/caja/pago-cuota', permission: 'inscripciones.ver' },
+    { type: 'item', label: 'Verificar pagos',            icon: 'lucideFileCheck',      color: 'text-emerald-600', link: '/caja/comprobantes', permission: 'inscripciones.crear' },
+    { type: 'item', label: 'Devoluciones',               icon: 'lucideUndo2',          color: 'text-amber-600',   link: '/cenefco/devoluciones', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Dashboard Cobranzas',        icon: 'lucideTrendingUp',     color: 'text-emerald-600', link: '/cobranzas/dashboard', permission: 'pagos.ver' },
     { type: 'item', label: 'Envíos a Provincias',        icon: 'lucideTruck',          color: 'text-orange-500',  link: '/envios/dashboard', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Directorio de Archivos',     icon: 'lucideFolderOpen',     color: 'text-amber-600',   link: '/cenefco/directorio-archivos', permission: 'directorio-archivos.ver' },
@@ -288,6 +292,7 @@ export class SidebarMenu implements OnInit {
   ]
 
   private certConfigService = inject(CertConfigProgramaService);
+  private comprobantesService = inject(ComprobantesCajaService);
   private cdr = inject(ChangeDetectorRef);
   private auth = inject(AuthService);
 
@@ -340,6 +345,18 @@ export class SidebarMenu implements OnInit {
   }
 
   ngOnInit(): void {
+    // El contador de solicitudes de certificado es del personal; el estudiante no tiene ese menú
+    if (this.auth.isEstudiante()) return;
+    if (this.auth.hasPermission('inscripciones.crear')) {
+      this.comprobantesService.pendientes().subscribe({
+        next: (res) => {
+          const item = this.allMenus.find((m) => m.link === '/caja/comprobantes');
+          if (item && res.pendientes > 0) item.badge = res.pendientes;
+          this.cdr.detectChanges();
+        },
+        error: () => {},
+      });
+    }
     this.certConfigService.getPendientesCount().subscribe({
       next: (res) => {
         const item = this.allMenus

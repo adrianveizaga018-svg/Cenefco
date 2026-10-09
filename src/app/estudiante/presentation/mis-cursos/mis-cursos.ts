@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 import { PageTitle } from '../../../common/components/page-title/page-title';
 import { EstudianteService, CursoEstudiante } from '../../application/services/estudiante.service';
@@ -7,7 +8,7 @@ import { EstudianteService, CursoEstudiante } from '../../application/services/e
 @Component({
   selector: 'app-mis-cursos',
   standalone: true,
-  imports: [CommonModule, NgIcon, PageTitle],
+  imports: [CommonModule, RouterLink, NgIcon, PageTitle],
   template: `
     <div class="p-6 md:p-10 space-y-8 animate-in fade-in duration-500 pb-20">
       <app-page-title title="Mis Cursos e Imparticiones" subtitle="Accede a tus materias, docentes y grabaciones de Zoom"></app-page-title>
@@ -23,6 +24,9 @@ import { EstudianteService, CursoEstudiante } from '../../application/services/e
           </div>
           <h3 class="text-xl font-bold text-default-900">Aún no tienes cursos</h3>
           <p class="text-sm text-default-500 max-w-sm mx-auto mt-2 leading-relaxed">Cuando te inscribas a un programa o curso, aparecerá aquí junto con su material y clases grabadas.</p>
+          <a routerLink="/estudiante/catalogo" class="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90">
+            <ng-icon name="lucideStore" style="font-size: 16px;"></ng-icon> Ver programas disponibles
+          </a>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -33,15 +37,30 @@ import { EstudianteService, CursoEstudiante } from '../../application/services/e
               <div class="absolute -right-12 -top-12 w-40 h-40 bg-gradient-to-br from-blue-50 to-transparent rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
 
               <div class="space-y-4 relative z-10">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 shadow-inner">
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    {{ curso.estado_inscripcion | uppercase }}
-                  </span>
-                  <span class="text-[10px] font-bold text-default-400 tracking-widest uppercase bg-default-100 px-2 py-0.5 rounded-md">ID: {{ curso.id_imp }}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  @switch (curso.estado_curso) {
+                    @case ('en_curso') {
+                      <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        En curso
+                      </span>
+                    }
+                    @case ('por_iniciar') {
+                      <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-700">Por iniciar</span>
+                    }
+                    @default {
+                      <span class="text-xs font-bold px-3 py-1 rounded-full bg-default-100 text-default-600">Finalizado</span>
+                    }
+                  }
+                  @if (curso.gratuito) {
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-success/10 text-success">Gratuito</span>
+                  }
+                  @if (curso.tiene_certificado) {
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-700">Con certificado</span>
+                  }
                 </div>
 
                 <h3 class="text-xl sm:text-2xl font-black text-default-900 leading-tight tracking-tight">
@@ -61,7 +80,13 @@ import { EstudianteService, CursoEstudiante } from '../../application/services/e
                   @if (curso.imparte_fecha_inicio) {
                     <div class="flex items-center gap-2">
                       <ng-icon name="lucideCalendarDays" class="text-blue-500 text-base"></ng-icon>
-                      <span>Inició el {{ curso.imparte_fecha_inicio | date:'longDate' }}</span>
+                      <span>{{ curso.estado_curso === 'por_iniciar' ? 'Inicia el' : 'Inició el' }} {{ curso.imparte_fecha_inicio | date:'longDate' }}</span>
+                    </div>
+                  }
+                  @if (curso.imparte_fecha_fin) {
+                    <div class="flex items-center gap-2">
+                      <ng-icon name="lucideFlag" class="text-default-400 text-base"></ng-icon>
+                      <span>{{ curso.estado_curso === 'finalizado' ? 'Finalizó el' : 'Termina el' }} {{ curso.imparte_fecha_fin | date:'longDate' }}</span>
                     </div>
                   }
                   @if (curso.horas_academicas) {
@@ -71,6 +96,13 @@ import { EstudianteService, CursoEstudiante } from '../../application/services/e
                     </div>
                   }
                 </div>
+
+                @if (curso.whatsapp_grupo_url) {
+                  <a [href]="curso.whatsapp_grupo_url" target="_blank" rel="noopener"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600">
+                    <ng-icon name="lucideMessageCircle" style="font-size: 16px;"></ng-icon> Unirme al grupo de WhatsApp
+                  </a>
+                }
               </div>
 
               <!-- Seccion de Grabaciones Zoom -->

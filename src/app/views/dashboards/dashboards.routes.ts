@@ -25,6 +25,11 @@ export const DASHBOARDS_ROUTES: Routes = [
     }
 ,
     {
+        path: 'caja/comprobantes',
+        loadComponent: () => import('../../caja/presentation/comprobantes/comprobantes').then(m => m.ComprobantesCajaComponent),
+        data: { title: 'Comprobantes por verificar' }
+    },
+    {
         path: 'cobranzas/dashboard',
         loadComponent: () => import('../../cobranzas/presentation/dashboard/dashboard').then(m => m.Dashboard),
         data: { title: 'Dashboard de Cobranzas' }

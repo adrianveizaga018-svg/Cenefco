@@ -39,9 +39,37 @@
           }
         </div>
 
-        <!-- Precio y Cuotas -->
+        <!-- Tipo de plan -->
+        <div>
+          <p class="text-sm font-medium text-default-700 mb-2">Tipo de plan</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" class="flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    [class]="!gratuito() ? 'border-primary bg-primary/5' : 'border-default-200'"
+                    [disabled]="totalInscripciones() > 0" (click)="setGratuito(false)">
+              <span class="size-5 inline-flex shrink-0 mt-0.5 text-primary"><ng-icon name="lucideWallet"></ng-icon></span>
+              <span>
+                <span class="block font-medium text-default-800 text-sm">De pago</span>
+                <span class="block text-xs text-default-500 mt-0.5">Al contado o en cuotas</span>
+              </span>
+            </button>
+            <button type="button" class="flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    [class]="gratuito() ? 'border-success bg-success/5' : 'border-default-200'"
+                    [disabled]="totalInscripciones() > 0" (click)="setGratuito(true)">
+              <span class="size-5 inline-flex shrink-0 mt-0.5 text-success"><ng-icon name="lucideGift"></ng-icon></span>
+              <span>
+                <span class="block font-medium text-default-800 text-sm">Gratuito</span>
+                <span class="block text-xs text-default-500 mt-0.5">Bs. 0 — se inscribe sin pago</span>
+              </span>
+            </button>
+          </div>
+          @if (gratuito()) {
+            <p class="mt-2 text-xs text-success-700 bg-success/10 rounded-lg px-3 py-2">
+              Al inscribir con este plan, Caja no pide monto ni comprobante, y el estudiante puede inscribirse solo desde su panel.
+            </p>
+          }
+        </div>
 
-        <!-- Precio y Cuotas -->
+        @if (!gratuito()) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label class="block text-sm font-medium text-default-700 mb-1">
@@ -66,6 +94,7 @@
             }
           </div>
         </div>
+        }
 
         <div>
             <label class="block text-sm font-medium text-default-700 mb-1">Estado</label>
@@ -76,6 +105,7 @@
           </div>
 
         <!-- QR -->
+        @if (!gratuito()) {
         <div>
           <label class="block text-sm font-medium text-default-700 mb-1">QR de Pago (Opcional)</label>
           <p class="text-xs text-default-400 mb-2">Sube la imagen QR de este plan para mostrarla al cliente en el momento de pago.</p>
@@ -94,12 +124,13 @@
             </label>
           }
         </div>
+        }
 
       </div>
     </div>
 
     <!-- Card 2: Configuracion de cuotas (solo si nroCuotas > 1) -->
-    @if (nroCuotasNum() > 1) {
+    @if (nroCuotasNum() > 1 && !gratuito()) {
       <div class="card">
         <div class="card-header">
           <h4 class="card-title">Calendario de Cobros</h4>

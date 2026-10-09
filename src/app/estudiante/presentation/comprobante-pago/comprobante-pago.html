@@ -1,0 +1,151 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-pago">
+  <div class="absolute inset-0 bg-slate-900/60" (click)="cerrar.emit()"></div>
+
+  <div class="relative w-full max-w-lg max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <!-- Cabecera -->
+    <div class="px-6 py-5 bg-gradient-to-br from-slate-900 to-slate-700 text-white flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <p class="text-xs text-slate-300 mb-0.5">{{ esInscripcion() ? 'Inscribirme' : 'Pagar cuota' }}</p>
+        <h2 id="titulo-pago" class="text-lg font-bold leading-snug">{{ titulo() }}</h2>
+      </div>
+      <button type="button" class="shrink-0 size-8 rounded-lg hover:bg-white/10 inline-flex items-center justify-center" aria-label="Cerrar" (click)="cerrar.emit()">
+        <span class="size-5 inline-flex"><ng-icon name="lucideX"></ng-icon></span>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+      @if (cargando()) {
+        <div class="flex justify-center py-10"><div class="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
+      } @else {
+        <!-- Plan (solo al inscribirse) -->
+        @if (esInscripcion()) {
+          <div>
+            <p class="text-sm font-semibold text-slate-800 mb-2">1. Elige tu plan de pago</p>
+            <div class="space-y-2">
+              @for (p of planesPago(); track p.id_plan) {
+                <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition"
+                  [class]="planId() === p.id_plan ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'">
+                  <input type="radio" name="plan" class="accent-primary" [checked]="planId() === p.id_plan" (change)="elegirPlan(p)">
+                  <span class="flex-1 min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800">{{ p.titulo }}</span>
+                    <span class="block text-xs text-slate-500">
+                      Total Bs. {{ p.costo | number:'1.2-2' }}{{ p.nro_cuotas > 1 ? ' · ' + p.nro_cuotas + ' pagos' : ' · al contado' }}
+                    </span>
+                  </span>
+                  <span class="text-right shrink-0">
+                    <span class="block text-[11px] text-slate-500">Para inscribirte</span>
+                    <span class="block text-sm font-bold text-slate-800">Bs. {{ p.primer_pago | number:'1.2-2' }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </div>
+        } @else if (info(); as i) {
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+              <p class="text-[11px] text-slate-500">Saldo del programa</p>
+              <p class="text-lg font-bold text-slate-800">Bs. {{ i.saldo | number:'1.2-2' }}</p>
+            </div>
+            @if (i.proxima) {
+              <div class="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+                <p class="text-[11px] text-amber-700">{{ i.proxima.descripcion }}{{ i.proxima.vence ? ' · vence ' + (i.proxima.vence | date:'dd/MM') : '' }}</p>
+                <p class="text-lg font-bold text-amber-800">Bs. {{ i.proxima.saldo | number:'1.2-2' }}</p>
+              </div>
+            }
+          </div>
+          @if (i.en_revision > 0) {
+            <p class="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2">Ya tienes {{ i.en_revision }} comprobante(s) en revisión. Puedes enviar otro si hiciste un pago distinto.</p>
+          }
+        }
+
+        <!-- Dónde pagar -->
+        <div>
+          <p class="text-sm font-semibold text-slate-800 mb-2">{{ esInscripcion() ? '2.' : '1.' }} Paga por QR o en una de estas cuentas</p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            @if (qrUrl()) {
+              <a [href]="qrUrl()" target="_blank" rel="noopener" class="shrink-0 self-center">
+                <img [src]="qrUrl()" alt="QR de pago" class="size-36 object-contain rounded-xl border border-slate-200 bg-white p-1.5">
+              </a>
+            }
+            <div class="flex-1 space-y-2">
+              @for (b of bancos(); track b.id) {
+                <div class="px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50">
+                  <p class="text-sm font-semibold text-slate-700">{{ b.nombre }}</p>
+                  @if (b.numero_cuenta) { <p class="text-xs text-slate-500 font-mono">Cta. {{ b.numero_cuenta }}{{ b.titular ? ' · ' + b.titular : '' }}</p> }
+                </div>
+              } @empty {
+                @if (!qrUrl()) { <p class="text-xs text-slate-500">Consulta los datos de pago con CENEFCO.</p> }
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos del pago -->
+        <div class="space-y-3">
+          <p class="text-sm font-semibold text-slate-800">{{ esInscripcion() ? '3.' : '2.' }} Cuéntanos tu pago y sube el comprobante</p>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="block text-xs font-medium text-slate-600 mb-1">Monto pagado (Bs.)</span>
+              <input type="number" min="0" step="0.01" class="form-input w-full" [ngModel]="monto()" (ngModelChange)="monto.set($event)">
+            </label>
+            <label class="block">
+              <span class="block text-xs font-medium text-slate-600 mb-1">Fecha del pago</span>
+              <input type="date" class="form-input w-full" [max]="hoy" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)">
+            </label>
+            <label class="block">
+              <span class="block text-xs font-medium text-slate-600 mb-1">¿Cómo pagaste?</span>
+              <select class="form-input w-full" [ngModel]="metodo()" (ngModelChange)="metodo.set($event)">
+                <option value="qr">QR</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="deposito">Depósito en banco</option>
+              </select>
+            </label>
+            @if (metodo() !== 'qr' && bancos().length) {
+              <label class="block">
+                <span class="block text-xs font-medium text-slate-600 mb-1">Banco</span>
+                <select class="form-input w-full" [ngModel]="bancoId()" (ngModelChange)="bancoId.set($event)">
+                  <option [ngValue]="null">—</option>
+                  @for (b of bancos(); track b.id) { <option [ngValue]="b.id">{{ b.nombre }}</option> }
+                </select>
+              </label>
+            }
+            <label class="block col-span-2">
+              <span class="block text-xs font-medium text-slate-600 mb-1">N° de transacción o boleta (opcional)</span>
+              <input type="text" maxlength="100" class="form-input w-full" placeholder="Ej. 000123456" [ngModel]="nroBoleta()" (ngModelChange)="nroBoleta.set($event)">
+            </label>
+          </div>
+
+          <label for="archivo-comprobante"
+            class="flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors"
+            [class]="archivo() ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'">
+            <span class="size-8 inline-flex shrink-0" [class]="archivo() ? 'text-emerald-600' : 'text-slate-400'">
+              <ng-icon [name]="archivo() ? 'lucideFileCheck' : 'lucideUploadCloud'"></ng-icon>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-sm font-medium text-slate-700 truncate">{{ archivo()?.name || 'Sube la foto o PDF del comprobante' }}</span>
+              <span class="block text-xs text-slate-400">JPG, PNG o PDF · máx. 5 MB</span>
+            </span>
+            <input id="archivo-comprobante" type="file" accept="image/*,.pdf" class="sr-only" (change)="onArchivo($event)">
+          </label>
+        </div>
+
+        @if (error()) {
+          <p class="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2" role="alert">{{ error() }}</p>
+        }
+        <p class="text-xs text-slate-500">Caja revisará tu comprobante y te avisaremos por correo. El pago se descuenta de tu saldo cuando sea aprobado.</p>
+      }
+    </div>
+
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3">
+      <button type="button" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-100 text-sm" (click)="cerrar.emit()">Cancelar</button>
+      <button type="button" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60"
+        [disabled]="enviando() || cargando()" (click)="enviar()">
+        @if (enviando()) {
+          <span class="size-4 inline-flex animate-spin"><ng-icon name="lucideLoader"></ng-icon></span> Enviando...
+        } @else {
+          <span class="size-4 inline-flex"><ng-icon name="lucideSend"></ng-icon></span> {{ esInscripcion() ? 'Inscribirme y enviar' : 'Enviar comprobante' }}
+        }
+      </button>
+    </div>
+  </div>
+</div>

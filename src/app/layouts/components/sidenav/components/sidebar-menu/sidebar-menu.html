@@ -14,6 +14,9 @@
       <span class="menu-icon" [ngClass]="menu.color"><ng-icon [name]="menu.icon"></ng-icon></span>
       }
       <div class="menu-text">{{ menu.label }}</div>
+      @if (menu.badge) {
+      <span class="badge rounded-full bg-red-500 text-white">{{ menu.badge }}</span>
+      }
     </a>
   </li>
   }

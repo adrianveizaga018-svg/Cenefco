@@ -31,14 +31,21 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <h3 class="font-bold text-slate-800 text-base leading-tight">{{ plan.nombre_programa }}</h3>
-                  @if (plan.periodo) {
-                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-medium rounded-full">{{ plan.periodo }} {{ plan.gestion }}</span>
-                  }
                 </div>
 
+                @if (plan.comprobantes_en_revision.length) {
+                  <p class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full px-3 py-1">
+                    <span class="size-3.5 inline-flex"><ng-icon name="lucideClock"></ng-icon></span>
+                    Comprobante en revisión: Bs {{ plan.comprobantes_en_revision[0].monto | number:'1.2-2' }}{{ plan.comprobantes_en_revision.length > 1 ? ' y ' + (plan.comprobantes_en_revision.length - 1) + ' más' : '' }}
+                  </p>
+                }
                 <div class="flex items-center gap-4 mt-2 flex-wrap">
                   <!-- Estado del Pago -->
-                  @if (plan.estado_pago === 'pagado') {
+                  @if (plan.estado_pago === 'gratuito') {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">
+                      <ng-icon name="lucideGift" class="w-3.5 h-3.5"></ng-icon> Gratuito — no debes nada
+                    </span>
+                  } @else if (plan.estado_pago === 'pagado') {
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">
                       <ng-icon name="lucideCheckCircle2" class="w-3.5 h-3.5"></ng-icon> Al día
                     </span>
@@ -82,7 +89,7 @@
                   class="h-full rounded-full transition-all duration-700"
                   [style.width.%]="getPorcentajePago(plan)"
                   [ngClass]="{
-                    'bg-gradient-to-r from-emerald-400 to-emerald-500': plan.estado_pago === 'pagado',
+                    'bg-gradient-to-r from-emerald-400 to-emerald-500': plan.estado_pago === 'pagado' || plan.estado_pago === 'gratuito',
                     'bg-gradient-to-r from-amber-400 to-amber-500': plan.estado_pago === 'parcial',
                     'bg-gradient-to-r from-red-400 to-red-500': plan.estado_pago === 'pendiente'
                   }">
@@ -139,8 +146,11 @@
                               'text-red-600': getEstadoCuota(cuota) === 'vencido',
                               'text-slate-700': getEstadoCuota(cuota) === 'pendiente'
                             }">
-                            Bs {{ cuota.monto_a_pagar | number:'1.2-2' }}
+                            Bs {{ (cuota.pagado ? cuota.monto_a_pagar : cuota.saldo) | number:'1.2-2' }}
                           </span>
+                          @if (cuota.estado === 'parcial') {
+                            <span class="text-[11px] text-amber-700">de Bs {{ cuota.monto_a_pagar | number:'1.2-2' }}</span>
+                          }
                         </div>
                         <div class="text-xs text-slate-500 mt-0.5">
                           @if (cuota.pagado && cuota.fecha_pago) {
@@ -180,76 +190,8 @@
   }
 </div>
 
-<!-- Modal de Pago/Comprobante -->
-@if (showComprobanteModal() && cuotaSeleccionada()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" (click)="cerrarPago()"></div>
-
-    <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-      <!-- Header -->
-      <div class="p-6 bg-gradient-to-br from-slate-900 to-slate-700 text-white">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-slate-300 mb-0.5">{{ cuotaSeleccionada()!.plan.nombre_programa }}</p>
-            <h2 class="text-xl font-black">Cuota {{ cuotaSeleccionada()!.cuota.nro_pago }}</h2>
-          </div>
-          <div class="text-right">
-            <p class="text-slate-400 text-xs mb-0.5">Monto a pagar</p>
-            <p class="text-2xl font-black text-emerald-400">Bs {{ cuotaSeleccionada()!.cuota.monto_a_pagar | number:'1.2-2' }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-6 space-y-5">
-        <!-- Cuentas Bancarias -->
-        <div>
-          <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <ng-icon name="lucideBuilding2" class="w-4 h-4 text-slate-400"></ng-icon>
-            Deposita en cualquiera de estas cuentas
-          </h4>
-          <div class="space-y-2">
-            <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50 flex items-center gap-3">
-              <div class="w-10 h-10 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center font-black text-xs">BNB</div>
-              <div>
-                <p class="text-sm font-bold text-slate-700">Banco Nacional de Bolivia</p>
-                <p class="text-xs text-slate-500 font-mono">Cta. 123456789 · CENEFCO S.R.L.</p>
-              </div>
-            </div>
-            <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50 flex items-center gap-3">
-              <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-black text-xs">UN</div>
-              <div>
-                <p class="text-sm font-bold text-slate-700">Banco Unión</p>
-                <p class="text-xs text-slate-500 font-mono">Cta. 987654321 · CENEFCO S.R.L.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Upload -->
-        <div>
-          <h4 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <ng-icon name="lucideUploadCloud" class="w-4 h-4 text-slate-400"></ng-icon>
-            Sube tu comprobante de depósito
-          </h4>
-          <label for="comprobante-cuota"
-            class="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 hover:border-primary-400 cursor-pointer transition-colors">
-            <ng-icon name="lucideImage" class="w-10 h-10 text-slate-400"></ng-icon>
-            <span class="text-sm font-medium text-slate-600">Haz clic para seleccionar el archivo</span>
-            <span class="text-xs text-slate-400">PNG, JPG o PDF · Máx. 5MB</span>
-            <input id="comprobante-cuota" type="file" accept="image/*,.pdf" class="sr-only">
-          </label>
-        </div>
-      </div>
-
-      <div class="p-5 border-t border-slate-100 bg-slate-50 flex gap-3">
-        <button (click)="cerrarPago()" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-colors text-sm">
-          Cancelar
-        </button>
-        <button class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-colors text-sm flex items-center justify-center gap-2">
-          <ng-icon name="lucideSend" class="w-4 h-4"></ng-icon>
-          Enviar Solicitud
-        </button>
-      </div>
-    </div>
-  </div>
+<!-- Pago con comprobante -->
+@if (cuotaSeleccionada(); as sel) {
+  <app-comprobante-pago [idIns]="sel.plan.id_ins" [montoSugerido]="sel.cuota.saldo"
+    (cerrar)="cerrarPago()" (enviado)="comprobanteEnviado($event)" />
 }
