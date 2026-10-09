@@ -6,6 +6,7 @@ use App\Application\Articulos\DTOs\ArticuloDTO;
 use App\Domain\Articulos\Contracts\ArticuloRepositoryInterface;
 use App\Domain\Articulos\Exceptions\ArticuloNotFoundException;
 use App\Shared\Kernel\DTOs\PaginationDTO;
+use App\Shared\Kernel\Support\SqlCompat;
 use Illuminate\Support\Facades\DB;
 
 class EloquentArticuloRepository implements ArticuloRepositoryInterface
@@ -22,7 +23,9 @@ class EloquentArticuloRepository implements ArticuloRepositoryInterface
                       WHERE ae.articulo_id = {$alias}.id_art) as etiquetas";
         }
 
-        return "(SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', e.id, 'nombre', e.nombre, 'slug', e.slug, 'color', e.color)), ']')
+        $json = SqlCompat::concat("'['", "GROUP_CONCAT(JSON_OBJECT('id', e.id, 'nombre', e.nombre, 'slug', e.slug, 'color', e.color))", "']'");
+
+        return "(SELECT {$json}
                   FROM web_articulo_etiqueta ae
                   JOIN web_etiqueta e ON e.id = ae.etiqueta_id
                   WHERE ae.articulo_id = {$alias}.id_art) as etiquetas";

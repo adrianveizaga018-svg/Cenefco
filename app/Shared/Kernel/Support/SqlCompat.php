@@ -38,6 +38,11 @@ final class SqlCompat
     {
         $map = ['%Y-%m' => 'YYYY-MM', '%Y' => 'YYYY'];
 
+        // strftime de SQLite usa los mismos códigos que DATE_FORMAT para año y mes
+        if (self::isSqlite()) {
+            return "strftime('{$mysqlFormat}', {$column})";
+        }
+
         return self::isPgsql()
             ? "TO_CHAR({$column}, '{$map[$mysqlFormat]}')"
             : "DATE_FORMAT({$column}, '{$mysqlFormat}')";

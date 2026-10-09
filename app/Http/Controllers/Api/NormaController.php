@@ -31,9 +31,9 @@ class NormaController extends Controller
         $pagination = new PaginationDTO(
             pageIndex: (int) $request->get('page', 1),
             pageSize: (int) $request->get('per_page', 15),
-            query: $request->get('q'),
-            sortKey: $request->get('sort', 'fecha_promulgacion'),
-            sortOrder: $request->get('order', 'desc'),
+            query: (string) $request->get('q', ''),
+            sortKey: (string) $request->get('sort', 'fecha_promulgacion'),
+            sortOrder: (string) $request->get('order', 'desc'),
         );
 
         $filters = [

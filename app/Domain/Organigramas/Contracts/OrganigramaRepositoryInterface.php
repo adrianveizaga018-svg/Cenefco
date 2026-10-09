@@ -6,7 +6,8 @@ use App\Application\Organigramas\DTOs\OrganigramaDTO;
 
 interface OrganigramaRepositoryInterface
 {
-    public function findLatest(): OrganigramaDTO;
+    /** Árbol del organigrama vigente, o null si no hay uno. */
+    public function findLatest(): ?array;
 
     public function findById(int $id): OrganigramaDTO;
 
