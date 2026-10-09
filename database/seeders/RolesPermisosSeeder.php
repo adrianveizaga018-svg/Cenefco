@@ -80,12 +80,13 @@ class RolesPermisosSeeder extends Seeder
         }
 
         $permisosParticipante = DB::table('permisos')
+            // Solo su área personal: los permisos *.ver de personal exponen datos de otros estudiantes
             ->whereIn('codigo', [
-                'programas.ver',
-                'inscripciones.ver',
-                'pagos.ver',
-                'notas.ver',
-                'certificados.ver',
+                'estudiante.dashboard',
+                'estudiante.cursos',
+                'estudiante.certificados',
+                'estudiante.pagos',
+                'estudiante.oferta',
             ])
             ->pluck('id');
         foreach ($permisosParticipante as $permisoId) {

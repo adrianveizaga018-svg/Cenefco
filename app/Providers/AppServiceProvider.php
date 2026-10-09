@@ -20,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
             Model::preventLazyLoading();
         }
 
+        \App\Infrastructure\Pagos\Models\Pago::observe(\App\Infrastructure\Pagos\Observers\PagoObserver::class);
+
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }

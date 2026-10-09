@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
  * Única regla de ascenso participante → Estudiante.
  *
  * Una cuenta nace como "participante" y pasa a "Estudiante" cuando se registra
- * el primer pago de una inscripción (caja, cobranzas, pago manual u online).
+ * el primer pago de una inscripción (caja, cobranzas, pago manual u online),
+ * o al inscribirse en un programa con plan gratuito (Caja o su propio panel).
  * Llamar siempre DESPUÉS de confirmar la transacción del pago: un fallo aquí
  * nunca debe revertir ni bloquear un pago.
  */

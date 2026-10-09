@@ -94,7 +94,14 @@ class EloquentPagoRepository implements PagoRepositoryInterface
 
     public function create(array $data): mixed
     {
-        return Pago::create($data);
+        $pago = new Pago($data);
+        // t_pago es tabla legada: en SQLite id_pago no es autoincremental
+        if (DB::getDriverName() === 'sqlite') {
+            $pago->id_pago = (int) (DB::table('t_pago')->max('id_pago') ?? 0) + 1;
+        }
+        $pago->save();
+
+        return $pago;
     }
 
     public function update(int $id, array $data): mixed
@@ -113,7 +120,7 @@ class EloquentPagoRepository implements PagoRepositoryInterface
 
     public function auditarCambio(object $pago, string $tipoLog, int $idUsReg): void
     {
-        PagoLog::create([
+        $log = new PagoLog([
             'id_pago'             => $pago->id_pago,
             'tipo_log'            => $tipoLog,
             'id_us_reg'           => $idUsReg,
@@ -135,6 +142,13 @@ class EloquentPagoRepository implements PagoRepositoryInterface
             'monto_descuento_extra' => $pago->monto_descuento_extra ?? null,
             'motivo_descuento'      => $pago->motivo_descuento ?? null,
         ]);
+
+        // En SQLite (desarrollo local) t_pagolog no tiene autoincremento; en MySQL/PostgreSQL sí
+        if (\DB::connection()->getDriverName() === 'sqlite') {
+            $log->id_pagolog = (PagoLog::max('id_pagolog') ?? 0) + 1;
+        }
+
+        $log->save();
     }
 
     public function registrarLogPagoOnlineFallido(string $referencia, int $idUs, float $monto, string $detalle): void

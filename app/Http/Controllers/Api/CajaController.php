@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Shared\Kernel\Support\FormatoPersona;
+use App\Shared\Kernel\Support\PlanGratuito;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +19,7 @@ class CajaController extends Controller
     {
         $ci = trim((string) $request->get('ci', ''));
         if (strlen($ci) < 3) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         $usuario = DB::table('t_usuario')
@@ -30,7 +32,7 @@ class CajaController extends Controller
             ->first();
 
         if (!$usuario) {
-            return response()->json(null);
+            return JsonResponse::fromJsonString('null'); // json(null) devolvería {}
         }
 
         // Inscripciones anteriores del estudiante
@@ -119,6 +121,7 @@ class CajaController extends Controller
                         'nro_cuotas'   => $p->nro_cuotas,
                         'descuento'    => $p->descuento,
                         'qr_image_url' => $p->qr_image_url ? url('storage/' . $p->qr_image_url) : null,
+                        'gratuito'     => PlanGratuito::costoCero($p->costo),
                     ])->values()
                     : $planesPrograma->map(fn ($p) => [
                         'id_plan'      => $p->id_plan,
@@ -127,6 +130,7 @@ class CajaController extends Controller
                         'nro_cuotas'   => $p->nro_cuotas,
                         'descuento'    => $p->descuento,
                         'qr_image_url' => $p->qr_image_url ? url('storage/' . $p->qr_image_url) : null,
+                        'gratuito'     => PlanGratuito::costoCero($p->costo),
                     ])->values();
 
                 return [
@@ -155,13 +159,17 @@ class CajaController extends Controller
 
     public function inscribir(Request $request): JsonResponse
     {
+        // Plan gratuito: se inscribe sin monto, comprobante ni registro de pago
+        $esGratuito = PlanGratuito::es($request->integer('id_plan') ?: null);
+        $siPaga     = $esGratuito ? 'nullable' : 'required';
+
         $request->validate([
             'id_imp'                => 'required|integer',
             'id_plan'               => 'nullable|integer',
-            'monto_pagado'          => 'required|numeric|min:0',
+            'monto_pagado'          => "{$siPaga}|numeric|min:0",
             'nro_boleta'            => 'nullable|string|max:200',
-            'fecha_deposito'        => 'required|date',
-            'metodo_pago'           => 'required|string',
+            'fecha_deposito'        => "{$siPaga}|date",
+            'metodo_pago'           => "{$siPaga}|string",
             'tipo_banco_id'         => 'nullable|integer',
             'comprobante'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             // Estudiante existente
@@ -176,6 +184,16 @@ class CajaController extends Controller
             'celular'               => 'nullable|string|max:20',
             'email'                 => 'nullable|email|max:100',
             'genero'                => 'nullable|integer',
+        ]);
+
+        // Mismo formato para todos: "Keny Kartman", correo en minúsculas, carnet en mayúsculas
+        $request->merge([
+            'nombre'           => FormatoPersona::nombre($request->input('nombre')),
+            'apellido_paterno' => FormatoPersona::nombre($request->input('apellido_paterno')),
+            'apellido_materno' => FormatoPersona::nombre($request->input('apellido_materno')),
+            'email'            => FormatoPersona::email($request->input('email')),
+            'ci'               => FormatoPersona::ci($request->input('ci')),
+            'celular'          => trim((string) $request->input('celular')) ?: null,
         ]);
 
         // ── Bug 1: Bloquear doble inscripción en la misma versión ────────────
@@ -238,22 +256,24 @@ class CajaController extends Controller
         }
 
         // ── Validar boleta duplicada (helper centralizado) ────────────────────
-        $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->input('nro_boleta'));
-        if ($boletaCheck['duplicada']) {
-            return response()->json(
-                array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []),
-                422
-            );
+        if (! $esGratuito) {
+            $boletaCheck = \App\Shared\Kernel\Support\BoletaValidator::verificar($request->input('nro_boleta'));
+            if ($boletaCheck['duplicada']) {
+                return response()->json(
+                    array_merge(['message' => $boletaCheck['message']], $boletaCheck['datos'] ?? []),
+                    422
+                );
+            }
         }
 
         // ── Guardar comprobante si viene ──────────────────────────────────────
         $comprobanteUrl = null;
-        if ($request->hasFile('comprobante')) {
+        if (! $esGratuito && $request->hasFile('comprobante')) {
             $comprobanteUrl = $request->file('comprobante')
                 ->store('inscripciones/comprobantes', 'public');
         }
 
-        $respuesta = DB::transaction(function () use ($request, $comprobanteUrl, $idUs) {
+        $respuesta = DB::transaction(function () use ($request, $comprobanteUrl, $idUs, $esGratuito) {
             $cajero = $request->user();
 
             // ── Crear estudiante nuevo ────────────────────────────────────────
@@ -310,6 +330,17 @@ class CajaController extends Controller
                 'email'       => $request->input('email'),
                 'telefono'    => $request->input('celular'),
             ]);
+
+            if ($esGratuito) {
+                return response()->json([
+                    'mensaje'   => 'Inscripción gratuita registrada correctamente',
+                    'id_ins'    => $idIns,
+                    'id_us'     => $idUs,
+                    'id_pago'   => null,
+                    'es_nuevo'  => !$request->input('id_us'),
+                    'gratuito'  => true,
+                ], 201);
+            }
 
             // ── Registrar pago ────────────────────────────────────────────────
             $idPago = (DB::table('t_pago')->max('id_pago') ?? 0) + 1;

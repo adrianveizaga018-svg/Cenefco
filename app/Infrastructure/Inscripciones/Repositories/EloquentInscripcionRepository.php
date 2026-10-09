@@ -312,6 +312,20 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
         $pagosActivos = $pagos->where('pago_estado', 1);
         $resumen      = $this->calculador->calcular($planId ? (int) $planId : null, $pagosActivos);
 
+        // Con cronograma propio, la deuda es la misma que ven Caja, Cobranzas y el estudiante
+        $cronograma = app(\App\Application\Inscripciones\Services\InscripcionCuotasService::class)->sincronizar($id);
+        if ($cronograma) {
+            $resumen = \App\Application\Pagos\DTOs\ResumenPagoDTO::fromArray([
+                'plan_no_asignado' => false,
+                'total_pagado'     => $cronograma->total_pagado,
+                'total_anticipos'  => $resumen->total_anticipos,
+                'cuotas_pagadas'   => $cronograma->cuotas_pagadas,
+                'cuotas_totales'   => $cronograma->cuotas_totales,
+                'total_plan'       => $cronograma->total_plan,
+                'pendiente'        => $cronograma->pendiente,
+            ]);
+        }
+
         $docentes = $ins->id_imp
             ? $this->cursoRepository->docentesByImp((int) $ins->id_imp)
             : [];
@@ -333,6 +347,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
             documentos_estudiante: $documentosEstudiante,
             formulario_campos: $formularioCampos,
             compromiso_cobro: $compromisoCobro,
+            cuotas_inscripcion: $cronograma->cuotas ?? [],
         );
     }
 

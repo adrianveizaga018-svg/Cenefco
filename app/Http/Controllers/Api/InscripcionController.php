@@ -99,6 +99,7 @@ class InscripcionController extends Controller
             'documentos_estudiante' => $detalle->documentos_estudiante,
             'formulario_campos' => $detalle->formulario_campos,
             'compromiso_cobro' => $detalle->compromiso_cobro,
+            'cuotas_inscripcion' => $detalle->cuotas_inscripcion,
         ]);
     }
 

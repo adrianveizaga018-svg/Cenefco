@@ -18,5 +18,7 @@ final readonly class InscripcionDetalleDTO
         public array $documentos_estudiante = [],
         public array $formulario_campos = [],
         public ?CompromisoCobroDTO $compromiso_cobro = null,
+        /** Cronograma propio: monto, lo pagado y estado (pagado/parcial/pendiente) de cada cuota */
+        public array $cuotas_inscripcion = [],
     ) {}
 }
