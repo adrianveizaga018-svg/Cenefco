@@ -62,6 +62,14 @@
             </select>
           </label>
         </div>
+        @if (campanas().length) {
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="imp-campana">Campaña (para su informe de inscritos)
+            <select id="imp-campana" class="form-input" [ngModel]="campana()" (ngModelChange)="campana.set($event)">
+              <option value="">Sin campaña</option>
+              @for (c of campanas(); track c.id) { <option [value]="c.id">{{ c.nombre }}</option> }
+            </select>
+          </label>
+        }
         <label class="grid gap-1 text-xs font-medium text-default-600" for="imp-nota">Nota para el vendedor
           <input id="imp-nota" class="form-input" maxlength="300" placeholder="Ej. Grupo Diplomado Gestión Pública · noviembre"
             [ngModel]="nota()" (ngModelChange)="nota.set($event)">

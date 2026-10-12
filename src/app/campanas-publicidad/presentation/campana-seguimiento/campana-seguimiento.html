@@ -1,0 +1,140 @@
+<main>
+  <app-page-title [title]="resumen()?.campana?.nombre || 'Seguimiento de campaña'" subtitle="Campañas Publicitarias" />
+
+  <a routerLink="/cenefco/campanas-publicidad" class="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline mb-4">
+    <span class="size-4 inline-flex"><ng-icon name="lucideArrowLeft"></ng-icon></span> Volver a campañas
+  </a>
+
+  <div class="grid xl:grid-cols-3 gap-4 mb-4">
+    <!-- Registro del día -->
+    @if (puedeEditar) {
+      <section class="card xl:col-span-1">
+        <div class="card-header"><h2 class="text-sm font-bold text-default-800">Registro del día</h2></div>
+        <div class="p-5 grid gap-3">
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="rd-fecha">Fecha
+            <input id="rd-fecha" type="date" class="form-input" [max]="hoy" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)">
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="grid gap-1 text-xs font-medium text-default-600" for="rd-nuevos">Se unieron hoy al grupo
+              <input id="rd-nuevos" type="number" min="0" class="form-input" placeholder="Ej. 30" [ngModel]="nuevos()" (ngModelChange)="nuevos.set($event)">
+            </label>
+            <label class="grid gap-1 text-xs font-medium text-default-600" for="rd-total">Total del grupo
+              <input id="rd-total" type="number" min="0" class="form-input" [placeholder]="sugerirTotal() !== null ? 'Se calcula: ' + sugerirTotal() : 'Opcional'"
+                [ngModel]="total()" (ngModelChange)="total.set($event)">
+            </label>
+          </div>
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="rd-gasto">Otros gastos del día (Bs)
+            <input id="rd-gasto" type="number" min="0" step="0.01" class="form-input" placeholder="Diseño, impresiones… (el de Facebook entra solo)"
+              [ngModel]="gasto()" (ngModelChange)="gasto.set($event)">
+          </label>
+          <label for="rd-flyer" class="flex items-center gap-3 p-3 border-2 border-dashed rounded-xl cursor-pointer"
+            [class]="flyer() ? 'border-success/40 bg-success/5' : 'border-default-300 bg-default-50 hover:bg-default-100'">
+            <span class="size-6 inline-flex shrink-0" [class]="flyer() ? 'text-success' : 'text-default-400'"><ng-icon [name]="flyer() ? 'lucideFileCheck' : 'lucideImage'"></ng-icon></span>
+            <span class="text-sm text-default-700 truncate">{{ flyer()?.name || 'Flyer publicado hoy (opcional)' }}</span>
+            <input id="rd-flyer" type="file" accept="image/*" class="sr-only" (change)="onFlyer($event)">
+          </label>
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="rd-nota">Nota
+            <textarea id="rd-nota" rows="2" class="form-input" maxlength="1000" placeholder="Refuerzo, cambio de presupuesto, qué funcionó…" [ngModel]="nota()" (ngModelChange)="nota.set($event)"></textarea>
+          </label>
+          <button type="button" class="btn bg-primary text-white" [disabled]="guardando()" (click)="guardar()">{{ guardando() ? 'Guardando...' : 'Guardar registro' }}</button>
+          <p class="text-[11px] text-default-500">Si ya hay un registro en esa fecha, se reemplaza. El total del grupo actualiza la columna "Leads WA".</p>
+        </div>
+      </section>
+    }
+
+    <!-- Resumen e informe -->
+    <section class="card" [class.xl:col-span-2]="puedeEditar" [class.xl:col-span-3]="!puedeEditar">
+      <div class="card-header flex flex-wrap items-end gap-3">
+        <h2 class="text-sm font-bold text-default-800 me-auto">Resumen del periodo</h2>
+        <label class="grid gap-1 text-xs font-medium text-default-600" for="rs-desde">Desde
+          <input id="rs-desde" type="date" class="form-input" [ngModel]="desde()" (ngModelChange)="desde.set($event)">
+        </label>
+        <label class="grid gap-1 text-xs font-medium text-default-600" for="rs-hasta">Hasta
+          <input id="rs-hasta" type="date" class="form-input" [max]="hoy" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)">
+        </label>
+        <button type="button" class="btn border border-default-300 bg-white" (click)="cargar()">Ver</button>
+        <button type="button" class="btn bg-primary text-white inline-flex items-center gap-1.5" [disabled]="generando()" (click)="generarInforme()">
+          <span class="size-4 inline-flex"><ng-icon name="lucideFileText"></ng-icon></span> {{ generando() ? 'Generando...' : 'Generar informe PDF' }}
+        </button>
+      </div>
+      @if (resumen(); as r) {
+        <div class="p-5 grid gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Gasto total</p><p class="text-xl font-bold tabular-nums">Bs {{ r.gastos.total | number:'1.2-2' }}</p><p class="text-[11px] text-default-500">Facebook {{ r.gastos.facebook | number:'1.2-2' }} · otros {{ r.gastos.otros | number:'1.2-2' }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Se unieron al grupo</p><p class="text-xl font-bold tabular-nums">{{ r.grupo.nuevos }}</p><p class="text-[11px] text-default-500">Total del grupo: {{ r.grupo.total }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Inscritos</p><p class="text-xl font-bold tabular-nums text-success">{{ r.crm.inscritos }}</p><p class="text-[11px] text-default-500">de {{ r.crm.interesados }} interesados en el embudo</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Cobrado</p><p class="text-xl font-bold tabular-nums">Bs {{ r.crm.cobrado | number:'1.0-0' }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Costo por persona en el grupo</p><p class="text-lg font-bold tabular-nums">{{ r.costos.por_persona_grupo !== null ? 'Bs ' + (r.costos.por_persona_grupo | number:'1.2-2') : '—' }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Costo por inscrito</p><p class="text-lg font-bold tabular-nums">{{ r.costos.por_inscrito !== null ? 'Bs ' + (r.costos.por_inscrito | number:'1.2-2') : '—' }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Retorno</p><p class="text-lg font-bold tabular-nums">{{ r.costos.retorno !== null ? (r.costos.retorno | number:'1.2-2') + 'x' : '—' }}</p></div>
+            <div class="rounded-lg bg-default-50 px-4 py-3"><p class="text-xs text-default-500">Facebook</p><p class="text-sm font-semibold tabular-nums">{{ r.facebook.alcance | number }} de alcance</p>
+              <p class="text-[11px]" [class]="r.facebook.actualizado ? 'text-default-500' : 'text-amber-700'">{{ r.facebook.actualizado ? 'al ' + (r.facebook.actualizado | date:'dd/MM') : 'Sin datos de Facebook' }}</p></div>
+          </div>
+          @if (r.crm.interesados === 0) {
+            <p class="text-xs text-default-500">Para ver inscritos y cobrado aquí, al subir el Excel del grupo en el embudo elige esta campaña.</p>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <div class="grid xl:grid-cols-3 gap-4">
+    <!-- Historial diario -->
+    <section class="card xl:col-span-2">
+      <div class="card-header"><h2 class="text-sm font-bold text-default-800">Historial diario</h2></div>
+      @if (!registros().length) {
+        <p class="px-5 py-10 text-center text-sm text-default-500">Todavía no hay registros. Empieza con el de hoy.</p>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-default-50 text-xs uppercase text-default-500">
+              <tr><th class="px-4 py-2 text-start">Fecha</th><th class="px-4 py-2 text-end">Se unieron</th><th class="px-4 py-2 text-start min-w-32"></th><th class="px-4 py-2 text-end">Total</th><th class="px-4 py-2 text-end">Otros gastos</th><th class="px-4 py-2 text-start">Flyer</th><th class="px-4 py-2 text-start">Nota</th><th class="px-4 py-2"></th></tr>
+            </thead>
+            <tbody class="divide-y divide-default-100 tabular-nums">
+              @for (r of registros(); track r.id) {
+                <tr class="hover:bg-default-50">
+                  <td class="px-4 py-2 whitespace-nowrap">{{ r.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-4 py-2 text-end font-semibold">{{ r.nuevos_grupo }}</td>
+                  <td class="px-4 py-2"><div class="h-2 rounded-full bg-primary/70" [style.width.%]="(r.nuevos_grupo / maxNuevos()) * 100"></div></td>
+                  <td class="px-4 py-2 text-end">{{ r.total_grupo }}</td>
+                  <td class="px-4 py-2 text-end">{{ r.gasto_extra ? 'Bs ' + (r.gasto_extra | number:'1.2-2') : '—' }}</td>
+                  <td class="px-4 py-2">
+                    @if (r.flyer_url) { <a [href]="r.flyer_url" target="_blank" rel="noopener"><img [src]="r.flyer_url" alt="Flyer" class="h-10 rounded border border-default-200"></a> } @else { — }
+                  </td>
+                  <td class="px-4 py-2 text-default-600 max-w-64 truncate" [title]="r.nota || ''">{{ r.nota || '—' }}</td>
+                  <td class="px-4 py-2 whitespace-nowrap text-end">
+                    @if (puedeEditar) {
+                      <button type="button" class="text-xs font-semibold text-primary hover:underline me-2" (click)="editar(r)">Editar</button>
+                      <button type="button" class="text-xs font-semibold text-danger hover:underline" (click)="eliminar(r)">Eliminar</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <!-- Historial de informes -->
+    <section class="card">
+      <div class="card-header"><h2 class="text-sm font-bold text-default-800">Informes generados</h2></div>
+      @if (!informes().length) {
+        <p class="px-5 py-10 text-center text-sm text-default-500">Aún no se generó ningún informe.</p>
+      } @else {
+        <ul class="divide-y divide-default-100">
+          @for (i of informes(); track i.id) {
+            <li class="px-5 py-3 flex items-center gap-3">
+              <span class="size-8 rounded-lg bg-danger/10 text-danger inline-flex items-center justify-center shrink-0"><span class="size-4 inline-flex"><ng-icon name="lucideFileText"></ng-icon></span></span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-default-800">{{ i.desde | date:'dd/MM' }} al {{ i.hasta | date:'dd/MM/yyyy' }}</p>
+                <p class="text-[11px] text-default-500">{{ i.created_at | date:'dd/MM/yyyy HH:mm' }}{{ i.generado_por ? ' · ' + i.generado_por : '' }} · Bs {{ i.resumen.gastos.total | number:'1.0-0' }} · {{ i.resumen.crm.inscritos }} inscritos</p>
+              </div>
+              <a [href]="i.archivo_url" target="_blank" rel="noopener" class="text-xs font-semibold text-primary hover:underline">Abrir</a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</main>

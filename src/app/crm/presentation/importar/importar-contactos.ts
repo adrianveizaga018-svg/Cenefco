@@ -1,4 +1,5 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon } from '@ng-icons/core';
@@ -15,8 +16,18 @@ import { CrmService, ResultadoImportacion, VendedorCrm } from '../../application
   imports: [FormsModule, NgIcon],
   templateUrl: './importar-contactos.html',
 })
-export class ImportarContactosComponent {
+export class ImportarContactosComponent implements OnInit {
   private crm = inject(CrmService);
+  private http = inject(HttpClient);
+
+  /** Campañas activas: el contacto queda ligado a la campaña para su informe de inscritos. */
+  campanas = signal<{ id: number; nombre: string }[]>([]);
+  campana  = signal('');
+
+  ngOnInit(): void {
+    this.http.get<{ data: { id: number; nombre: string }[] }>('/api/v1/campanas-publicidad', { params: new HttpParams().set('estado', 'activa').set('pageSize', '200') })
+      .subscribe({ next: (res) => this.campanas.set(res.data ?? []), error: () => {} });
+  }
 
   readonly vendedores = input<VendedorCrm[]>([]);
   readonly cerrar = output<void>();
@@ -56,6 +67,7 @@ export class ImportarContactosComponent {
     fd.append('archivo', archivo);
     fd.append('origen', this.origen());
     if (this.vendedor()) fd.append('vendedor_id', this.vendedor());
+    if (this.campana()) fd.append('campana_publicidad_id', this.campana());
     if (this.nota().trim()) fd.append('nota', this.nota().trim());
 
     this.enviando.set(true);

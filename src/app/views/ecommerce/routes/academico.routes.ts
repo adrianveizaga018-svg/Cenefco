@@ -116,6 +116,7 @@ import { CampanasPublicidad } from '../../../campanas-publicidad/presentation/ca
 import { CampanaEdit }        from '../../../campanas-publicidad/presentation/campana-edit/campana-edit'
 import { CampanaDetail }      from '../../../campanas-publicidad/presentation/campana-detail/campana-detail'
 import { CampanasReporte }    from '../../../campanas-publicidad/presentation/campanas-reporte/campanas-reporte'
+import { CampanaSeguimientoComponent } from '../../../campanas-publicidad/presentation/campana-seguimiento/campana-seguimiento'
 
 import { CampanasLeads }    from '../../../campanas-leads/presentation/campanas-leads/campanas-leads'
 import { CampanaLeadEdit }   from '../../../campanas-leads/presentation/campana-lead-edit/campana-lead-edit'
@@ -255,6 +256,7 @@ export const ACADEMICO_ROUTES: Routes = [
     { path: 'cenefco/campana-create',      component: CampanaEdit,        data: { title: 'Nueva Campaña Publicitaria' } },
     { path: 'cenefco/campana-edit/:id',    component: CampanaEdit,        data: { title: 'Editar Campaña Publicitaria' } },
     { path: 'cenefco/campana-detail/:id',  component: CampanaDetail,      data: { title: 'Detalle de Campaña' } },
+    { path: 'cenefco/campana-seguimiento/:id', component: CampanaSeguimientoComponent, data: { title: 'Seguimiento de campaña' } },
     { path: 'cenefco/campanas-reporte',    component: CampanasReporte,    data: { title: 'Reporte de Campañas' } },
 
     { path: 'cenefco/campanas-leads',        component: CampanasLeads,      data: { title: 'Campañas de Leads' } },
