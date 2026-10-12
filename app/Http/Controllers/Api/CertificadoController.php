@@ -256,6 +256,7 @@ class CertificadoController extends Controller
             return response()->json(['message' => 'No se pudo crear el archivo ZIP (código '.$abierto.').'], 500);
         }
 
+        $agregados = 0;
         foreach ($certs as $cert) {
             $relative = ltrim(str_replace('/storage/', '', $cert->archivo_url), '/');
             $filePath = Storage::disk('public')->path($relative);
@@ -264,9 +265,17 @@ class CertificadoController extends Controller
             }
             $entryName = Str::slug($cert->nombre_en_certificado).'-'.$cert->codigo_verificacion.'.pdf';
             $zip->addFile($filePath, $entryName);
+            $agregados++;
         }
 
         $zip->close();
+
+        // ZipArchive no escribe el archivo si quedó vacío
+        if ($agregados === 0) {
+            @unlink($zipPath);
+
+            return response()->json(['message' => 'Los certificados de esta apertura todavía no tienen su PDF. Ejecuta "php artisan certificados:reparar-pdf".'], 404);
+        }
 
         $imparte = DB::table('t_imparte')->where('id_imp', $imparteId)->first();
         $nombrePrograma = $imparte?->titulo_personalizado ?: 'certificados';
