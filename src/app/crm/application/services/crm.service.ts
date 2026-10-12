@@ -85,6 +85,20 @@ export interface TableroCrm {
   por_origen: { origen: Origen; interesados: number; inscritos: number }[];
 }
 
+export interface TareaCrm extends LeadCrm {
+  vencida: boolean;
+  proxima_accion: string | null;
+  intentos_sin_respuesta: number;
+}
+
+export interface ResultadoImportacion {
+  nuevos: number;
+  ya_estaban: number;
+  ya_estudiantes: number;
+  errores: string[];
+  por_vendedor: { vendedor: string; cantidad: number }[];
+}
+
 export interface ContactoCrm {
   tipo: 'llamada' | 'whatsapp' | 'correo' | 'reunion' | 'otro';
   resultado: 'no_contesto' | 'contactado' | 'interesado' | 'no_interesado';
@@ -123,6 +137,27 @@ export class CrmService {
 
   asignar(id: number, vendedorId: number): Observable<{ message: string }> {
     return this.http.patch<{ message: string }>(`${this.base}/leads/${id}/asignar`, { vendedor_id: vendedorId });
+  }
+
+  /** El mismo contacto a varios (p. ej. "les envié el flyer"); solo se aplica a los que son del vendedor. */
+  contactoMasivo(ids: number[], datos: Pick<ContactoCrm, 'tipo' | 'resultado' | 'nota'>): Observable<{ message: string; registrados: number }> {
+    return this.http.post<{ message: string; registrados: number }>(`${this.base}/leads/contacto-masivo`, { ids, ...datos });
+  }
+
+  asignarMasivo(ids: number[], vendedorId: number): Observable<{ message: string }> {
+    return this.http.patch<{ message: string }>(`${this.base}/leads/asignar-masivo`, { ids, vendedor_id: vendedorId });
+  }
+
+  tareas(): Observable<{ data: TareaCrm[]; vencidas: number }> {
+    return this.http.get<{ data: TareaCrm[]; vencidas: number }>(`${this.base}/tareas`);
+  }
+
+  importar(datos: FormData): Observable<ResultadoImportacion> {
+    return this.http.post<ResultadoImportacion>(`${this.base}/importar`, datos);
+  }
+
+  plantilla(): Observable<Blob> {
+    return this.http.get(`${this.base}/importar/plantilla`, { responseType: 'blob' });
   }
 
   tablero(desde: string, hasta: string): Observable<TableroCrm> {

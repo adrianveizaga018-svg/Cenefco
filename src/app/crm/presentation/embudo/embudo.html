@@ -26,7 +26,15 @@
           {{ sinAtender() }} sin atender hace más de 24 h
         </span>
       }
-      <button type="button" class="btn bg-primary text-white ms-auto inline-flex items-center gap-1.5" (click)="nuevoInteresado()">
+      <button type="button" class="btn border border-default-300 bg-white ms-auto inline-flex items-center gap-1.5" [class.bg-primary/10]="seleccionando()" (click)="alternarSeleccion()">
+        <span class="size-4 inline-flex"><ng-icon name="lucideCheckSquare"></ng-icon></span> {{ seleccionando() ? 'Terminar selección' : 'Seleccionar varios' }}
+      </button>
+      @if (importa) {
+        <button type="button" class="btn border border-default-300 bg-white inline-flex items-center gap-1.5" (click)="importando.set(true)">
+          <span class="size-4 inline-flex"><ng-icon name="lucideUpload"></ng-icon></span> Subir Excel
+        </button>
+      }
+      <button type="button" class="btn bg-primary text-white inline-flex items-center gap-1.5" (click)="nuevoInteresado()">
         <span class="size-4 inline-flex"><ng-icon name="lucidePlus"></ng-icon></span> Nuevo interesado
       </button>
     </div>
@@ -40,19 +48,25 @@
     <!-- Columnas del embudo -->
     <div class="flex gap-3 overflow-x-auto pb-3" cdkDropListGroup>
       @for (col of columnas(); track col.valor) {
-        <section class="shrink-0 w-64 rounded-xl bg-default-100/70 p-2.5 flex flex-col gap-2"
+        <section class="shrink-0 w-72 rounded-xl bg-default-100/70 p-2.5 flex flex-col gap-2"
           cdkDropList [cdkDropListData]="col.valor" (cdkDropListDropped)="alSoltar($event)" [attr.aria-label]="col.etiqueta">
-          <header class="flex items-center justify-between px-1">
-            <h2 class="text-sm font-bold"
+          <header class="flex items-center justify-between gap-2 px-1">
+            @if (seleccionando() && col.leads.length && abiertas.includes(col.valor)) {
+              <button type="button" class="text-[11px] font-semibold text-primary hover:underline" (click)="marcarColumna(col.valor)">Todos</button>
+            }
+            <h2 class="text-sm font-bold me-auto"
               [class]="col.valor === 'inscrito' ? 'text-success' : col.valor === 'perdido' ? 'text-default-500' : 'text-default-800'">{{ col.etiqueta }}</h2>
             <span class="text-xs font-semibold text-default-500 tabular-nums">{{ col.leads.length }}</span>
           </header>
 
           @for (l of col.leads; track l.id) {
-            <article cdkDrag [cdkDragData]="l" (click)="abrir(l)" tabindex="0" (keyup.enter)="abrir(l)"
+            <article cdkDrag [cdkDragData]="l" [cdkDragDisabled]="seleccionando()" (click)="alClicTarjeta(l)" tabindex="0" (keyup.enter)="alClicTarjeta(l)"
               class="bg-white rounded-lg border border-default-200 px-3 py-2.5 cursor-grab active:cursor-grabbing hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40 grid gap-1"
-              [class.border-l-4]="l.sin_atender" [class.border-l-danger]="l.sin_atender">
-              <p class="text-sm font-semibold text-default-800 leading-snug">{{ l.nombre }}</p>
+              [class.border-l-4]="l.sin_atender" [class.border-l-danger]="l.sin_atender" [class.ring-2]="seleccion().has(l.id)" [class.ring-primary]="seleccion().has(l.id)">
+              <p class="text-sm font-semibold text-default-800 leading-snug flex items-start gap-2">
+                @if (seleccionando()) { <input type="checkbox" class="mt-0.5 accent-primary" [checked]="seleccion().has(l.id)" (click)="$event.stopPropagation(); marcar(l)" [attr.aria-label]="'Seleccionar ' + l.nombre"> }
+                <span>{{ l.nombre }}</span>
+              </p>
               @if (l.programa) { <p class="text-xs text-default-600 line-clamp-2">{{ l.programa }}</p> }
               <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
                 <span class="px-1.5 py-0.5 rounded bg-default-100 text-default-600">{{ nombreOrigen(l.origen) }}</span>
@@ -66,6 +80,19 @@
               } @else if (col.valor === 'perdido' && l.motivo_perdida) {
                 <p class="text-[11px] text-default-500">Motivo: {{ l.motivo_perdida }}</p>
               }
+              @if (!seleccionando() && abiertas.includes(col.valor)) {
+                <div class="flex gap-1 pt-1 border-t border-default-100 mt-0.5" (mousedown)="$event.stopPropagation()">
+                  <button type="button" class="flex-1 inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md py-1 text-[11px] font-semibold text-default-600 hover:bg-default-100" title="No contestó (agenda el siguiente intento)" (click)="rapido($event, l, 'no_contesto')">
+                    <span class="size-3.5 inline-flex"><ng-icon name="lucidePhoneOff"></ng-icon></span> No contestó
+                  </button>
+                  <button type="button" class="flex-1 inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md py-1 text-[11px] font-semibold text-primary hover:bg-primary/10" title="Hablamos" (click)="rapido($event, l, 'contactado')">
+                    <span class="size-3.5 inline-flex"><ng-icon name="lucideMessageCircle"></ng-icon></span> Hablamos
+                  </button>
+                  <button type="button" class="flex-1 inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md py-1 text-[11px] font-semibold text-success hover:bg-success/10" title="Está interesado" (click)="rapido($event, l, 'interesado')">
+                    <span class="size-3.5 inline-flex"><ng-icon name="lucideStar"></ng-icon></span> Interesa
+                  </button>
+                </div>
+              }
             </article>
           } @empty {
             <p class="text-xs text-default-400 text-center py-6">Sin interesados</p>
@@ -75,6 +102,22 @@
     </div>
   }
 </main>
+
+<!-- Barra de acciones masivas -->
+@if (seleccionando()) {
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-default-900 text-white rounded-xl shadow-2xl px-4 py-3 flex flex-wrap items-center gap-3">
+    <span class="text-sm font-semibold tabular-nums">{{ seleccion().size }} seleccionado(s)</span>
+    <button type="button" class="btn btn-sm bg-white text-default-900" [disabled]="!seleccion().size" (click)="contactoMasivo()">Registrar contacto</button>
+    @if (supervisa) {
+      <button type="button" class="btn btn-sm bg-white/15 text-white" [disabled]="!seleccion().size" (click)="reasignarMasivo()">Reasignar</button>
+    }
+    <button type="button" class="btn btn-sm text-white/80 hover:text-white" (click)="alternarSeleccion()">Cancelar</button>
+  </div>
+}
+
+@if (importando()) {
+  <app-importar-contactos [vendedores]="vendedores()" (cerrar)="importando.set(false)" (importado)="cargar()" />
+}
 
 <!-- Ficha del interesado -->
 @if (detalle(); as d) {

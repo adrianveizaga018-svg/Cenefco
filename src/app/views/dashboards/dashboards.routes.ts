@@ -30,6 +30,11 @@ export const DASHBOARDS_ROUTES: Routes = [
         data: { title: 'Embudo de ventas' }
     },
     {
+        path: 'crm/tareas',
+        loadComponent: () => import('../../crm/presentation/tareas/tareas').then(m => m.TareasCrmComponent),
+        data: { title: 'Mis tareas de hoy' }
+    },
+    {
         path: 'crm/tablero',
         loadComponent: () => import('../../crm/presentation/tablero/tablero').then(m => m.TableroCrmComponent),
         data: { title: 'Tablero de ventas' }

@@ -1,0 +1,82 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-importar">
+  <div class="absolute inset-0 bg-slate-900/50" (click)="cerrar.emit()"></div>
+  <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+    <header class="px-6 py-4 border-b border-default-200 flex items-center justify-between gap-3">
+      <h2 id="titulo-importar" class="text-lg font-bold text-default-900">Subir contactos al embudo</h2>
+      <button type="button" class="size-8 rounded-lg hover:bg-default-100 inline-flex items-center justify-center" aria-label="Cerrar" (click)="cerrar.emit()">
+        <span class="size-5 inline-flex"><ng-icon name="lucideX"></ng-icon></span>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-6 py-5 grid gap-4 content-start">
+      @if (resultado(); as r) {
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-xl bg-success/10 px-3 py-3"><p class="text-2xl font-bold text-success tabular-nums">{{ r.nuevos }}</p><p class="text-xs text-default-600">nuevos en el embudo</p></div>
+          <div class="rounded-xl bg-default-100 px-3 py-3"><p class="text-2xl font-bold tabular-nums">{{ r.ya_estaban }}</p><p class="text-xs text-default-600">ya estaban (se sumó la nota)</p></div>
+          <div class="rounded-xl bg-blue-50 px-3 py-3"><p class="text-2xl font-bold text-blue-700 tabular-nums">{{ r.ya_estudiantes }}</p><p class="text-xs text-default-600">ya son estudiantes</p></div>
+        </div>
+        @if (r.por_vendedor.length) {
+          <div class="grid gap-1">
+            <p class="text-sm font-semibold text-default-800">Repartidos así</p>
+            @for (v of r.por_vendedor; track v.vendedor) {
+              <p class="flex justify-between text-sm border-b border-default-100 py-1"><span>{{ v.vendedor }}</span><span class="font-semibold tabular-nums">{{ v.cantidad }}</span></p>
+            }
+          </div>
+        }
+        @if (r.errores.length) {
+          <div class="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 grid gap-1">
+            <p class="text-sm font-semibold text-amber-800">{{ r.errores.length }} fila(s) no se subieron</p>
+            @for (e of r.errores; track $index) { <p class="text-xs text-amber-800">{{ e }}</p> }
+          </div>
+        }
+      } @else {
+        <p class="text-sm text-default-600">
+          Sirve para los números de un grupo de WhatsApp, una feria o una base. Puede ser la plantilla o simplemente una columna con los números.
+          Si alguien ya está en el embudo no se duplica, y si ya es estudiante se marca.
+        </p>
+        <button type="button" class="justify-self-start text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1.5" (click)="descargarPlantilla()">
+          <span class="size-4 inline-flex"><ng-icon name="lucideDownload"></ng-icon></span> Descargar plantilla
+        </button>
+
+        <label for="imp-archivo" class="flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors"
+          [class]="archivo() ? 'border-success/40 bg-success/5' : 'border-default-300 bg-default-50 hover:bg-default-100'">
+          <span class="size-8 inline-flex shrink-0" [class]="archivo() ? 'text-success' : 'text-default-400'"><ng-icon [name]="archivo() ? 'lucideFileCheck' : 'lucideFileSpreadsheet'"></ng-icon></span>
+          <span class="min-w-0">
+            <span class="block text-sm font-medium text-default-700 truncate">{{ archivo()?.name || 'Elige el archivo de Excel o CSV' }}</span>
+            <span class="block text-xs text-default-400">.xlsx, .xls o .csv · hasta 2.000 filas</span>
+          </span>
+          <input id="imp-archivo" type="file" accept=".xlsx,.xls,.csv,.txt" class="sr-only" (change)="onArchivo($event)">
+        </label>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="imp-origen">De dónde salen
+            <select id="imp-origen" class="form-input" [ngModel]="origen()" (ngModelChange)="origen.set($event)">
+              <option value="whatsapp_grupo">Grupo de WhatsApp</option>
+              <option value="excel">Otra lista (feria, base…)</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="imp-vendedor">Repartir a
+            <select id="imp-vendedor" class="form-input" [ngModel]="vendedor()" (ngModelChange)="vendedor.set($event)">
+              <option value="">Todos, por turnos</option>
+              @for (v of vendedores(); track v.id) { <option [value]="v.id">{{ v.nombre }}</option> }
+            </select>
+          </label>
+        </div>
+        <label class="grid gap-1 text-xs font-medium text-default-600" for="imp-nota">Nota para el vendedor
+          <input id="imp-nota" class="form-input" maxlength="300" placeholder="Ej. Grupo Diplomado Gestión Pública · noviembre"
+            [ngModel]="nota()" (ngModelChange)="nota.set($event)">
+        </label>
+        @if (error()) { <p class="text-sm text-danger bg-danger/10 rounded-lg px-3 py-2" role="alert">{{ error() }}</p> }
+      }
+    </div>
+
+    <footer class="px-6 py-4 border-t border-default-200 bg-default-50 flex justify-end gap-2">
+      @if (resultado()) {
+        <button type="button" class="btn bg-primary text-white" (click)="cerrar.emit()">Listo</button>
+      } @else {
+        <button type="button" class="btn border border-default-300 bg-white" (click)="cerrar.emit()">Cancelar</button>
+        <button type="button" class="btn bg-primary text-white" [disabled]="enviando()" (click)="subir()">{{ enviando() ? 'Subiendo...' : 'Subir contactos' }}</button>
+      }
+    </footer>
+  </div>
+</div>

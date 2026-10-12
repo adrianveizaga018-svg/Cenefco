@@ -10,6 +10,7 @@ import { PageTitle } from '../../../common/components/page-title/page-title';
 import { ToastService } from '../../../common/application/services/toast.service';
 import { AuthService } from '../../../auth/application/services/auth.service';
 import { extractErrorMessage } from '../../../utils/http-error';
+import { ImportarContactosComponent } from '../importar/importar-contactos';
 import {
   ContactoCrm, CrmService, DetalleLead, ETAPAS, Etapa, LeadCrm, ORIGENES, Origen, VendedorCrm,
 } from '../../application/services/crm.service';
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-embudo-crm',
   standalone: true,
-  imports: [PageTitle, NgIcon, FormsModule, DatePipe, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag],
+  imports: [PageTitle, NgIcon, FormsModule, DatePipe, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag, ImportarContactosComponent],
   templateUrl: './embudo.html',
   styles: `
     .cdk-drag-preview { box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); border-radius: 0.5rem; }
@@ -37,6 +38,11 @@ export class EmbudoCrmComponent implements OnInit {
   readonly etapas = ETAPAS;
   readonly origenes = Object.entries(ORIGENES) as [Origen, string][];
   readonly supervisa = this.auth.hasPermission('crm.supervisar');
+  readonly importa = this.auth.hasPermission('crm.importar');
+
+  importando    = signal(false);
+  seleccionando = signal(false);
+  seleccion     = signal<Set<number>>(new Set());
 
   leads      = signal<LeadCrm[]>([]);
   vendedores = signal<VendedorCrm[]>([]);
@@ -52,6 +58,79 @@ export class EmbudoCrmComponent implements OnInit {
 
   readonly columnas = computed(() => this.etapas.map(e => ({ ...e, leads: this.leads().filter(l => l.estado === e.valor) })));
   readonly sinAtender = computed(() => this.leads().filter(l => l.sin_atender).length);
+  readonly abiertas: Etapa[] = ['nuevo', 'contactado', 'interesado', 'por_pagar'];
+
+  /** Registro de un clic desde la tarjeta: la etapa y la secuencia se ajustan solas. */
+  rapido(ev: Event, lead: LeadCrm, resultado: ContactoCrm['resultado']): void {
+    ev.stopPropagation();
+    this.crm.registrarContacto(lead.id, { tipo: resultado === 'no_contesto' ? 'llamada' : 'whatsapp', resultado, nota: null, proxima_accion: null, proxima_accion_at: null }).subscribe({
+      next: (res) => {
+        const textos: Record<string, string> = { no_contesto: 'No contestó: se agendó el siguiente intento', contactado: 'Contacto registrado', interesado: 'Marcado como interesado' };
+        this.toast.success(textos[resultado] ?? 'Registrado', res.estado === 'perdido' ? lead.nombre + ' se cerró: no responde' : lead.nombre);
+        this.cargar();
+      },
+      error: (err: HttpErrorResponse) => this.toast.error('No se pudo registrar', extractErrorMessage(err, 'Inténtalo de nuevo.')),
+    });
+  }
+
+  // ── Selección masiva ────────────────────────────────────────────────────
+  alternarSeleccion(): void {
+    this.seleccionando.update(v => !v);
+    this.seleccion.set(new Set());
+  }
+
+  marcar(lead: LeadCrm): void {
+    this.seleccion.update(s => { const n = new Set(s); if (n.has(lead.id)) { n.delete(lead.id); } else { n.add(lead.id); } return n; });
+  }
+
+  alClicTarjeta(lead: LeadCrm): void {
+    if (this.seleccionando()) { this.marcar(lead); } else { this.abrir(lead); }
+  }
+
+  marcarColumna(etapa: Etapa): void {
+    const ids = this.leads().filter(l => l.estado === etapa).map(l => l.id);
+    this.seleccion.update(s => new Set([...s, ...ids]));
+  }
+
+  async contactoMasivo(): Promise<void> {
+    const ids = [...this.seleccion()];
+    const r = await Swal.fire({
+      title: 'Registrar contacto a ' + ids.length,
+      html: '<div style="display:grid;gap:10px;text-align:left">'
+        + '<label>Resultado<select id="cm-resultado" class="swal2-select" style="margin:4px 0 0;width:100%;display:block">'
+        + '<option value="contactado">Hablamos / les escribí</option><option value="no_contesto">No contestaron</option>'
+        + '<option value="interesado">Están interesados</option></select></label>'
+        + '<label>Por<select id="cm-tipo" class="swal2-select" style="margin:4px 0 0;width:100%;display:block">'
+        + '<option value="whatsapp">WhatsApp</option><option value="llamada">Llamada</option><option value="correo">Correo</option><option value="otro">Otro</option></select></label>'
+        + '<label>Nota<input id="cm-nota" class="swal2-input" style="margin:4px 0 0;width:100%" maxlength="500" placeholder="Ej. Envié el flyer y el plan de pagos"></label>'
+        + '</div>',
+      focusConfirm: false, showCancelButton: true, confirmButtonText: 'Registrar', cancelButtonText: 'Cancelar', confirmButtonColor: '#0b4258',
+      preConfirm: () => {
+        const v = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement).value;
+        return { resultado: v('cm-resultado') as ContactoCrm['resultado'], tipo: v('cm-tipo') as ContactoCrm['tipo'], nota: v('cm-nota').trim() || null };
+      },
+    });
+    if (!r.isConfirmed || !r.value) return;
+    this.crm.contactoMasivo(ids, r.value).subscribe({
+      next: (res) => { this.toast.success('Listo', res.message); this.alternarSeleccion(); this.cargar(); },
+      error: (err: HttpErrorResponse) => this.toast.error('No se pudo registrar', extractErrorMessage(err, 'Inténtalo de nuevo.')),
+    });
+  }
+
+  async reasignarMasivo(): Promise<void> {
+    const ids = [...this.seleccion()];
+    const opciones = Object.fromEntries(this.vendedores().map(v => [String(v.id), v.nombre]));
+    const r = await Swal.fire({
+      title: 'Reasignar ' + ids.length + ' interesado(s)', input: 'select', inputOptions: opciones, inputPlaceholder: 'Elige el vendedor',
+      inputValidator: v => (!v ? 'Elige un vendedor.' : null),
+      showCancelButton: true, confirmButtonText: 'Reasignar', cancelButtonText: 'Cancelar', confirmButtonColor: '#0b4258',
+    });
+    if (!r.isConfirmed) return;
+    this.crm.asignarMasivo(ids, Number(r.value)).subscribe({
+      next: (res) => { this.toast.success('Listo', res.message); this.alternarSeleccion(); this.cargar(); },
+      error: (err: HttpErrorResponse) => this.toast.error('No se pudo reasignar', extractErrorMessage(err, 'Inténtalo de nuevo.')),
+    });
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -201,5 +280,5 @@ export class EmbudoCrmComponent implements OnInit {
     { valor: 'whatsapp', etiqueta: 'WhatsApp' }, { valor: 'llamada', etiqueta: 'Llamada' },
     { valor: 'reunion', etiqueta: 'Reunión' }, { valor: 'correo', etiqueta: 'Correo' }, { valor: 'otro', etiqueta: 'Otro' },
   ];
-  etiquetaResultado(r: string): string { return this.resultados.find(x => x.valor === r)?.etiqueta ?? r; }
+  etiquetaResultado(r: string): string { return r === 'registro' ? 'Nota' : this.resultados.find(x => x.valor === r)?.etiqueta ?? r; }
 }
