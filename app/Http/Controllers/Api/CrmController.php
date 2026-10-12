@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Application\Crm\Services\CrmService;
+use App\Application\Crm\Services\ImportarContactosCrmService;
 use App\Application\Crm\Services\TableroCrmService;
 use App\Http\Controllers\Controller;
 use App\Infrastructure\CampanasLeads\Models\Lead;
@@ -146,6 +147,102 @@ class CrmController extends Controller
         }
 
         return response()->json(['message' => 'Interesado reasignado.']);
+    }
+
+    /** El mismo contacto a varios interesados (p. ej. "les envié el flyer por WhatsApp"). */
+    public function contactoMasivo(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'ids'       => 'required|array|min:1|max:200',
+            'ids.*'     => 'integer',
+            'tipo'      => 'required|in:llamada,whatsapp,correo,reunion,otro',
+            'resultado' => 'required|in:no_contesto,contactado,interesado,no_interesado',
+            'nota'      => 'nullable|string|max:2000',
+        ]);
+        $soloMio = $this->soloVendedor($request);
+        $leads = Lead::whereIn('id', $datos['ids'])->whereIn('estado', CrmService::ABIERTAS)
+            ->when($soloMio, fn ($q) => $q->where('vendedor_asignado_id', $soloMio))->get();
+
+        foreach ($leads as $lead) {
+            $this->crm->anotar($lead, $datos['tipo'], $datos['resultado'], $datos['nota'] ?? null, null);
+        }
+
+        return response()->json(['message' => "Contacto registrado a {$leads->count()} interesado(s).", 'registrados' => $leads->count()]);
+    }
+
+    public function asignarMasivo(Request $request): JsonResponse
+    {
+        $datos = $request->validate(['ids' => 'required|array|min:1|max:500', 'ids.*' => 'integer', 'vendedor_id' => 'required|integer']);
+
+        try {
+            $leads = Lead::whereIn('id', $datos['ids'])->get();
+            foreach ($leads as $lead) {
+                $this->crm->asignar($lead, (int) $datos['vendedor_id']);
+            }
+        } catch (DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => "{$leads->count()} interesado(s) reasignados."]);
+    }
+
+    /** Lo que el vendedor tiene que hacer hoy: próximas acciones vencidas o de hoy. */
+    public function tareas(Request $request): JsonResponse
+    {
+        $soloMio = $this->soloVendedor($request);
+        $finDeHoy = now()->endOfDay();
+
+        $tareas = $this->consultaLeads()
+            ->whereIn('l.estado', CrmService::ABIERTAS)
+            ->where('l.proxima_accion_at', '<=', $finDeHoy)
+            ->when($soloMio, fn ($q) => $q->where('l.vendedor_asignado_id', $soloMio))
+            ->when(! $soloMio && $request->filled('vendedor_id'), fn ($q) => $q->where('l.vendedor_asignado_id', (int) $request->vendedor_id))
+            ->orderBy('l.proxima_accion_at')
+            ->limit(300)
+            ->get()
+            ->map(function ($l) {
+                $l->vencida = Carbon::parse($l->proxima_accion_at)->lt(now()->startOfDay());
+                $l->proxima_accion = DB::table('lead_seguimientos')->where('lead_id', $l->id)->whereNotNull('proxima_accion')->orderByDesc('id')->value('proxima_accion');
+                $l->intentos_sin_respuesta = DB::table('lead_seguimientos')->where('lead_id', $l->id)->where('resultado', 'no_contesto')->count();
+
+                return $l;
+            });
+
+        return response()->json(['data' => $tareas, 'vencidas' => $tareas->where('vencida', true)->count()]);
+    }
+
+    public function importar(Request $request, ImportarContactosCrmService $importador): JsonResponse
+    {
+        $datos = $request->validate([
+            'archivo'               => 'required|file|max:5120|mimes:xlsx,xls,csv,txt',
+            'origen'                => 'required|in:excel,whatsapp_grupo,manual',
+            'vendedor_id'           => 'nullable|integer',
+            'programa_id'           => 'nullable|integer',
+            'campana_publicidad_id' => 'nullable|integer',
+            'nota'                  => 'nullable|string|max:300',
+        ]);
+        $archivo = $request->file('archivo');
+
+        try {
+            $res = $importador->importar($archivo->getRealPath(), $archivo->getClientOriginalExtension(), $datos);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'No se pudo leer el archivo. Guárdalo como Excel (.xlsx) o CSV e inténtalo de nuevo.'], 422);
+        }
+
+        $nombres = DB::table('vendedores')->whereIn('id', array_filter(array_keys($res['por_vendedor']), 'is_numeric'))
+            ->get(['id', 'nombre', 'apellido'])->mapWithKeys(fn ($v) => [(string) $v->id => trim($v->nombre.' '.$v->apellido)]);
+        $res['por_vendedor'] = collect($res['por_vendedor'])
+            ->map(fn ($n, $id) => ['vendedor' => $nombres[$id] ?? 'Sin asignar', 'cantidad' => $n])->values();
+
+        return response()->json($res);
+    }
+
+    public function plantilla()
+    {
+        return response(ImportarContactosCrmService::plantillaCsv(), 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="plantilla-contactos-cenefco.csv"',
+        ]);
     }
 
     public function tablero(Request $request): JsonResponse

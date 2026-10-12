@@ -21,6 +21,9 @@ class CrmService
     public const ABIERTAS = ['nuevo', 'contactado', 'interesado', 'por_pagar'];
     public const ORIGENES = ['manual', 'excel', 'portal', 'contacto', 'whatsapp', 'whatsapp_grupo', 'meta', 'caja'];
     public const HORAS_SIN_ATENCION = 24;
+    /** Secuencia ante "no contestó": siguiente intento a los 2 días, luego a los 3; al tercer intento sin respuesta se cierra. */
+    public const CADENCIA_DIAS = [2, 3];
+    public const MAX_INTENTOS = 3;
 
     public function __construct(private readonly InscripcionCuotasService $cuotas) {}
 
@@ -51,7 +54,7 @@ class CrmService
                     'programa_id' => $existente->programa_id ?: ($datos['programa_id'] ?? null),
                 ], fn ($v) => $v !== null))->save();
 
-                $this->anotar($existente, 'otro', 'contactado', 'Volvió a escribir por '.self::nombreOrigen($origen).($datos['nota'] ?? null ? ': '.$datos['nota'] : '.'), null, sumaContacto: false);
+                $this->anotar($existente, 'otro', 'registro', 'Volvió a escribir por '.self::nombreOrigen($origen).($datos['nota'] ?? null ? ': '.$datos['nota'] : '.'), null, sumaContacto: false);
 
                 return $existente->fresh();
             }
@@ -67,6 +70,7 @@ class CrmService
                 'programa_id'           => $datos['programa_id'] ?? null,
                 'campana_publicidad_id' => $datos['campana_publicidad_id'] ?? null,
                 'id_us'                 => $this->estudianteDe($celular, $correo, $ci),
+                'proxima_accion_at'     => now()->startOfDay(), // primer contacto: hoy
             ]);
 
             $vendedor = $datos['vendedor_id'] ?? $this->siguienteVendedor();
@@ -74,7 +78,7 @@ class CrmService
                 $this->asignar($lead, (int) $vendedor);
             }
             if (! empty($datos['nota'])) {
-                $this->anotar($lead, 'otro', 'contactado', $datos['nota'], null, sumaContacto: false);
+                $this->anotar($lead, 'otro', 'registro', $datos['nota'], null, sumaContacto: false);
             }
 
             return $lead->fresh();
@@ -122,6 +126,7 @@ class CrmService
             'estado'         => $etapa,
             'motivo_perdida' => $etapa === 'perdido' ? trim($motivo) : null,
             'cerrado_at'     => in_array($etapa, ['inscrito', 'perdido'], true) ? now() : null,
+            'proxima_accion_at' => in_array($etapa, ['inscrito', 'perdido'], true) ? null : $lead->proxima_accion_at,
         ]);
 
         return $lead;
@@ -149,11 +154,36 @@ class CrmService
             }
             if ($resultado === 'no_interesado') {
                 $cambios += ['estado' => 'perdido', 'motivo_perdida' => $nota ?: 'No le interesa', 'cerrado_at' => now()];
+            } elseif ($resultado === 'no_contesto') {
+                $cambios = $this->siguienteIntento($lead, $cambios, $proximaAccionAt);
+            } elseif (! $proximaAccionAt && in_array($lead->estado, self::ABIERTAS, true)) {
+                $cambios['proxima_accion_at'] = now()->addDays(2)->startOfDay(); // seguimiento por defecto
             }
             $lead->update($cambios);
         }
 
         return $seg;
+    }
+
+    /** Secuencia de seguimiento: agenda el próximo intento o cierra tras el último sin respuesta. */
+    private function siguienteIntento(Lead $lead, array $cambios, ?string $proximaAccionAt): array
+    {
+        $respondioAlgunaVez = LeadSeguimiento::where('lead_id', $lead->id)->whereIn('resultado', ['contactado', 'interesado'])->exists();
+        if ($respondioAlgunaVez) {
+            $cambios['proxima_accion_at'] = $proximaAccionAt ? Carbon::parse($proximaAccionAt) : now()->addDays(self::CADENCIA_DIAS[0])->startOfDay();
+
+            return $cambios;
+        }
+
+        $intentos = LeadSeguimiento::where('lead_id', $lead->id)->where('resultado', 'no_contesto')->count();
+        if ($intentos >= self::MAX_INTENTOS) {
+            return ['estado' => 'perdido', 'motivo_perdida' => "No responde ({$intentos} intentos)", 'cerrado_at' => now(), 'proxima_accion_at' => null] + $cambios;
+        }
+
+        $dias = self::CADENCIA_DIAS[min($intentos, count(self::CADENCIA_DIAS)) - 1];
+        $cambios['proxima_accion_at'] = $proximaAccionAt ? Carbon::parse($proximaAccionAt) : now()->addDays($dias)->startOfDay();
+
+        return $cambios;
     }
 
     /**
@@ -196,6 +226,8 @@ class CrmService
             'estado'      => $etapa,
             'cerrado_at'  => $etapa === 'inscrito' ? ($lead->cerrado_at ?? now()) : null,
             'motivo_perdida' => null,
+            // Inscrito ya no tiene tareas; "por pagar" se sigue hasta que confirme el pago
+            'proxima_accion_at' => $etapa === 'inscrito' ? null : ($lead->proxima_accion_at ?? now()->addDays(2)->startOfDay()),
         ]);
 
         return $lead->fresh();

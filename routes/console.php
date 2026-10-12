@@ -85,3 +85,9 @@ Schedule::command(\App\Console\Commands\AlertarInteresadosSinAtender::class)
     ->hourly()
     ->between('8:00', '20:00')
     ->withoutOverlapping();
+
+// Embudo de ventas: seguimientos del día a cada vendedor (lunes a sábado, 8:00)
+Schedule::command(\App\Console\Commands\AvisarTareasDelDia::class)
+    ->dailyAt('08:00')
+    ->days([1, 2, 3, 4, 5, 6])
+    ->withoutOverlapping();
