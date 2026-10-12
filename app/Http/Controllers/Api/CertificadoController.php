@@ -17,7 +17,9 @@ use App\Application\Certificados\Queries\GetCertificadosQuery;
 use App\Application\Certificados\QueryHandlers\GetCertificadoByCodigoQueryHandler;
 use App\Application\Certificados\QueryHandlers\GetCertificadoByIdQueryHandler;
 use App\Application\Certificados\QueryHandlers\GetCertificadosQueryHandler;
+use App\Application\Inscripciones\Services\InscripcionCuotasService;
 use App\Application\Pagos\Services\PagoCalculadorService;
+use App\Shared\Kernel\Support\PlanGratuito;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Certificados\StoreCertificadoRequest;
 use App\Http\Requests\Certificados\UpdateCertificadoRequest;
@@ -318,59 +320,23 @@ class CertificadoController extends Controller
             : collect();
 
         $calificados = [];
+        $cuotas = app(InscripcionCuotasService::class);
 
         foreach ($inscripciones as $ins) {
             $planId = $ins->id_plan ?: $planDefault;
 
-            
-            
-            
-            
-            $cuotasDelPlan    = $planId && $todasCuotasPorPlan->has($planId) ? $todasCuotasPorPlan->get($planId) : collect();
-            $cuotasIdsDelPlan = $cuotasDelPlan->pluck('id_fechapago')->all();
+            // Misma deuda que la ficha, Caja y el estudiante: el cronograma de la inscripción
+            $cronograma = $cuotas->sincronizar((int) $ins->id_ins);
 
-            $pagosDeEsteEstudiante = $todosPagos
-                ->where('id_us', $ins->id_us)
-                ->filter(function ($p) use ($ins, $cuotasIdsDelPlan) {
-                    if ($p->id_ins === $ins->id_ins) return true;
-                    if ($p->id_ins !== null) return false;
-                    if (in_array($p->id_fechapago, $cuotasIdsDelPlan, true)) return true;
-                    return (int) $p->pago_extra === 1 && $p->id_fechapago === null;
-                });
-
-            
-            
-            
-            if (! $planId) {
-                $resumenSinPlan = $this->calculador->calcularConCostoFijo($costoMonto, $pagosDeEsteEstudiante);
-                $completo = $resumenSinPlan->pendiente !== null && $resumenSinPlan->pendiente <= 0.0;
+            if ($cronograma) {
+                $completo = $cronograma->pendiente <= 0.0;
+            } elseif ($planId && PlanGratuito::es((int) $planId)) {
+                $completo = true; // programa gratuito: nada que pagar
             } else {
-
-
-
-
-                $cuotasCubiertasIds = $pagosDeEsteEstudiante
-                    ->whereNotNull('id_fechapago')
-                    ->where('pago_extra', '!=', 1)
-                    ->pluck('id_fechapago')
-                    ->unique()
-                    ->intersect($cuotasIdsDelPlan)
-                    ->values()
-                    ->all();
-                $cuotasTotales = $cuotasDelPlan->count();
-
-
-
-
-                $montoPendienteCuotas = (float) $cuotasDelPlan
-                    ->filter(fn ($c) => ! in_array($c->id_fechapago, $cuotasCubiertasIds, true))
-                    ->sum(fn ($c) => (float) $c->monto_a_pagar);
-
-                $totalAnticipos = (float) $pagosDeEsteEstudiante
-                    ->where('pago_extra', 1)
-                    ->sum(fn ($p) => (float) $p->monto_pagado);
-
-                $completo = $cuotasTotales > 0 && max(0.0, $montoPendienteCuotas - $totalAnticipos) <= 0.0;
+                // Sin plan: se compara lo pagado con el costo del programa
+                $pagos = $todosPagos->where('id_us', $ins->id_us)->filter(fn ($p) => $p->id_ins === $ins->id_ins);
+                $resumen = $this->calculador->calcularConCostoFijo($costoMonto, $pagos);
+                $completo = $resumen->pendiente !== null && $resumen->pendiente <= 0.0;
             }
 
             if ($completo) {
