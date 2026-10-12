@@ -236,7 +236,7 @@ class EloquentInscripcionRepository implements InscripcionRepositoryInterface
             ->select([
                 'p.id_pago', 'p.monto_pagado', 'p.fecha_deposito', 'p.nro_boleta_bancaria',
                 'p.observacion_pago', 'p.estado as pago_estado', 'p.pago_extra',
-                'p.metodo_pago', 'p.id_us_cajero', 'p.comprobante_archivo', 'p.estado_verificacion',
+                'p.metodo_pago', 'p.id_us_cajero', DB::raw('COALESCE(p.comprobante_archivo, p.comprobante_url) as comprobante_archivo'), 'p.estado_verificacion',
                 'p.nota_verificacion', 'p.monto_descuento_extra as monto_descuento', 'p.motivo_descuento',
                 'p.tipo_banco_id', 'tb.nombre as tipo_banco_nombre',
                 DB::raw("NULLIF(" . \App\Shared\Kernel\Support\SqlCompat::trimConcat("COALESCE(cj.nombre,'')", "' '", "COALESCE(cj.apellido,'')") . ", '') as cajero_nombre"),
