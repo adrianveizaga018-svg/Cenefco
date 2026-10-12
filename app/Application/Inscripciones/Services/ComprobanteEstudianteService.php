@@ -127,6 +127,7 @@ class ComprobanteEstudianteService
         if ($gratuito) {
             $this->promocion->promoverPorIdUs((int) $ins->id_us);
         }
+        \App\Application\Crm\Services\CrmService::alInscribir($idIns);
 
         return ['gratuito' => $gratuito, 'saldo' => (float) ($this->cuotas->sincronizar($idIns)->pendiente ?? 0)];
     }
@@ -151,6 +152,7 @@ class ComprobanteEstudianteService
         }));
 
         $this->avisarCaja($imp->nombre_programa, (float) $datos['monto'], nueva: true);
+        \App\Application\Crm\Services\CrmService::alInscribir($idIns);
 
         return ['id_ins' => $idIns, 'programa' => $imp->nombre_programa];
     }
@@ -216,6 +218,7 @@ class ComprobanteEstudianteService
         });
 
         $this->promocion->promoverPorIdUs((int) $pago->id_us);
+        \App\Application\Crm\Services\CrmService::alInscribir((int) $pago->id_ins);
         $saldo = (float) ($this->cuotas->sincronizar((int) $pago->id_ins)->pendiente ?? 0);
         $this->avisarEstudiante($pago, true, null, $saldo);
 

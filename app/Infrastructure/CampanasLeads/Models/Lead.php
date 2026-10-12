@@ -20,6 +20,25 @@ class Lead extends Model
         'estado',
         'vendedor_asignado_id',
         'programa_id',
+        'ci',
+        'origen',
+        'motivo_perdida',
+        'campana_publicidad_id',
+        'id_us',
+        'id_ins',
+        'asignado_at',
+        'ultimo_contacto_at',
+        'proxima_accion_at',
+        'cerrado_at',
+        'alerta_enviada_at',
+    ];
+
+    protected $casts = [
+        'asignado_at'        => 'datetime',
+        'ultimo_contacto_at' => 'datetime',
+        'proxima_accion_at'  => 'datetime',
+        'cerrado_at'         => 'datetime',
+        'alerta_enviada_at'  => 'datetime',
     ];
 
     public function campanaLead()

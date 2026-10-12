@@ -35,6 +35,8 @@ class PagoObserver
             foreach ($ids as $idIns) {
                 try {
                     $servicio->sincronizar($idIns);
+                    // El primer pago confirmado pasa al interesado de "Por pagar" a "Inscrito"
+                    \App\Application\Crm\Services\CrmService::alInscribir($idIns);
                 } catch (\Throwable $e) {
                     report($e); // un fallo al recalcular nunca debe deshacer el pago
                 }

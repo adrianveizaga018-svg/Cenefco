@@ -123,6 +123,7 @@ class CobranzaController extends Controller
         });
 
         app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)->promoverPorIdUs($inscripcion->id_us);
+        \App\Application\Crm\Services\CrmService::alInscribir((int) $inscripcion->id_ins);
 
         return $respuesta;
     }
@@ -344,6 +345,7 @@ class CobranzaController extends Controller
         });
 
         app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)->promoverPorIdUs($inscripcion->id_us);
+        \App\Application\Crm\Services\CrmService::alInscribir((int) $inscripcion->id_ins);
 
         return $respuesta;
     }

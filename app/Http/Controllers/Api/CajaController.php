@@ -380,6 +380,7 @@ class CajaController extends Controller
 
         app(\App\Application\Usuarios\Services\PromocionEstudianteService::class)
             ->promoverPorIdUs($respuesta->getData()->id_us);
+        \App\Application\Crm\Services\CrmService::alInscribir($respuesta->getData()->id_ins ?? null);
 
         return $respuesta;
     }

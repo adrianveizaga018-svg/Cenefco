@@ -56,6 +56,14 @@ class MensajeContactoController extends Controller
             ip_origen: $request->ip(),
         ));
 
+        // "Solicitar información" del portal entra al embudo de ventas
+        \App\Application\Crm\Services\CrmService::alContactar([
+            'nombre'  => $request->nombre_remitente,
+            'celular' => $request->telefono_remitente,
+            'correo'  => $request->email_remitente,
+            'nota'    => trim(($request->asunto ? $request->asunto.': ' : '').mb_substr((string) $request->mensaje, 0, 500)),
+        ], 'contacto');
+
         return response()->json($dto, 201);
     }
 

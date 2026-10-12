@@ -101,6 +101,9 @@ class InscripcionPortalController extends Controller
         // El rol sigue siendo 'participante' hasta que se registre el primer pago
         // (ver PromocionEstudianteService).
 
+        // Entra al embudo como "Por pagar" hasta que confirme su pago
+        \App\Application\Crm\Services\CrmService::alInscribir($idIns);
+
         return response()->json(['inscripcion_id' => $idIns], 201);
     }
 

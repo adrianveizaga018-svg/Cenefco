@@ -293,6 +293,7 @@ class AreaEstudianteService
         $idIns = DB::transaction(fn () => $this->crearInscripcion($user, $imp, $idPlan));
 
         $this->promocion->promoverPorIdUs($this->idUs($user));
+        \App\Application\Crm\Services\CrmService::alInscribir($idIns);
 
         return ['id_ins' => $idIns, 'programa' => $imp->nombre_programa];
     }

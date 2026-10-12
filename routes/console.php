@@ -79,3 +79,9 @@ Schedule::command(SyncMetaAdsSpend::class)
     ->dailyAt('06:00')
     ->name('meta-ads-sync-gastos')
     ->withoutOverlapping();
+
+// Embudo de ventas: interesados con más de 24 h sin contacto (cada hora, de 8 a 20)
+Schedule::command(\App\Console\Commands\AlertarInteresadosSinAtender::class)
+    ->hourly()
+    ->between('8:00', '20:00')
+    ->withoutOverlapping();

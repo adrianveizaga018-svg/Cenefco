@@ -20,6 +20,8 @@ class ConversationManager
                 'estado' => BotState::MENU->value,
                 'contexto' => [],
             ]);
+            // Un número que escribe por primera vez es un interesado para el embudo de ventas
+            \App\Application\Crm\Services\CrmService::alContactar(['nombre' => $nombre, 'celular' => $phone], 'whatsapp');
         } elseif ($nombre && $conv->nombre !== $nombre) {
             $conv->update(['nombre' => $nombre]);
             $conv->nombre = $nombre;

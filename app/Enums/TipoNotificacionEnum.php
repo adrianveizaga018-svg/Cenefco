@@ -18,4 +18,5 @@ enum TipoNotificacionEnum: string
     case PAGO_OBSERVADO        = 'pago_observado';
     case COMPROMISO_COBRO         = 'compromiso_cobro';
     case COMPROMISO_COBRO_VENCIDO = 'compromiso_cobro_vencido';
+    case INTERESADO_SIN_ATENDER   = 'interesado_sin_atender';
 }
