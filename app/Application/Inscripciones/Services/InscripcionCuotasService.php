@@ -142,9 +142,12 @@ class InscripcionCuotasService
         $filas      = [];
 
         foreach ($templates as $i => $t) {
-            $vencimiento = ($modoFechas === 'relativo' && $t->dias_desde_inscripcion !== null)
+            // Hay planes marcados "fijo" con cuotas en días: si falta la fecha fija se usan los días,
+            // y si no hay ninguno vence el día de la inscripción (la columna no admite vacío)
+            $relativa = $t->dias_desde_inscripcion !== null && ($modoFechas === 'relativo' || ! $t->fecha_fin);
+            $vencimiento = $relativa
                 ? $base->copy()->addDays((int) $t->dias_desde_inscripcion)->format('Y-m-d')
-                : $t->fecha_fin;
+                : ($t->fecha_fin ?: $base->format('Y-m-d'));
 
             $filas[] = [
                 'id_fechapago_template' => $t->id_fechapago,

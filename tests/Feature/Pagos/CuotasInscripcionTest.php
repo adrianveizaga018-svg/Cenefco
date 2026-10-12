@@ -100,6 +100,22 @@ class CuotasInscripcionTest extends TestCase
         $this->assertEquals(2000.0, $res->pendiente);
     }
 
+    public function test_plan_fijo_con_cuotas_en_dias_calcula_el_vencimiento_desde_la_inscripcion(): void
+    {
+        $idUs = $this->crearEstudiante();
+        [, $idImp] = $this->crearProgramaConVersion();
+        $idPlan = $this->crearPlan($idImp, 900, [300, 600]);
+        // Como el plan real del error: marcado "fijo" pero sus cuotas solo tienen días
+        DB::table('t_fechapago')->where('id_plan', $idPlan)->update(['fecha_fin' => null]);
+        DB::table('t_fechapago')->where('id_plan', $idPlan)->where('nro_pago', '2')->update(['dias_desde_inscripcion' => 30]);
+        $idIns = $this->inscribir($idUs, $idImp, $idPlan);
+
+        $this->cuotas->sincronizar($idIns);
+
+        $fechas = DB::table('t_inscripcion_cuotas')->where('id_ins', $idIns)->orderBy('nro_cuota')->pluck('fecha_vencimiento')->all();
+        $this->assertSame([now()->toDateString(), now()->addDays(30)->toDateString()], $fechas);
+    }
+
     public function test_plan_gratuito_no_genera_cronograma(): void
     {
         $idUs = $this->crearEstudiante();

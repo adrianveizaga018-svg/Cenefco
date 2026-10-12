@@ -14,6 +14,7 @@ use DomainException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Pago desde el panel del estudiante: sube su comprobante (queda "enviado_estudiante",
@@ -90,7 +91,7 @@ class ComprobanteEstudianteService
         $this->validarEnvio($idIns, $datos);
         $ruta = $archivo->store('pagos/estudiantes', 'public');
 
-        $idPago = DB::transaction(fn () => $this->registrarPago($user, (int) $ins->id_us, $idIns, $datos, $ruta));
+        $idPago = $this->conArchivo($ruta, fn () => DB::transaction(fn () => $this->registrarPago($user, (int) $ins->id_us, $idIns, $datos, $ruta)));
         $this->avisarCaja($ins->programa, (float) $datos['monto']);
 
         return $idPago;
@@ -141,13 +142,13 @@ class ComprobanteEstudianteService
         $this->validarEnvio(null, $datos);
         $ruta = $archivo->store('pagos/estudiantes', 'public');
 
-        $idIns = DB::transaction(function () use ($user, $imp, $idPlan, $datos, $ruta) {
+        $idIns = $this->conArchivo($ruta, fn () => DB::transaction(function () use ($user, $imp, $idPlan, $datos, $ruta) {
             $idIns = $this->area->crearInscripcion($user, $imp, $idPlan);
             $idUs  = (int) DB::table('t_inscripcion')->where('id_ins', $idIns)->value('id_us');
             $this->registrarPago($user, $idUs, $idIns, $datos, $ruta);
 
             return $idIns;
-        });
+        }));
 
         $this->avisarCaja($imp->nombre_programa, (float) $datos['monto'], nueva: true);
 
@@ -236,6 +237,17 @@ class ComprobanteEstudianteService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+
+    /** Si el registro falla, el comprobante ya guardado no debe quedar huérfano en el disco. */
+    private function conArchivo(string $ruta, callable $registrar): mixed
+    {
+        try {
+            return $registrar();
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($ruta);
+            throw $e;
+        }
+    }
 
     private function inscripcionPropia(User $user, int $idIns): object
     {
