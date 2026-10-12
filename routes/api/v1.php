@@ -1956,5 +1956,6 @@ require __DIR__ . '/v1/caja.php';
 
 require __DIR__ . '/v1/estudiantes.php';
 require __DIR__ . '/v1/crm.php';
+require __DIR__ . '/v1/marketing.php';
 
 require __DIR__ . '/v1/cobranzas.php';

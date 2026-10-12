@@ -54,19 +54,27 @@ class SyncMetaAdsSpend extends Command
 
         // Pre-cargar los estados de todas las cuentas involucradas para no hacer 1 petición por campaña
         $statusesPorCuenta = [];
+        $insightsPorCuenta = [];
         $cuentasUnicas = $campanas->pluck('cuenta_externa_id')->filter()->unique();
         foreach ($cuentasUnicas as $cId) {
             $statusesPorCuenta[$cId] = $metaAds->getAccountCampaignStatuses($cId);
+            // Una sola consulta trae las métricas de todas las campañas de la cuenta:
+            // pedirlas una por una agotaba el límite de consultas de Meta ("User request limit reached")
+            $insightsPorCuenta[$cId] = $metaAds->getAccountLiveInsights($cId);
         }
 
+        $sinActividad = 0;
         foreach ($campanas as $campana) {
             $this->line("Consultando campaña: {$campana->nombre} (ID Externa: {$campana->id_campana_externa})");
-            
-            $insights = $metaAds->getCampaignInsights(
-                $campana->id_campana_externa,
-                $this->option('desde') ?: null,
-                $this->option('hasta') ?: null
-            );
+
+            $deLaCuenta = $insightsPorCuenta[$campana->cuenta_externa_id] ?? [];
+            if ($deLaCuenta !== [] && ! isset($deLaCuenta[$campana->id_campana_externa])) {
+                // La cuenta respondió pero la campaña no tuvo gasto ni impresiones en el periodo
+                $sinActividad++;
+                continue;
+            }
+            $insights = $deLaCuenta[$campana->id_campana_externa]
+                ?? $metaAds->getCampaignInsights($campana->id_campana_externa, $this->option('desde') ?: null, $this->option('hasta') ?: null);
 
             if ($insights !== null) {
                 // Suponemos que la cuenta de Meta devuelve en dólares y la TC es aprox 7. 
@@ -116,8 +124,8 @@ class SyncMetaAdsSpend extends Command
             }
         }
 
-        $this->info("Sincronización terminada. Actualizadas: {$actualizadas}, Errores: {$errores}.");
-        Log::info("Meta Ads Sync", ['actualizadas' => $actualizadas, 'errores' => $errores]);
+        $this->info("Sincronización terminada. Actualizadas: {$actualizadas}, sin actividad: {$sinActividad}, errores: {$errores}.");
+        Log::info("Meta Ads Sync", ['actualizadas' => $actualizadas, 'sin_actividad' => $sinActividad, 'errores' => $errores]);
         
         return self::SUCCESS;
     }
