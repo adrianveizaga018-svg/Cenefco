@@ -101,6 +101,10 @@ export class SidebarMenu implements OnInit {
       ]
     },
 
+    { type: 'title', label: 'Ventas' },
+    { type: 'item', label: 'Embudo de ventas',          icon: 'lucideKanban',          color: 'text-indigo-600',  link: '/crm/embudo', permission: 'crm.ver' },
+    { type: 'item', label: 'Tablero de ventas',         icon: 'lucideGauge',           color: 'text-indigo-500',  link: '/crm/tablero', permission: 'crm.ver' },
+
     { type: 'title', label: 'Inscripciones y Pagos' },
     {
       type: 'item',

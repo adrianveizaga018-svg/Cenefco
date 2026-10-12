@@ -25,6 +25,16 @@ export const DASHBOARDS_ROUTES: Routes = [
     }
 ,
     {
+        path: 'crm/embudo',
+        loadComponent: () => import('../../crm/presentation/embudo/embudo').then(m => m.EmbudoCrmComponent),
+        data: { title: 'Embudo de ventas' }
+    },
+    {
+        path: 'crm/tablero',
+        loadComponent: () => import('../../crm/presentation/tablero/tablero').then(m => m.TableroCrmComponent),
+        data: { title: 'Tablero de ventas' }
+    },
+    {
         path: 'caja/comprobantes',
         loadComponent: () => import('../../caja/presentation/comprobantes/comprobantes').then(m => m.ComprobantesCajaComponent),
         data: { title: 'Comprobantes por verificar' }

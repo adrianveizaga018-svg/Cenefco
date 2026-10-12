@@ -1,0 +1,140 @@
+<main>
+  <app-page-title [title]="supervisa ? 'Tablero de ventas' : 'Mis ventas'" subtitle="Ventas" />
+
+  <!-- Periodo -->
+  <div class="card mb-4">
+    <div class="card-header flex flex-wrap items-end gap-3">
+      <div class="inline-flex rounded-lg border border-default-200 overflow-hidden" role="group" aria-label="Periodo rápido">
+        <button type="button" class="px-3 py-1.5 text-xs font-semibold hover:bg-default-100" (click)="periodo('semana')">Últimos 7 días</button>
+        <button type="button" class="px-3 py-1.5 text-xs font-semibold hover:bg-default-100 border-x border-default-200" (click)="periodo('mes')">Este mes</button>
+        <button type="button" class="px-3 py-1.5 text-xs font-semibold hover:bg-default-100" (click)="periodo('mes_anterior')">Mes anterior</button>
+      </div>
+      <label class="grid gap-1 text-xs font-medium text-default-600" for="tab-desde">Desde
+        <input id="tab-desde" type="date" class="form-input" [ngModel]="desde()" (ngModelChange)="desde.set($event)">
+      </label>
+      <label class="grid gap-1 text-xs font-medium text-default-600" for="tab-hasta">Hasta
+        <input id="tab-hasta" type="date" class="form-input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)">
+      </label>
+      <button type="button" class="btn bg-primary text-white" (click)="cargar()">Ver</button>
+      <a routerLink="/crm/embudo" class="ms-auto text-sm font-semibold text-primary hover:underline">Ir al embudo</a>
+    </div>
+  </div>
+
+  @if (cargando() && !datos()) {
+    <div class="flex items-center justify-center gap-2 py-16 text-sm text-default-500">
+      <span class="size-4 inline-flex animate-spin"><ng-icon name="lucideLoader"></ng-icon></span> Cargando tablero...
+    </div>
+  } @else if (datos(); as d) {
+    <!-- Totales -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+      <div class="card px-4 py-3"><p class="text-xs text-default-500">Interesados nuevos</p><p class="text-2xl font-bold tabular-nums">{{ d.totales.interesados }}</p></div>
+      <div class="card px-4 py-3"><p class="text-xs text-default-500">Inscritos</p><p class="text-2xl font-bold tabular-nums text-success">{{ d.totales.inscritos }}</p></div>
+      <div class="card px-4 py-3"><p class="text-xs text-default-500">Conversión</p><p class="text-2xl font-bold tabular-nums">{{ d.totales.conversion | number:'1.0-1' }}%</p></div>
+      <div class="card px-4 py-3"><p class="text-xs text-default-500">Cobrado</p><p class="text-2xl font-bold tabular-nums">Bs {{ d.totales.cobrado | number:'1.0-0' }}</p></div>
+      <div class="card px-4 py-3"><p class="text-xs text-default-500">Primera respuesta</p><p class="text-2xl font-bold tabular-nums">{{ horas(d.totales.primera_respuesta_h) }}</p></div>
+      <div class="card px-4 py-3" [class.border-danger]="d.totales.sin_atender > 0">
+        <p class="text-xs text-default-500">Sin atender +24 h</p>
+        <p class="text-2xl font-bold tabular-nums" [class.text-danger]="d.totales.sin_atender > 0">{{ d.totales.sin_atender }}</p>
+        @if (d.totales.sin_asignar > 0) { <p class="text-[11px] text-amber-700">{{ d.totales.sin_asignar }} sin asignar</p> }
+      </div>
+    </div>
+
+    <!-- Por vendedor -->
+    <div class="card mb-4">
+      <div class="card-header"><h2 class="text-sm font-bold text-default-800">Por vendedor</h2></div>
+      @if (d.vendedores.length === 0) {
+        <p class="px-5 py-10 text-center text-sm text-default-500">No hay vendedores activos. Créalos en Vendedores y vincúlalos a su cuenta.</p>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-default-50 text-xs uppercase text-default-500">
+              <tr>
+                <th class="px-4 py-2.5 text-start">Vendedor</th>
+                <th class="px-4 py-2.5 text-end">Interesados</th>
+                <th class="px-4 py-2.5 text-end">Contactados</th>
+                <th class="px-4 py-2.5 text-end">Inscritos</th>
+                <th class="px-4 py-2.5 text-end">Conversión</th>
+                <th class="px-4 py-2.5 text-end">Cobrado</th>
+                <th class="px-4 py-2.5 text-start min-w-44">Meta del mes</th>
+                <th class="px-4 py-2.5 text-end">1ª respuesta</th>
+                <th class="px-4 py-2.5 text-end">Sin atender</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-default-100 tabular-nums">
+              @for (v of d.vendedores; track v.vendedor_id) {
+                <tr class="hover:bg-default-50">
+                  <td class="px-4 py-2.5 font-semibold text-default-800">{{ v.vendedor }}<span class="block text-[11px] font-normal text-default-500">{{ v.abiertos }} en curso</span></td>
+                  <td class="px-4 py-2.5 text-end">{{ v.interesados }}</td>
+                  <td class="px-4 py-2.5 text-end">{{ v.contactados }}</td>
+                  <td class="px-4 py-2.5 text-end font-semibold text-success">{{ v.inscritos }}</td>
+                  <td class="px-4 py-2.5 text-end">{{ v.conversion | number:'1.0-1' }}%</td>
+                  <td class="px-4 py-2.5 text-end font-semibold">Bs {{ v.cobrado | number:'1.0-0' }}</td>
+                  <td class="px-4 py-2.5">
+                    @if (v.avance_meta !== null) {
+                      <div class="flex items-center gap-2">
+                        <div class="flex-1 h-2 rounded-full bg-default-200 overflow-hidden"><div class="h-full rounded-full" [class]="claseMeta(v.avance_meta)" [style.width.%]="v.avance_meta > 100 ? 100 : v.avance_meta"></div></div>
+                        <span class="text-xs w-10 text-end">{{ v.avance_meta | number:'1.0-0' }}%</span>
+                      </div>
+                      <span class="text-[11px] text-default-500">de Bs {{ v.meta | number:'1.0-0' }}</span>
+                    } @else {
+                      <span class="text-xs text-default-400">Sin meta cargada</span>
+                    }
+                  </td>
+                  <td class="px-4 py-2.5 text-end">{{ horas(v.primera_respuesta_h) }}</td>
+                  <td class="px-4 py-2.5 text-end" [class.text-danger]="v.sin_atender > 0" [class.font-bold]="v.sin_atender > 0">{{ v.sin_atender }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-4">
+      <!-- Embudo -->
+      <div class="card">
+        <div class="card-header"><h2 class="text-sm font-bold text-default-800">Embudo</h2></div>
+        <div class="p-4 grid gap-2.5">
+          @for (e of etapas; track e.valor) {
+            <div class="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-2 text-sm">
+              <span class="text-default-600">{{ e.etiqueta }}</span>
+              <div class="h-5 rounded bg-default-100 overflow-hidden">
+                <div class="h-full rounded" [style.width.%]="(d.embudo[e.valor] / maxEmbudo()) * 100"
+                  [class]="e.valor === 'inscrito' ? 'bg-success' : e.valor === 'perdido' ? 'bg-default-300' : 'bg-primary/70'"></div>
+              </div>
+              <span class="text-end font-semibold tabular-nums">{{ d.embudo[e.valor] }}</span>
+            </div>
+          }
+          <p class="text-[11px] text-default-500 mt-1">Etapas en curso: hoy. Inscritos y perdidos: del periodo.</p>
+        </div>
+      </div>
+
+      <!-- Origen -->
+      <div class="card">
+        <div class="card-header"><h2 class="text-sm font-bold text-default-800">De dónde llegan</h2></div>
+        <div class="p-4">
+          @if (d.por_origen.length) {
+            <table class="w-full text-sm tabular-nums">
+              <thead class="text-xs text-default-500"><tr><th class="text-start pb-2">Origen</th><th class="text-end pb-2">Interesados</th><th class="text-end pb-2">Inscritos</th></tr></thead>
+              <tbody>
+                @for (o of d.por_origen; track o.origen) {
+                  <tr class="border-t border-default-100"><td class="py-1.5">{{ nombreOrigen(o.origen) }}</td><td class="py-1.5 text-end">{{ o.interesados }}</td><td class="py-1.5 text-end text-success font-semibold">{{ o.inscritos }}</td></tr>
+                }
+              </tbody>
+            </table>
+          } @else { <p class="text-sm text-default-500">Sin interesados en el periodo.</p> }
+        </div>
+      </div>
+
+      <!-- Motivos de pérdida -->
+      <div class="card">
+        <div class="card-header"><h2 class="text-sm font-bold text-default-800">Por qué se pierden</h2></div>
+        <div class="p-4 grid gap-2">
+          @for (m of d.motivos_perdida; track m.motivo) {
+            <div class="flex justify-between text-sm border-b border-default-100 pb-1.5"><span>{{ m.motivo || 'Sin motivo' }}</span><span class="font-semibold tabular-nums">{{ m.total }}</span></div>
+          } @empty { <p class="text-sm text-default-500">Ninguna venta perdida en el periodo.</p> }
+        </div>
+      </div>
+    </div>
+  }
+</main>
