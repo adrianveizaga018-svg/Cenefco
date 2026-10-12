@@ -223,20 +223,7 @@ class CertificadoService
             ->orderBy('orden')
             ->get();
 
-        $imparte = DB::table('t_imparte as i')
-            ->leftJoin('t_materia as m', 'i.id_mat', '=', 'm.id_mat')
-            ->leftJoin('t_programa as prog', function ($j) {
-                $j->on('prog.id_imp', '=', 'i.id_imp')
-                  ->whereRaw('prog.id_us_reg = (SELECT MIN(p2.id_us_reg) FROM t_programa p2 WHERE p2.id_imp = prog.id_imp)');
-            })
-            ->select('i.*', 'm.nombre as nombre_materia', 'prog.slug as programa_slug')
-            ->where('i.id_imp', $imparteId)
-            ->whereRaw('i.id_us_reg = (SELECT MIN(i2.id_us_reg) FROM t_imparte i2 WHERE i2.id_imp = i.id_imp)')
-            ->first();
-
-        if (! $imparte) {
-            throw new \RuntimeException('Apertura de curso no encontrada (id_imp='.$imparteId.').');
-        }
+        $imparte = $this->cargarImparte($imparteId);
 
         $aprobados = $this->listaAprobadosRepository->aprobadosPendientesDeCertificado($imparteId, $usuarioIds);
 
@@ -267,18 +254,6 @@ class CertificadoService
             }
         }
 
-        $datosEstudiantesDjango = [];
-        foreach ($generados as $cert) {
-            $datosEstudiantesDjango[] = [
-                'nombre' => $cert->nombre_en_certificado,
-                'codigo' => $cert->codigo_verificacion,
-            ];
-        }
-
-        if (!empty($datosEstudiantesDjango)) {
-            $this->notificarDjangoParaPdf($imparteId, $plantilla, $imparte, $datosEstudiantesDjango);
-        }
-
         return [
             'generados' => count($generados),
             'total_aprobados' => $aprobados->count(),
@@ -286,41 +261,6 @@ class CertificadoService
             'ya_generados' => $yaGenerados,
             'certificados' => $generados,
         ];
-    }
-
-    private function notificarDjangoParaPdf(int $imparteId, object $plantilla, object $imparte, array $estudiantes): void
-    {
-        try {
-            $djangoUrl = config('certificados_externos.url', 'http://localhost:8001');
-            
-            // Convertimos la imagen_url relativa a URL absoluta local
-            // Suponiendo que plantilla->imagen_url es como "plantillas/xxx.jpg"
-            $plantillaUrl = url('/storage/' . $plantilla->imagen_url);
-
-            $payload = [
-                'lote_id' => $imparteId,
-                'curso'   => $imparte->titulo_personalizado ?: ($imparte->nombre_materia ?: 'Curso'),
-                'plantilla_url' => $plantillaUrl,
-                'estudiantes' => $estudiantes,
-                'config' => [
-                    'texto_x' => 400, // Django usa centro absoluto, el frontend usa %. Django necesitara ajustar esto o usamos un default.
-                    'texto_y' => 300,
-                    'tamano_fuente' => 40,
-                    'color_texto' => $plantilla->color_default ?? '#000000',
-                    'qr_activo' => true,
-                    'qr_x' => 100,
-                    'qr_y' => 500,
-                    'qr_tamano' => 120,
-                    // Idealmente pasariamos las coordenadas exactas de la tabla t_cert_plantilla_campo
-                ]
-            ];
-
-            \Illuminate\Support\Facades\Http::timeout(10)
-                ->post("{$djangoUrl}/api/generar-lote-pdf/", $payload);
-                
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error notificando a Django para PDFs: " . $e->getMessage());
-        }
     }
 
     private function esViolacionUnicidadListaAprobado(\Throwable $e): bool
@@ -337,13 +277,79 @@ class CertificadoService
         return str_contains($e->getMessage(), 't_certificado_lista_aprobado_id_unique');
     }
 
+    private function cargarImparte(int $imparteId): object
+    {
+        $imparte = DB::table('t_imparte as i')
+            ->leftJoin('t_materia as m', 'i.id_mat', '=', 'm.id_mat')
+            ->leftJoin('t_programa as prog', function ($j) {
+                $j->on('prog.id_imp', '=', 'i.id_imp')
+                  ->whereRaw('prog.id_us_reg = (SELECT MIN(p2.id_us_reg) FROM t_programa p2 WHERE p2.id_imp = prog.id_imp)');
+            })
+            ->select('i.*', 'm.nombre as nombre_materia', 'prog.slug as programa_slug')
+            ->where('i.id_imp', $imparteId)
+            ->whereRaw('i.id_us_reg = (SELECT MIN(i2.id_us_reg) FROM t_imparte i2 WHERE i2.id_imp = i.id_imp)')
+            ->first();
+
+        if (! $imparte) {
+            throw new \RuntimeException('Apertura de curso no encontrada (id_imp='.$imparteId.').');
+        }
+
+        return $imparte;
+    }
+
+    /**
+     * Vuelve a generar el PDF de los certificados emitidos cuyo archivo no existe
+     * (los del lote se quedaban sin PDF esperando al servicio Django). Conserva el
+     * código de verificación para que el QR ya compartido siga siendo válido.
+     *
+     * @return array{reparados: int, errores: array<int, array{id: int, error: string}>}
+     */
+    public function regenerarPdfFaltantes(?int $imparteId = null): array
+    {
+        $certs = DB::table('t_certificado')
+            ->where('estado', '!=', 'anulado')
+            ->whereNotNull('lista_aprobado_id')
+            ->when($imparteId, fn ($q) => $q->where('imparte_id', $imparteId))
+            ->get()
+            ->filter(fn ($c) => ! $c->archivo_url || ! file_exists($this->resolveStoragePath($c->archivo_url)));
+
+        $reparados = 0;
+        $errores = [];
+        foreach ($certs as $cert) {
+            try {
+                $aprobado = DB::table('t_lista_aprobados as la')
+                    ->leftJoin('t_usuario as u', function ($join) {
+                        $join->on('la.usuario_id', '=', 'u.id_us')
+                            ->whereRaw('u.id_us_reg = (SELECT MIN(u2.id_us_reg) FROM t_usuario u2 WHERE u2.id_us = u.id_us)');
+                    })
+                    ->select('la.*', 'u.nombre', 'u.appaterno', 'u.apmaterno', 'u.email', 'u.ci')
+                    ->where('la.id', $cert->lista_aprobado_id)
+                    ->first();
+                $plantilla = DB::table('t_cert_plantilla')->find($cert->plantilla_id);
+                if (! $aprobado || ! $plantilla) {
+                    throw new \RuntimeException('Faltan los datos del aprobado o la plantilla.');
+                }
+                $campos = DB::table('t_cert_plantilla_campo')->where('plantilla_id', $plantilla->id)->where('activo', true)->orderBy('orden')->get();
+
+                $this->generarCertificado($aprobado, $plantilla, $campos, $this->cargarImparte((int) $cert->imparte_id), $cert);
+                $reparados++;
+            } catch (\Throwable $e) {
+                $errores[] = ['id' => (int) $cert->id, 'error' => $e->getMessage()];
+            }
+        }
+
+        return ['reparados' => $reparados, 'errores' => $errores];
+    }
+
+    /** Con `$existente` vuelve a dibujar ese certificado con su mismo código en lugar de crear otro. */
     private function generarCertificado(
         object $aprobado,
         object $plantilla,
         $campos,
-        object $imparte
+        object $imparte,
+        ?object $existente = null
     ): object {
-        $codigo = $this->generarCodigo();
+        $codigo = $existente->codigo_verificacion ?? $this->generarCodigo();
 
         $nombreCompleto = trim(implode(' ', array_filter([
             $aprobado->appaterno,
@@ -460,15 +466,32 @@ class CertificadoService
         $widthPt = round($ancho * 0.75);
         $heightPt = round($alto * 0.75);
 
-        // --- MODO HEADLESS: Ya no generamos el PDF con DOMPDF aqui ---
-        // Solo generamos el JPEG de previsualizacion.
-        // Django se encargara de generar el PDF real y enviarlo luego.
+        // El PDF se genera aquí mismo: el servicio Django que lo hacía ya no existe
+        $html = <<<HTML
+            <!DOCTYPE html><html><head>
+            <style>* { margin:0; padding:0; } body { width:{$widthPt}pt; height:{$heightPt}pt; overflow:hidden; } img { width:100%; height:100%; display:block; }</style>
+            </head><body><img src="data:image/jpeg;base64,{$b64Image}" /></body></html>
+            HTML;
+
+        $pdf = Pdf::loadHTML($html)
+            ->setPaper([0, 0, $widthPt, $heightPt])
+            ->setOptions(['dpi' => 96, 'isRemoteEnabled' => false, 'isHtml5ParserEnabled' => true]);
+
         $pdfFilename = $codigo.'.pdf';
+        file_put_contents(Storage::disk('public')->path($dir.'/'.$pdfFilename), $pdf->output());
         $archivoUrl = '/storage/'.$dir.'/'.$pdfFilename;
 
         $previewPath = Storage::disk('public')->path($dir.'/'.$codigo.'_preview.jpg');
         $image->scale(width: 800)->save($previewPath, quality: 70);
         $previewUrl = '/storage/'.$dir.'/'.$codigo.'_preview.jpg';
+
+        if ($existente) {
+            DB::table('t_certificado')->where('id', $existente->id)->update([
+                'qr_url' => $qrUrl, 'archivo_url' => $archivoUrl, 'archivo_miniatura_url' => $previewUrl, 'updated_at' => now(),
+            ]);
+
+            return DB::table('t_certificado')->find($existente->id);
+        }
 
         $certId = DB::table('t_certificado')->insertGetId([
             'lista_aprobado_id' => $aprobado->id,
@@ -484,6 +507,7 @@ class CertificadoService
             'codigo_verificacion' => $codigo,
             'qr_url' => $qrUrl,
             'archivo_url' => $archivoUrl,
+            'archivo_miniatura_url' => $previewUrl,
             'estado' => 'generado',
             'id_us_reg' => auth()->id() ?? 0,
             'created_at' => now(),
