@@ -96,3 +96,8 @@ Schedule::command(\App\Console\Commands\AvisarTareasDelDia::class)
     ->dailyAt('08:00')
     ->days([1, 2, 3, 4, 5, 6])
     ->withoutOverlapping();
+
+// Podio de vendedores: el 1 de cada mes se guarda el del mes anterior y se felicita a los ganadores
+Schedule::command(\App\Console\Commands\CerrarPodioVentas::class)
+    ->monthlyOn(1, '08:00')
+    ->withoutOverlapping();

@@ -47,7 +47,8 @@ class CreateComisionLiquidacionHandler
                 array_map(fn ($i) => [
                     'id_pago'        => $i->id_pago,
                     'id_ins'         => $i->id_ins,
-                    'categoria_id'   => $i->categoria_id,
+                    'producto_id'    => $i->categoria_id,
+                    'regla'          => $i->regla,
                     'comision_monto' => $i->comision_monto,
                     'fecha_deposito' => $i->fecha_deposito,
                 ], $calculo['inscritos'])

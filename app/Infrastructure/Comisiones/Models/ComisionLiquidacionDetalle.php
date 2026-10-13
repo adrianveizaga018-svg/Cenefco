@@ -19,6 +19,8 @@ class ComisionLiquidacionDetalle extends Model
         'id_ins',
         'categoria_id',
         'comision_monto',
+        'producto_id',
+        'regla',
         'monto_pagado',
         'fecha_deposito',
     ];

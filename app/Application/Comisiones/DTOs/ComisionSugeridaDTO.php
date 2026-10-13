@@ -12,5 +12,7 @@ final readonly class ComisionSugeridaDTO
         public int     $total_inscritos,
         public float   $monto_comision,
         public array   $inscritos,
+        /** Ventas del periodo sin monto todavía: por negociar, sin tipo de producto o fuera de la tabla */
+        public array   $pendientes = [],
     ) {}
 }

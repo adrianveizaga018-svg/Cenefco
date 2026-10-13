@@ -32,6 +32,7 @@ class GetComisionSugeridaQueryHandler
             total_inscritos:  $calculo['total_inscritos'],
             monto_comision:   $calculo['monto_comision'],
             inscritos:        $calculo['inscritos'],
+            pendientes:       $calculo['pendientes'],
         );
     }
 }
