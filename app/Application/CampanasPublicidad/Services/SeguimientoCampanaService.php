@@ -112,7 +112,7 @@ class SeguimientoCampanaService
         $registros = DB::table('campana_registro_diario')->where('campana_publicidad_id', $idCampana)
             ->whereBetween('fecha', [$d, $h])->orderBy('fecha')->get();
         $otrosGastos = (float) $registros->sum('gasto_extra')
-            + (float) DB::table('gasto')->where('campana_publicidad_id', $idCampana)->whereNull('deleted_at')->whereBetween('fecha', [$d, $h])->sum('monto');
+            + (float) DB::table('gasto')->where('campana_publicidad_id', $idCampana)->where('origen', '!=', 'publicidad_meta')->whereNull('deleted_at')->whereBetween('fecha', [$d, $h])->sum('monto');
         $gastoTotal = round($gastoFacebook + $otrosGastos, 2);
 
         $nuevosGrupo = (int) $registros->sum('nuevos_grupo');

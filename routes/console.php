@@ -80,6 +80,11 @@ Schedule::command(SyncMetaAdsSpend::class)
     ->name('meta-ads-sync-gastos')
     ->withoutOverlapping();
 
+// Pasa a Gastos lo gastado en Facebook (por campaña y mes), después de sincronizar con Meta
+Schedule::command(\App\Console\Commands\RegistrarGastosAutomaticos::class)
+    ->dailyAt('06:30')
+    ->withoutOverlapping();
+
 // Embudo de ventas: interesados con más de 24 h sin contacto (cada hora, de 8 a 20)
 Schedule::command(\App\Console\Commands\AlertarInteresadosSinAtender::class)
     ->hourly()

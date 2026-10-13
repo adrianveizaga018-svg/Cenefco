@@ -83,15 +83,9 @@ class SyncMetaAdsSpend extends Command
 
             if ($insights !== null) {
                 // Meta devuelve el gasto en la moneda de la cuenta: solo se convierte si factura en dólares
-                $tipoCambio = (float) env('TIPO_CAMBIO_USD_BOB', 6.96);
-                $moneda = $monedaPorCuenta[$campana->cuenta_externa_id] ?? null;
-                if ($moneda === 'BOB') {
-                    $spendBob = round((float) $insights['spend'], 2);
-                    $spendUsd = $tipoCambio > 0 ? round($spendBob / $tipoCambio, 2) : $spendBob;
-                } else {
-                    $spendUsd = round((float) $insights['spend'], 2);
-                    $spendBob = round($spendUsd * $tipoCambio, 2);
-                }
+                [$spendUsd, $spendBob] = MetaAdsService::enDolaresYBolivianos(
+                    (float) $insights['spend'], $monedaPorCuenta[$campana->cuenta_externa_id] ?? null,
+                );
 
                 $updateData = [
                     'presupuesto_usd' => $spendUsd,

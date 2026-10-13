@@ -3,6 +3,7 @@
 namespace App\Application\Dashboard\QueryHandlers;
 
 use App\Application\Dashboard\Queries\GetDashboardGastosQuery;
+use App\Application\Dashboard\Services\RentabilidadProgramasService;
 use App\Application\Gastos\Queries\GetGastosPendientesDelMesQuery;
 use App\Application\Gastos\Queries\GetResumenMesQuery;
 use App\Application\Gastos\QueryHandlers\GetGastosPendientesDelMesQueryHandler;
@@ -16,6 +17,7 @@ class GetDashboardGastosQueryHandler
         private readonly GetResumenIngresosQueryHandler $resumenIngresosHandler,
         private readonly GetResumenMesQueryHandler       $resumenGastosHandler,
         private readonly GetGastosPendientesDelMesQueryHandler $pendientesHandler,
+        private readonly RentabilidadProgramasService $rentabilidad,
     ) {}
 
     public function handle(GetDashboardGastosQuery $query): array
@@ -39,6 +41,7 @@ class GetDashboardGastosQueryHandler
             'gastos_por_categoria'     => $resumenGastos['resumen']['por_categoria'],
             'gastos_por_linea_negocio' => $resumenGastos['por_linea_negocio'],
             'gastos_pendientes'        => $pendientes,
+            'rentabilidad'             => $this->rentabilidad->delMes($query->anio, $query->mes),
         ];
     }
 }

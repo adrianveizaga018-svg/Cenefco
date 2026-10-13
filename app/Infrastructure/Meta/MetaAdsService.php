@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Meta;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -133,13 +134,41 @@ class MetaAdsService
                 ]);
 
             if ($response->successful()) {
-                return $response->json('currency');
+                $moneda = $response->json('currency');
+                // La moneda de una cuenta no cambia: se guarda para no consultarla en cada listado
+                Cache::put("meta_moneda_{$accountId}", $moneda, now()->addDay());
+
+                return $moneda;
             }
             Log::warning("MetaAdsService: no se pudo leer la cuenta {$accountId}", ['error' => $response->json('error.message')]);
         } catch (\Exception $e) {
             Log::error("MetaAdsService: Error al consultar la moneda de la cuenta", ['err' => $e->getMessage()]);
         }
         return null;
+    }
+
+    /** Igual que getAccountCurrency, pero usa la moneda guardada si ya se consultó hoy. */
+    public function monedaDeCuenta(string $accountId): ?string
+    {
+        $clave = 'meta_moneda_' . (str_starts_with($accountId, 'act_') ? $accountId : 'act_' . $accountId);
+
+        return Cache::get($clave) ?? $this->getAccountCurrency($accountId);
+    }
+
+    /**
+     * Gasto de Meta en dólares y bolivianos. Meta lo devuelve en la moneda de la cuenta:
+     * solo se convierte si la cuenta factura en dólares (o si no se sabe).
+     *
+     * @return array{0: float, 1: float} [usd, bob]
+     */
+    public static function enDolaresYBolivianos(float $gasto, ?string $moneda): array
+    {
+        $tipoCambio = (float) env('TIPO_CAMBIO_USD_BOB', 6.96);
+        if ($moneda === 'BOB') {
+            return [$tipoCambio > 0 ? round($gasto / $tipoCambio, 2) : $gasto, round($gasto, 2)];
+        }
+
+        return [round($gasto, 2), round($gasto * $tipoCambio, 2)];
     }
 
     /**

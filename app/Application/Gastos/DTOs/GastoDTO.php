@@ -19,6 +19,8 @@ final readonly class GastoDTO
         public ?string $campana_publicidad_nombre,
         public ?string $created_at,
         public ?string $updated_at,
+        public string  $origen = 'manual',
+        public ?int    $id_programa = null,
     ) {}
 
     public static function fromModel(object $m): self
@@ -29,7 +31,7 @@ final readonly class GastoDTO
             categoria_nombre:           $m->categoria->nombre ?? null,
             concepto:                   $m->concepto,
             monto:                      (float) $m->monto,
-            fecha:                      (string) $m->fecha,
+            fecha:                      substr((string) $m->fecha, 0, 10),
             responsable:                $m->responsable ?? null,
             comprobante_url:            $m->comprobante_url ?? null,
             nota:                       $m->nota ?? null,
@@ -38,6 +40,8 @@ final readonly class GastoDTO
             campana_publicidad_nombre:  $m->campanaPublicidad->nombre ?? null,
             created_at:                 $m->created_at ? (string) $m->created_at : null,
             updated_at:                 $m->updated_at ? (string) $m->updated_at : null,
+            origen:                     $m->origen ?? 'manual',
+            id_programa:                isset($m->id_programa) ? (int) $m->id_programa : null,
         );
     }
 }

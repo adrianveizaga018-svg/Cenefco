@@ -9,6 +9,7 @@ use App\Domain\CampanasPublicidad\Contracts\CampanaPublicidadRepositoryInterface
 use App\Domain\CampanasPublicidad\Exceptions\CampanaPublicidadNotFoundException;
 use App\Infrastructure\CampanasPublicidad\Models\CampanaMetrica;
 use App\Infrastructure\CampanasPublicidad\Models\CampanaPublicidad;
+use App\Infrastructure\Meta\MetaAdsService;
 use App\Shared\Kernel\DTOs\PaginationDTO;
 use Illuminate\Support\Facades\DB;
 
@@ -98,19 +99,22 @@ class EloquentCampanaPublicidadRepository implements CampanaPublicidadRepository
 
                 $liveData = [];
                 $liveStatuses = [];
+                $monedaPorCampana = [];
                 foreach ($cuentas as $cuentaId) {
                     $res = $metaAds->getAccountLiveInsights($cuentaId, $filtros['fecha_desde'] ?? null, $filtros['fecha_hasta'] ?? null);
                     $stats = $metaAds->getAccountCampaignStatuses($cuentaId);
-                    
+
                     if ($res) {
-                        $liveData = $liveData + $res; 
+                        $liveData = $liveData + $res;
+                        $moneda = $metaAds->monedaDeCuenta($cuentaId);
+                        foreach (array_keys($res) as $idExterno) {
+                            $monedaPorCampana[$idExterno] = $moneda;
+                        }
                     }
                     if ($stats) {
                         $liveStatuses = $liveStatuses + $stats;
                     }
                 }
-
-                $tipoCambio = env('TIPO_CAMBIO_USD_BOB', 6.96);
 
                 // Sobreescribir las propiedades de $items con lo que dijo Meta en vivo
                 foreach ($items as $item) {
@@ -120,8 +124,9 @@ class EloquentCampanaPublicidadRepository implements CampanaPublicidadRepository
 
                     if ($item->id_campana_externa && isset($liveData[$item->id_campana_externa])) {
                         $live = $liveData[$item->id_campana_externa];
-                        $item->presupuesto_usd = $live['spend'];
-                        $item->presupuesto_bob = $live['spend'] * $tipoCambio;
+                        [$item->presupuesto_usd, $item->presupuesto_bob] = MetaAdsService::enDolaresYBolivianos(
+                            (float) $live['spend'], $monedaPorCampana[$item->id_campana_externa] ?? null,
+                        );
                         $item->leads = $live['leads'];
                         // También inyectamos las métricas al vuelo si existen
                         $mDto = new CampanaMetricaDTO(
@@ -138,7 +143,7 @@ class EloquentCampanaPublicidadRepository implements CampanaPublicidadRepository
                             resultados: $live['leads'],
                             tipo_resultado: 'live',
                             costo_por_resultado: null,
-                            gasto_periodo: $live['spend'] * $tipoCambio,
+                            gasto_periodo: $item->presupuesto_bob,
                             fuente: 'api_meta_live',
                             notas: null,
                             created_at: null
@@ -238,8 +243,10 @@ class EloquentCampanaPublicidadRepository implements CampanaPublicidadRepository
 
     public function tieneGastos(int $id): bool
     {
+        // El gasto de Facebook que se registra solo no impide borrar la campaña: solo los cargados a mano
         return DB::table('gasto')
             ->where('campana_publicidad_id', $id)
+            ->where('origen', 'manual')
             ->whereNull('deleted_at')
             ->exists();
     }

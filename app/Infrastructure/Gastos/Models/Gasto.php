@@ -22,6 +22,9 @@ class Gasto extends Model
         'nota',
         'gasto_recurrente_id',
         'campana_publicidad_id',
+        'origen',
+        'origen_ref',
+        'id_programa',
     ];
 
     protected $casts = [

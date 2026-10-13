@@ -57,6 +57,8 @@ class GenerarPlanillaHandler
                 'gasto_id' => $gasto->id,
             ], $detalle);
 
+            DB::table('gasto')->where('id', $gasto->id)->update(['origen' => 'planilla', 'origen_ref' => (string) $planilla->id]);
+
             $detalleIdPorEmpleado = [];
             foreach ($planilla->detalle as $d) {
                 $detalleIdPorEmpleado[$d->empleado_id] = $d->id;

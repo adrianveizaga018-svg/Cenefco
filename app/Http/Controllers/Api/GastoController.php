@@ -90,6 +90,10 @@ class GastoController extends Controller
     #[OA\Put(path: '/api/v1/gastos/{id}', summary: 'Actualizar gasto', tags: ['Gastos'])]
     public function update(UpdateGastoRequest $request, int $gasto): JsonResponse
     {
+        if ($error = $this->esAutomatico($gasto)) {
+            return $error;
+        }
+
         $comprobanteUrl = null;
         if ($request->hasFile('comprobante')) {
             $comprobanteUrl = $request->file('comprobante')->store('gastos-comprobantes', 'public');
@@ -111,8 +115,27 @@ class GastoController extends Controller
     #[OA\Delete(path: '/api/v1/gastos/{id}', summary: 'Eliminar gasto', tags: ['Gastos'])]
     public function destroy(int $gasto): JsonResponse
     {
+        if ($error = $this->esAutomatico($gasto)) {
+            return $error;
+        }
+
         $this->deleteHandler->handle(new DeleteGastoCommand($gasto));
 
         return response()->json(null, 204);
+    }
+
+    /** Los gastos que registra el sistema se corrigen en su origen; si no, se volverían a crear o quedarían desfasados. */
+    private function esAutomatico(int $gasto): ?JsonResponse
+    {
+        $origen = \Illuminate\Support\Facades\DB::table('gasto')->where('id', $gasto)->value('origen');
+        $donde = [
+            'honorario_docente' => 'anula o corrige el pago en Sueldos Docentes',
+            'publicidad_meta'   => 'se actualiza solo con lo que informa Facebook',
+            'planilla'          => 'corresponde a una planilla de sueldos',
+        ][$origen] ?? null;
+
+        return $donde
+            ? response()->json(['message' => "Este gasto lo registra el sistema: {$donde}."], 422)
+            : null;
     }
 }
