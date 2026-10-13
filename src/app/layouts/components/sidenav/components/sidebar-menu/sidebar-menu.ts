@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from "@ng-icons/core";
 import { CertConfigProgramaService } from '../../../../../cert-config-programas/application/services/cert-config-programa.service';
 import { AuthService } from '../../../../../auth/application/services/auth.service';
 import { ComprobantesCajaService } from '../../../../../caja/application/services/comprobantes-caja.service';
+import { ChatService } from '../../../../../chat/application/services/chat.service';
 
 type MenuItem = {
   type: 'title' | 'item' | 'accordion';
@@ -24,7 +25,7 @@ type MenuItem = {
   templateUrl: './sidebar-menu.html',
   styles: ``
 })
-export class SidebarMenu implements OnInit {
+export class SidebarMenu implements OnInit, OnDestroy {
 
   allMenus: MenuItem[] = [
 
@@ -36,6 +37,7 @@ export class SidebarMenu implements OnInit {
       color: 'text-violet-500',
       link: '/dashboards/cenefco',
     },
+    { type: 'item', label: 'Chat interno',              icon: 'lucideMessagesSquare',  color: 'text-primary',     link: '/chat', permission: 'chat.usar' },
     {
       type: 'item',
       label: 'Dashboard Gerencial',
@@ -298,6 +300,8 @@ export class SidebarMenu implements OnInit {
 
   private certConfigService = inject(CertConfigProgramaService);
   private comprobantesService = inject(ComprobantesCajaService);
+  private chatService = inject(ChatService);
+  private chatTimer?: ReturnType<typeof setInterval>;
   private cdr = inject(ChangeDetectorRef);
   private auth = inject(AuthService);
 
@@ -352,6 +356,10 @@ export class SidebarMenu implements OnInit {
   ngOnInit(): void {
     // El contador de solicitudes de certificado es del personal; el estudiante no tiene ese menú
     if (this.auth.isEstudiante()) return;
+    if (this.auth.hasPermission('chat.usar')) {
+      this.contarChat();
+      this.chatTimer = setInterval(() => this.contarChat(), 30000);
+    }
     if (this.auth.hasPermission('inscripciones.crear')) {
       this.comprobantesService.pendientes().subscribe({
         next: (res) => {
@@ -370,6 +378,22 @@ export class SidebarMenu implements OnInit {
         if (item && res.pendientes > 0) {
           item.badge = res.pendientes;
         }
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.chatTimer) clearInterval(this.chatTimer);
+  }
+
+  /** Mensajes del chat interno sin leer, en el ítem del menú. */
+  private contarChat(): void {
+    this.chatService.noLeidos().subscribe({
+      next: (res) => {
+        const item = this.allMenus.find((m) => m.link === '/chat');
+        if (item) item.badge = res.no_leidos > 0 ? res.no_leidos : undefined;
         this.cdr.detectChanges();
       },
       error: () => {},

@@ -25,6 +25,11 @@ export const DASHBOARDS_ROUTES: Routes = [
     }
 ,
     {
+        path: 'chat',
+        loadComponent: () => import('../../chat/presentation/chat/chat').then(m => m.ChatComponent),
+        data: { title: 'Chat interno' }
+    },
+    {
         path: 'crm/embudo',
         loadComponent: () => import('../../crm/presentation/embudo/embudo').then(m => m.EmbudoCrmComponent),
         data: { title: 'Embudo de ventas' }

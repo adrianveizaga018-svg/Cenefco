@@ -1,0 +1,260 @@
+<div class="card overflow-hidden flex flex-row" style="height: calc(100dvh - 9.5rem); min-height: 480px">
+
+  <!-- ── Conversaciones ───────────────────────────────────────────────── -->
+  <aside class="w-80 shrink-0 border-e border-default-200 flex flex-col bg-default-50/60" [class.hidden]="activa() !== null" [class.md:flex]="true">
+    <div class="p-3 border-b border-default-200 grid gap-2">
+      <div class="flex items-center justify-between">
+        <h1 class="text-base font-bold text-default-900">Chat</h1>
+        <div class="flex gap-1">
+          <button type="button" class="btn btn-sm border border-default-300 bg-white inline-flex items-center gap-1" title="Nuevo mensaje directo" (click)="abrirDialogo('directo')">
+            <span class="size-4 inline-flex"><ng-icon name="lucideMessageSquarePlus"></ng-icon></span>
+          </button>
+          @if (administra()) {
+            <button type="button" class="btn btn-sm border border-default-300 bg-white inline-flex items-center gap-1" title="Nuevo grupo" (click)="abrirDialogo('grupo')">
+              <span class="size-4 inline-flex"><ng-icon name="lucideUsers"></ng-icon></span>
+            </button>
+          }
+        </div>
+      </div>
+      <div class="relative">
+        <span class="absolute left-2.5 top-2.5 size-4 inline-flex text-default-400"><ng-icon name="lucideSearch"></ng-icon></span>
+        <input id="chat-buscar" type="search" class="form-input w-full ps-8 text-sm" placeholder="Buscar conversación o mensaje"
+          [ngModel]="filtro()" (ngModelChange)="filtro.set($event); resultados.set(null)" (keyup.enter)="buscar()">
+      </div>
+      @if (filtro().trim().length >= 2 && resultados() === null) {
+        <button type="button" class="text-xs font-semibold text-primary hover:underline justify-self-start" (click)="buscar()">Buscar "{{ filtro() }}" en los mensajes</button>
+      }
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      @if (resultados(); as rs) {
+        <p class="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-default-500">{{ rs.length }} mensaje(s) encontrados</p>
+        @for (r of rs; track r.id) {
+          <button type="button" class="w-full text-start px-3 py-2.5 hover:bg-white border-b border-default-100" (click)="abrir(r.conversacion_id)">
+            <p class="text-xs text-default-500">{{ r.conversacion || 'Directo' }} · {{ r.autor }} · {{ r.created_at | date:'dd/MM HH:mm' }}</p>
+            <p class="text-sm text-default-800 line-clamp-2">{{ r.cuerpo || r.adjunto_nombre }}</p>
+          </button>
+        }
+      } @else {
+        @for (c of lista(); track c.id) {
+          <button type="button" class="w-full text-start px-3 py-2.5 flex items-center gap-3 border-b border-default-100 hover:bg-white"
+            [class.bg-white]="c.id === activa()" [class.border-s-4]="c.id === activa()" [class.border-s-primary]="c.id === activa()" (click)="abrir(c.id)">
+            <span class="size-10 shrink-0 rounded-full inline-flex items-center justify-center text-sm font-bold"
+              [class]="c.tipo === 'anuncios' ? 'bg-amber-100 text-amber-700' : c.tipo === 'grupo' ? 'bg-primary/10 text-primary' : 'bg-default-200 text-default-700'">
+              @if (c.tipo === 'anuncios') { <span class="size-5 inline-flex"><ng-icon name="lucideMegaphone"></ng-icon></span> }
+              @else if (c.tipo === 'grupo') { <span class="size-5 inline-flex"><ng-icon name="lucideHash"></ng-icon></span> }
+              @else { {{ iniciales(c.nombre) }} }
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="flex items-baseline justify-between gap-2">
+                <span class="text-sm font-semibold text-default-900 truncate">{{ c.nombre }}</span>
+                @if (c.ultimo_mensaje) { <span class="text-[10px] text-default-400 shrink-0">{{ c.ultimo_mensaje.fecha | date:'dd/MM HH:mm' }}</span> }
+              </span>
+              <span class="flex items-center justify-between gap-2">
+                <span class="text-xs text-default-500 truncate">{{ c.ultimo_mensaje ? (c.tipo !== 'directo' && c.ultimo_mensaje.autor ? c.ultimo_mensaje.autor + ': ' : '') + c.ultimo_mensaje.texto : (c.descripcion || 'Sin mensajes todavía') }}</span>
+                @if (c.no_leidos) { <span class="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-white text-[11px] font-bold inline-flex items-center justify-center">{{ c.no_leidos }}</span> }
+              </span>
+            </span>
+          </button>
+        } @empty {
+          <p class="px-4 py-10 text-center text-sm text-default-500">Todavía no tienes conversaciones. Escribe a alguien con el botón de arriba.</p>
+        }
+      }
+    </div>
+  </aside>
+
+  <!-- ── Conversación abierta ─────────────────────────────────────────── -->
+  <section class="flex-1 min-w-0 flex flex-col" [class.hidden]="activa() === null" [class.md:flex]="true">
+    @if (!activa()) {
+      <div class="flex-1 flex flex-col items-center justify-center text-center p-8 text-default-500">
+        <span class="size-12 inline-flex text-default-300"><ng-icon name="lucideMessagesSquare"></ng-icon></span>
+        <p class="mt-3 text-sm">Elige una conversación o escribe a alguien del equipo.</p>
+      </div>
+    } @else {
+      <header class="px-4 py-3 border-b border-default-200 flex items-center gap-3">
+        <button type="button" class="md:hidden size-8 inline-flex items-center justify-center rounded-lg hover:bg-default-100" aria-label="Volver" (click)="activa.set(null); hilo.set(null)">
+          <span class="size-5 inline-flex"><ng-icon name="lucideArrowLeft"></ng-icon></span>
+        </button>
+        <div class="min-w-0 flex-1">
+          <h2 class="font-bold text-default-900 truncate">{{ actual()?.nombre }}</h2>
+          <p class="text-xs text-default-500 truncate">
+            @if (hilo()?.conversacion?.tipo === 'directo') { Mensaje directo · solo lo ven ustedes dos }
+            @else if (hilo()?.conversacion?.tipo === 'anuncios') { Canal de avisos · todo el personal lo lee }
+            @else { {{ hilo()?.participantes?.length }} miembros{{ actual()?.descripcion ? ' · ' + actual()?.descripcion : '' }} }
+          </p>
+        </div>
+        @if (actual()?.puede_gestionar) {
+          <button type="button" class="btn btn-sm border border-default-300 bg-white inline-flex items-center gap-1" (click)="abrirDialogo('gestionar')">
+            <span class="size-4 inline-flex"><ng-icon name="lucideSettings"></ng-icon></span> Miembros
+          </button>
+        }
+      </header>
+
+      <div #hiloScroll class="flex-1 overflow-y-auto px-4 py-3 bg-default-50/40">
+        @if (cargandoHilo()) {
+          <p class="text-center text-sm text-default-500 py-10">Cargando...</p>
+        } @else {
+          @if (hilo()?.hay_mas) {
+            <div class="text-center mb-3">
+              <button type="button" class="text-xs font-semibold text-primary hover:underline" [disabled]="cargandoMas()" (click)="cargarAnteriores()">
+                {{ cargandoMas() ? 'Cargando...' : 'Ver mensajes anteriores' }}
+              </button>
+            </div>
+          }
+          @for (grupo of porDia(); track grupo.dia) {
+            <div class="flex justify-center my-3"><span class="text-[11px] font-semibold text-default-500 bg-white border border-default-200 rounded-full px-3 py-0.5">{{ diaTexto(grupo.dia) }}</span></div>
+            @for (m of grupo.mensajes; track m.id; let i = $index) {
+              <div class="flex mb-1.5 group" [class.justify-end]="m.es_mio">
+                <div class="max-w-[78%] min-w-0">
+                  @if (!m.es_mio && hilo()?.conversacion?.tipo !== 'directo' && (i === 0 || grupo.mensajes[i - 1].usuario_id !== m.usuario_id)) {
+                    <p class="text-[11px] font-semibold text-primary ms-1 mb-0.5">{{ m.autor }}</p>
+                  }
+                  <div class="rounded-2xl px-3.5 py-2 text-sm shadow-sm"
+                    [class]="m.eliminado ? 'bg-default-100 text-default-400 italic' : m.es_mio ? 'bg-primary text-white rounded-br-md' : 'bg-white text-default-800 border border-default-200 rounded-bl-md'"
+                    [class.ring-2]="!m.es_mio && m.menciones.includes(yo)" [class.ring-amber-400]="!m.es_mio && m.menciones.includes(yo)">
+                    @if (m.eliminado) {
+                      Mensaje eliminado
+                    } @else {
+                      @if (m.responde_a) {
+                        <div class="mb-1.5 border-s-2 ps-2 text-xs" [class]="m.es_mio ? 'border-white/60 text-white/80' : 'border-primary/50 text-default-500'">
+                          <span class="font-semibold">{{ m.responde_a.autor }}</span><br>{{ m.responde_a.cuerpo }}
+                        </div>
+                      }
+                      @if (m.adjunto) {
+                        @if (m.adjunto.es_imagen) {
+                          @if (imagen(m.id); as src) {
+                            <img [src]="src" [alt]="m.adjunto.nombre" class="rounded-lg max-h-64 max-w-full cursor-pointer mb-1" (click)="descargar(m)">
+                          } @else {
+                            <div class="h-24 w-40 rounded-lg bg-default-100 animate-pulse mb-1"></div>
+                          }
+                        } @else {
+                          <button type="button" class="flex items-center gap-2 rounded-lg px-2.5 py-2 mb-1 text-start w-full"
+                            [class]="m.es_mio ? 'bg-white/15 hover:bg-white/25' : 'bg-default-100 hover:bg-default-200'" (click)="descargar(m)">
+                            <span class="size-5 inline-flex shrink-0"><ng-icon name="lucideFileText"></ng-icon></span>
+                            <span class="min-w-0"><span class="block text-xs font-semibold truncate">{{ m.adjunto.nombre }}</span><span class="block text-[10px] opacity-75">{{ peso(m.adjunto.peso) }} · Descargar</span></span>
+                          </button>
+                        }
+                      }
+                      @if (m.cuerpo) {
+                        <p class="whitespace-pre-wrap break-words">@for (s of segmentos(m.cuerpo); track $index) {@switch (s.tipo) {@case ('url') {<a [href]="s.destino" target="_blank" rel="noopener" class="underline break-all">{{ s.texto }}</a>}@case ('ruta') {<a [routerLink]="s.destino" class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold no-underline" [class]="m.es_mio ? 'bg-white/20' : 'bg-primary/10 text-primary'">↗ {{ s.texto }}</a>}@case ('mencion') {<span class="font-semibold" [class]="m.es_mio ? 'text-white' : 'text-primary'">{{ s.texto }}</span>}@default {{{ s.texto }}}}}</p>
+                      }
+                    }
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5 px-1 text-[10px] text-default-400" [class.justify-end]="m.es_mio">
+                    <span>{{ m.created_at | date:'HH:mm' }}</span>
+                    @if (m.es_mio && hilo()?.conversacion?.tipo === 'directo' && m.id <= vistoHasta()) { <span class="text-primary font-semibold">Visto</span> }
+                    @if (!m.eliminado) {
+                      <button type="button" class="opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-primary" (click)="respondeA.set(m); cajaRef?.nativeElement?.focus()">Responder</button>
+                      @if (m.es_mio || administra()) { <button type="button" class="opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger" (click)="eliminar(m)">Eliminar</button> }
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          } @empty {
+            <p class="text-center text-sm text-default-500 py-10">Todavía no hay mensajes. Escribe el primero.</p>
+          }
+        }
+      </div>
+
+      <!-- Escribir -->
+      @if (hilo()?.conversacion?.puede_publicar) {
+        <footer class="border-t border-default-200 p-3 grid gap-2 relative">
+          @if (respondeA(); as r) {
+            <div class="flex items-center gap-2 text-xs bg-default-50 border-s-2 border-primary rounded px-3 py-1.5">
+              <span class="min-w-0 flex-1 truncate"><b>Respondiendo a {{ r.autor }}:</b> {{ r.cuerpo || r.adjunto?.nombre }}</span>
+              <button type="button" class="text-default-500 hover:text-danger" aria-label="Cancelar respuesta" (click)="respondeA.set(null)">✕</button>
+            </div>
+          }
+          @if (archivo(); as f) {
+            <div class="flex items-center gap-2 text-xs bg-default-50 rounded px-3 py-1.5">
+              <span class="size-4 inline-flex"><ng-icon name="lucidePaperclip"></ng-icon></span>
+              <span class="min-w-0 flex-1 truncate">{{ f.name }} · {{ peso(f.size) }}</span>
+              <button type="button" class="text-default-500 hover:text-danger" aria-label="Quitar archivo" (click)="archivo.set(null)">✕</button>
+            </div>
+          }
+          @if (sugerencias().length) {
+            <ul class="absolute bottom-full mb-1 left-3 w-64 bg-white border border-default-200 rounded-lg shadow-lg overflow-hidden z-10" role="listbox">
+              @for (p of sugerencias(); track p.id) {
+                <li><button type="button" class="w-full text-start px-3 py-2 text-sm hover:bg-default-100" (click)="mencionar(p)">@{{ p.nombre }}</button></li>
+              }
+            </ul>
+          }
+          <div class="flex items-end gap-2">
+            <label class="size-10 shrink-0 rounded-lg hover:bg-default-100 inline-flex items-center justify-center cursor-pointer text-default-500" title="Adjuntar archivo">
+              <span class="size-5 inline-flex"><ng-icon name="lucidePaperclip"></ng-icon></span>
+              <input id="chat-adjunto" type="file" class="sr-only" (change)="onArchivo($event)">
+            </label>
+            <textarea #caja id="chat-texto" rows="1" class="form-input flex-1 resize-none max-h-40" placeholder="Escribe un mensaje… (Enter envía, Shift+Enter salto de línea, @ para mencionar)"
+              [ngModel]="texto()" (ngModelChange)="alEscribir($event)" (keydown)="teclear($event)"></textarea>
+            <button type="button" class="size-10 shrink-0 rounded-lg bg-primary text-white inline-flex items-center justify-center disabled:opacity-50" aria-label="Enviar"
+              [disabled]="enviando() || (!texto().trim() && !archivo())" (click)="enviar()">
+              <span class="size-5 inline-flex"><ng-icon name="lucideSendHorizonal"></ng-icon></span>
+            </button>
+          </div>
+        </footer>
+      } @else if (hilo()) {
+        <footer class="border-t border-default-200 px-4 py-3 text-center text-xs text-default-500">En este canal solo publica Dirección.</footer>
+      }
+    }
+  </section>
+</div>
+
+<!-- ── Diálogos ────────────────────────────────────────────────────────── -->
+@if (dialogo(); as tipo) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="chat-dialogo-titulo">
+    <div class="absolute inset-0 bg-slate-900/50" (click)="dialogo.set(null)"></div>
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+      <header class="px-5 py-4 border-b border-default-200 flex items-center justify-between">
+        <h2 id="chat-dialogo-titulo" class="font-bold text-default-900">{{ tipo === 'directo' ? 'Nuevo mensaje' : tipo === 'grupo' ? 'Nuevo grupo' : 'Miembros del grupo' }}</h2>
+        <button type="button" class="size-8 rounded-lg hover:bg-default-100 inline-flex items-center justify-center" aria-label="Cerrar" (click)="dialogo.set(null)">
+          <span class="size-5 inline-flex"><ng-icon name="lucideX"></ng-icon></span>
+        </button>
+      </header>
+      <div class="p-5 grid gap-3 overflow-y-auto">
+        @if (tipo !== 'directo') {
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="grupo-nombre">Nombre
+            <input id="grupo-nombre" class="form-input" maxlength="120" placeholder="Ej. Caja y Ventas" [ngModel]="grupoNombre()" (ngModelChange)="grupoNombre.set($event)">
+          </label>
+          <label class="grid gap-1 text-xs font-medium text-default-600" for="grupo-desc">Descripción (opcional)
+            <input id="grupo-desc" class="form-input" maxlength="300" [ngModel]="grupoDesc()" (ngModelChange)="grupoDesc.set($event)">
+          </label>
+        }
+        @if (tipo === 'gestionar') {
+          <div class="grid gap-1">
+            <p class="text-xs font-semibold text-default-600">Miembros actuales</p>
+            @for (p of hilo()?.participantes ?? []; track p.id) {
+              <div class="flex items-center justify-between text-sm py-1 border-b border-default-100">
+                <span>{{ p.nombre }}{{ p.rol === 'admin' ? ' · admin' : '' }}</span>
+                @if (p.rol !== 'admin') { <button type="button" class="text-xs text-danger hover:underline" (click)="quitarMiembro(p)">Quitar</button> }
+              </div>
+            }
+          </div>
+        }
+        <input id="chat-gente" type="search" class="form-input" [placeholder]="tipo === 'directo' ? 'Buscar a quién escribir' : 'Buscar personas para agregar'"
+          [ngModel]="filtroGente()" (ngModelChange)="filtroGente.set($event)">
+        <ul class="grid gap-0.5 max-h-72 overflow-y-auto">
+          @for (p of gente(); track p.id) {
+            @if (tipo === 'directo') {
+              <li><button type="button" class="w-full text-start px-2 py-2 rounded-lg hover:bg-default-100 flex items-center gap-2 text-sm" (click)="escribirA(p)">
+                <span class="size-8 rounded-full bg-default-200 text-default-700 text-xs font-bold inline-flex items-center justify-center">{{ iniciales(p.nombre) }}</span>{{ p.nombre }}
+              </button></li>
+            } @else if (tipo === 'grupo' || !miembrosActuales().has(p.id)) {
+              <li><label class="px-2 py-2 rounded-lg hover:bg-default-100 flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" class="accent-primary" [checked]="elegidos().has(p.id)" (change)="alternar(p.id)">{{ p.nombre }}
+              </label></li>
+            }
+          } @empty {
+            <li class="text-sm text-default-500 px-2 py-4">No hay personas que coincidan.</li>
+          }
+        </ul>
+      </div>
+      @if (tipo !== 'directo') {
+        <footer class="px-5 py-3 border-t border-default-200 flex justify-end gap-2">
+          <button type="button" class="btn border border-default-300 bg-white" (click)="dialogo.set(null)">Cancelar</button>
+          <button type="button" class="btn bg-primary text-white" (click)="tipo === 'grupo' ? crearGrupo() : guardarGrupo()">{{ tipo === 'grupo' ? 'Crear grupo' : 'Guardar' }}{{ elegidos().size ? ' (' + elegidos().size + ')' : '' }}</button>
+        </footer>
+      }
+    </div>
+  </div>
+}
