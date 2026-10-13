@@ -27,6 +27,19 @@ export interface GastoRecurrentePendiente {
   ultima_confirmacion: string | null;
 }
 
+/** Ganancia de un programa en el mes: cobrado contra docentes, publicidad y otros gastos suyos. */
+export interface RentabilidadPrograma {
+  id_programa: number;
+  programa: string;
+  ingresos: number;
+  docentes: number;
+  publicidad: number;
+  otros: number;
+  gastos: number;
+  ganancia: number;
+  margen: number | null;
+}
+
 export interface DashboardGastos {
   anio: number;
   mes: number;
@@ -34,4 +47,5 @@ export interface DashboardGastos {
   gastos_por_categoria: GastoPorCategoria[];
   gastos_por_linea_negocio: GastoPorLineaNegocio[];
   gastos_pendientes: GastoRecurrentePendiente[];
+  rentabilidad: { programas: RentabilidadPrograma[]; gastos_generales: number };
 }

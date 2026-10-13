@@ -118,7 +118,6 @@ import { CampanaDetail }      from '../../../campanas-publicidad/presentation/ca
 import { CampanasReporte }    from '../../../campanas-publicidad/presentation/campanas-reporte/campanas-reporte'
 import { CampanaSeguimientoComponent } from '../../../campanas-publicidad/presentation/campana-seguimiento/campana-seguimiento'
 
-import { CampanasLeads }    from '../../../campanas-leads/presentation/campanas-leads/campanas-leads'
 import { CampanaLeadEdit }   from '../../../campanas-leads/presentation/campana-lead-edit/campana-lead-edit'
 import { CampanaLeadDetail } from '../../../campanas-leads/presentation/campana-lead-detail/campana-lead-detail'
 import { LeadDetail }        from '../../../campanas-leads/presentation/lead-detail/lead-detail'
@@ -259,7 +258,8 @@ export const ACADEMICO_ROUTES: Routes = [
     { path: 'cenefco/campana-seguimiento/:id', component: CampanaSeguimientoComponent, data: { title: 'Seguimiento de campaña' } },
     { path: 'cenefco/campanas-reporte',    component: CampanasReporte,    data: { title: 'Reporte de Campañas' } },
 
-    { path: 'cenefco/campanas-leads',        component: CampanasLeads,      data: { title: 'Campañas de Leads' } },
+    // Reemplazado por el Embudo de ventas (usa la misma tabla de interesados)
+    { path: 'cenefco/campanas-leads',        redirectTo: '/crm/embudo', pathMatch: 'full' },
     { path: 'cenefco/campana-lead-create',   component: CampanaLeadEdit,    data: { title: 'Nueva Campaña de Leads' } },
     { path: 'cenefco/campana-lead-edit/:id', component: CampanaLeadEdit,    data: { title: 'Editar Campaña de Leads' } },
     { path: 'cenefco/campana-lead-detail/:id', component: CampanaLeadDetail, data: { title: 'Detalle de Campaña de Leads' } },

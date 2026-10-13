@@ -90,6 +90,16 @@ export class Gastos implements OnInit {
     this.load()
   }
 
+  /** Dónde se corrige un gasto que registra el sistema. */
+  origenTexto(gasto: Gasto): string {
+    switch (gasto.origen) {
+      case 'honorario_docente': return 'Pago a docente: se corrige o anula en Sueldos Docentes.';
+      case 'publicidad_meta':   return 'Gasto del mes en Facebook / Instagram: se actualiza solo con lo que informa Meta.';
+      case 'planilla':          return 'Planilla de sueldos generada.';
+      default:                  return '';
+    }
+  }
+
   eliminar(gasto: Gasto): void {
     Swal.fire({
       title: '¿Eliminar gasto?',

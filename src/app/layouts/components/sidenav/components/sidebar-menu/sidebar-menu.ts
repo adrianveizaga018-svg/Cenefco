@@ -100,6 +100,9 @@ export class SidebarMenu implements OnInit, OnDestroy {
       children: [
         { type: 'item', label: 'Docentes',               icon: 'lucideUserCheck',     color: 'text-cyan-600',  link: '/cenefco/docentes-perfil', permission: 'docentes.ver' },
         { type: 'item', label: 'Convenios',              icon: 'lucideHandshake',     color: 'text-cyan-500',  link: '/cenefco/convenios', permission: 'programas.ver' },
+        { type: 'item', label: 'Honorarios del Mes',      icon: 'lucideCalendarCheck',  color: 'text-violet-500',  link: '/cenefco/honorarios-mes', permission: 'honorarios.ver' },
+        { type: 'item', label: 'Configurar Honorarios',   icon: 'lucideSettings2',      color: 'text-violet-400',  link: '/cenefco/config-honorarios', permission: 'honorarios.editar' },
+        { type: 'item', label: 'Sueldos Docentes',        icon: 'lucideWallet',         color: 'text-violet-600',  link: '/cenefco/sueldos-docentes', permission: 'docentes.ver' },
       ]
     },
 
@@ -107,6 +110,10 @@ export class SidebarMenu implements OnInit, OnDestroy {
     { type: 'item', label: 'Mis tareas de hoy',         icon: 'lucideListChecks',      color: 'text-indigo-700',  link: '/crm/tareas', permission: 'crm.ver' },
     { type: 'item', label: 'Embudo de ventas',          icon: 'lucideKanban',          color: 'text-indigo-600',  link: '/crm/embudo', permission: 'crm.ver' },
     { type: 'item', label: 'Tablero de ventas',         icon: 'lucideGauge',           color: 'text-indigo-500',  link: '/crm/tablero', permission: 'crm.ver' },
+
+    { type: 'title', label: 'Marketing' },
+    { type: 'item', label: 'Campañas Publicitarias',  icon: 'lucideMegaphone',      color: 'text-pink-600',    link: '/cenefco/campanas-publicidad', permission: 'campanas.ver' },
+    { type: 'item', label: 'Reporte de Campañas',     icon: 'lucideBarChart3',      color: 'text-pink-500',    link: '/cenefco/campanas-reporte', permission: 'campanas.ver' },
 
     { type: 'title', label: 'Inscripciones y Pagos' },
     {
@@ -135,29 +142,31 @@ export class SidebarMenu implements OnInit, OnDestroy {
         { type: 'item', label: 'Comisiones',              icon: 'lucideBadgeDollarSign', color: 'text-orange-600', link: '/cenefco/comisiones', permission: 'comisiones.ver' },
         { type: 'item', label: 'Compromisos de Cobro',    icon: 'lucideCalendarClock',  color: 'text-teal-500',   link: '/cenefco/compromisos-cobro', permission: 'compromisos-cobro.ver' },
         { type: 'item', label: 'Tipos de Banco',          icon: 'lucideLandmark',       color: 'text-emerald-500', link: '/cenefco/tipos-banco', permission: 'pagos.ver' },
-        { type: 'item', label: 'Sueldos Docentes',        icon: 'lucideWallet',         color: 'text-violet-600',  link: '/cenefco/sueldos-docentes', permission: 'docentes.ver' },
       ]
     },
 
-    { type: 'title', label: 'Gastos y Planillas' },
+    { type: 'title', label: 'Finanzas' },
     {
       type: 'accordion',
-      label: 'Nómina y Gastos',
-      icon: 'lucideCreditCard',
+      label: 'Gastos',
+      icon: 'lucideReceipt',
       color: 'text-emerald-600',
       children: [
         { type: 'item', label: 'Dashboard de Gastos',     icon: 'lucideLayoutDashboard', color: 'text-emerald-600', link: '/cenefco/dashboard-gastos', permission: 'gastos.ver' },
         { type: 'item', label: 'Gastos',                  icon: 'lucideReceipt',        color: 'text-red-500',     link: '/cenefco/gastos', permission: 'gastos.ver' },
         { type: 'item', label: 'Gastos Recurrentes',      icon: 'lucideCalendarClock',  color: 'text-red-400',     link: '/cenefco/gastos-recurrentes', permission: 'gastos.ver' },
+      ]
+    },
+    {
+      type: 'accordion',
+      label: 'Personal de planta',
+      icon: 'lucideUsers',
+      color: 'text-cyan-600',
+      children: [
         { type: 'item', label: 'Empleados de Planta',     icon: 'lucideUsers',          color: 'text-cyan-600',    link: '/cenefco/empleados', permission: 'empleados.ver' },
         { type: 'item', label: 'Ajustes de Sueldo',       icon: 'lucideMinusCircle',    color: 'text-red-500',     link: '/cenefco/ajustes-sueldo', permission: 'empleados.editar' },
         { type: 'item', label: 'Generar Planilla',        icon: 'lucidePlayCircle',     color: 'text-cyan-500',    link: '/cenefco/generar-planilla', permission: 'planillas.crear' },
         { type: 'item', label: 'Historial de Planillas',  icon: 'lucideHistory',        color: 'text-cyan-700',    link: '/cenefco/planillas', permission: 'planillas.ver' },
-        { type: 'item', label: 'Honorarios del Mes',      icon: 'lucideCalendarCheck',  color: 'text-violet-500',  link: '/cenefco/honorarios-mes', permission: 'honorarios.ver' },
-        { type: 'item', label: 'Configurar Honorarios',   icon: 'lucideSettings2',      color: 'text-violet-400',  link: '/cenefco/config-honorarios', permission: 'honorarios.editar' },
-        { type: 'item', label: 'Campañas Publicitarias',  icon: 'lucideMegaphone',      color: 'text-pink-600',    link: '/cenefco/campanas-publicidad', permission: 'campanas.ver' },
-        { type: 'item', label: 'Reporte de Campañas',     icon: 'lucideBarChart3',      color: 'text-pink-500',    link: '/cenefco/campanas-reporte', permission: 'campanas.ver' },
-        { type: 'item', label: 'Campañas de Leads',       icon: 'lucideUsers',          color: 'text-pink-400',    link: '/cenefco/campanas-leads', permission: 'leads.ver' },
       ]
     },
 

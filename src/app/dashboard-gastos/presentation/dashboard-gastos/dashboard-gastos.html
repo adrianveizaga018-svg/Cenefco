@@ -34,7 +34,7 @@
         <div class="card-body flex items-center justify-between">
           <div>
             <p class="text-xs text-default-500 mb-1">Ingresos del mes</p>
-            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_ingresos }}</h5>
+            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_ingresos | number:'1.2-2' }}</h5>
           </div>
           <div class="size-10 rounded-full bg-success/10 text-success flex items-center justify-center">
             <div class="size-5"><ng-icon name="lucideTrendingUp"></ng-icon></div>
@@ -46,7 +46,7 @@
         <div class="card-body flex items-center justify-between">
           <div>
             <p class="text-xs text-default-500 mb-1">Gastos del mes</p>
-            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_gastos }}</h5>
+            <h5 class="font-semibold">Bs. {{ d.resumen_mes.total_gastos | number:'1.2-2' }}</h5>
           </div>
           <div class="size-10 rounded-full bg-danger/10 text-danger flex items-center justify-center">
             <div class="size-5"><ng-icon name="lucideTrendingDown"></ng-icon></div>
@@ -59,7 +59,7 @@
           <div>
             <p class="text-xs text-default-500 mb-1">Balance</p>
             <h5 class="font-semibold" [class.text-success]="d.resumen_mes.balance >= 0" [class.text-danger]="d.resumen_mes.balance < 0">
-              Bs. {{ d.resumen_mes.balance }}
+              Bs. {{ d.resumen_mes.balance | number:'1.2-2' }}
             </h5>
           </div>
           <div class="size-10 rounded-full flex items-center justify-center"
@@ -110,7 +110,7 @@
               <div>
                 <div class="flex items-center justify-between text-sm mb-1">
                   <span class="font-medium text-default-700">{{ nombreLinea(l.linea_negocio) }}</span>
-                  <span class="text-default-500">Bs. {{ l.total }} ({{ porcentajeLinea(l.total) }}%)</span>
+                  <span class="text-default-500">Bs. {{ l.total | number:'1.2-2' }} ({{ porcentajeLinea(l.total) }}%)</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-default-150 overflow-hidden">
                   <div class="h-full rounded-full {{ colorLinea(l.linea_negocio) }}" [style.width.%]="porcentajeLinea(l.total)"></div>
@@ -119,6 +119,54 @@
             }
           }
         </div>
+      </div>
+    </div>
+
+    <div class="card mb-5">
+      <div class="card-header">
+        <div>
+          <h6 class="card-title">Ganancia por programa</h6>
+          <p class="text-xs text-default-500 mt-0.5">Lo cobrado en el mes a los inscritos de cada programa, menos lo pagado a sus docentes, su publicidad en Facebook y otros gastos asignados a él.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        @if (d.rentabilidad.programas.length === 0) {
+          <p class="text-sm text-default-400 text-center py-6">No hay cobros ni gastos de programas en este mes.</p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead>
+                <tr class="text-xs uppercase text-default-500 border-b border-default-200">
+                  <th class="text-start font-semibold px-3 py-2">Programa</th>
+                  <th class="text-end font-semibold px-3 py-2">Cobrado</th>
+                  <th class="text-end font-semibold px-3 py-2">Docentes</th>
+                  <th class="text-end font-semibold px-3 py-2">Publicidad</th>
+                  <th class="text-end font-semibold px-3 py-2">Otros</th>
+                  <th class="text-end font-semibold px-3 py-2">Ganancia</th>
+                  <th class="text-end font-semibold px-3 py-2">Margen</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.rentabilidad.programas; track p.id_programa) {
+                  <tr class="border-b border-default-100">
+                    <td class="px-3 py-2 font-medium text-default-800">{{ p.programa }}</td>
+                    <td class="px-3 py-2 text-end">{{ p.ingresos | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-end text-default-600">{{ p.docentes | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-end text-default-600">{{ p.publicidad | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-end text-default-600">{{ p.otros | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-end font-semibold" [class.text-success]="p.ganancia >= 0" [class.text-danger]="p.ganancia < 0">{{ p.ganancia | number:'1.2-2' }}</td>
+                    <td class="px-3 py-2 text-end" [class.text-danger]="p.margen !== null && p.margen < 0">{{ p.margen === null ? '—' : (p.margen | number:'1.0-1') + ' %' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text-xs text-default-500 mt-3">
+            Gastos generales del mes (sin programa: alquiler, sueldos de planta, publicidad sin programa asignado, etc.):
+            <b>Bs. {{ d.rentabilidad.gastos_generales | number:'1.2-2' }}</b>.
+            Para que la publicidad de una campaña cuente en su programa, asígnale el programa en Campañas Publicitarias.
+          </p>
+        }
       </div>
     </div>
 
@@ -145,7 +193,7 @@
                     <p class="text-xs text-default-500">{{ g.categoria_nombre ?? 'Sin categoría' }} · día {{ g.dia_del_mes }} de cada mes</p>
                   </div>
                 </div>
-                <span class="text-sm font-medium">Bs. {{ g.monto }}</span>
+                <span class="text-sm font-medium">Bs. {{ g.monto | number:'1.2-2' }}</span>
               </div>
             }
           </div>

@@ -1,4 +1,5 @@
 import { Component, inject, signal, ChangeDetectorRef, OnInit } from '@angular/core'
+import { DecimalPipe } from '@angular/common'
 import { FormsModule } from '@angular/forms'
 import { RouterLink } from '@angular/router'
 import { NgIcon, provideIcons } from '@ng-icons/core'
@@ -14,7 +15,7 @@ const NOMBRES_MES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
 @Component({
   selector: 'app-dashboard-gastos',
   standalone: true,
-  imports: [FormsModule, NgIcon, PageTitle, Apexchart, RouterLink],
+  imports: [FormsModule, NgIcon, PageTitle, Apexchart, RouterLink, DecimalPipe],
   viewProviders: [provideIcons({ lucideTrendingUp, lucideTrendingDown, lucideScale, lucideLoader, lucideAlertTriangle })],
   templateUrl: './dashboard-gastos.html',
 })
@@ -110,11 +111,11 @@ export class DashboardGastos implements OnInit {
       },
       dataLabels: {
         enabled: true,
-        formatter: (v: number) => 'Bs. ' + v,
+        formatter: (v: number) => 'Bs. ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         style: { fontSize: '11px' },
       },
       tooltip: {
-        y: { formatter: (v: number) => 'Bs. ' + v },
+        y: { formatter: (v: number) => 'Bs. ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
       },
       grid: {
         borderColor: '#f1f5f9',

@@ -20,6 +20,9 @@ export interface Gasto {
   campana_publicidad_nombre: string | null;
   created_at: string | null;
   updated_at: string | null;
+  /** manual, o lo registró el sistema: honorario_docente | publicidad_meta | planilla */
+  origen?: 'manual' | 'honorario_docente' | 'publicidad_meta' | 'planilla';
+  id_programa?: number | null;
 }
 
 export interface GastoRecurrente {
