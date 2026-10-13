@@ -8,6 +8,14 @@
     * { font-family: DejaVu Sans, sans-serif; }
     body { color: #0d2630; font-size: 11px; line-height: 1.45; }
     .marca { border-bottom: 3px solid #0b4258; padding-bottom: 8px; margin-bottom: 14px; }
+    .marca .logo { height: 40px; }
+    .marca td { vertical-align: middle; }
+    .firma { margin-top: 46px; width: 100%; }
+    .firma td { width: 50%; text-align: center; vertical-align: bottom; font-size: 10px; }
+    .firma .linea { border-top: 1px solid #0d2630; margin: 0 30px; padding-top: 5px; }
+    .firma .nombre { font-weight: bold; font-size: 11px; }
+    .firma .cargo { color: #546b74; }
+    .fuentes { margin-top: 14px; color: #546b74; font-size: 9px; }
     .marca .org { font-size: 10px; letter-spacing: 1.5px; color: #1a6080; font-weight: bold; text-transform: uppercase; }
     h1 { font-size: 18px; margin: 4px 0 2px; color: #0b4258; }
     .sub { color: #546b74; font-size: 10.5px; }
@@ -28,8 +36,13 @@
 </head>
 <body>
     <div class="marca">
-        <div class="org">CENEFCO · Informe de marketing</div>
-        <h1>{{ $r['campana']['nombre'] }}</h1>
+        <table>
+            <tr>
+                <td>@if ($logo)<img class="logo" src="{{ $logo }}" alt="CENEFCO">@endif</td>
+                <td style="text-align:right"><div class="org">Informe de marketing</div><div class="sub">N.º {{ $numero }}</div></td>
+            </tr>
+        </table>
+        <h1>{{ $titulo }}</h1>
         <div class="sub">
             Periodo: {{ \Carbon\Carbon::parse($r['periodo']['desde'])->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($r['periodo']['hasta'])->format('d/m/Y') }}
             @if ($r['campana']['programa']) · Programa: {{ $r['campana']['programa'] }} @endif
@@ -62,6 +75,9 @@
     @if (! $r['facebook']['actualizado'])
         <p class="aviso">No hay datos de Facebook para este periodo: revisa que la campaña esté vinculada y sincronizada.</p>
     @else
+        @if (\Carbon\Carbon::parse($r['facebook']['actualizado'])->lt(\Carbon\Carbon::parse($r['periodo']['hasta'])->subDays(2)))
+            <p class="aviso">Los datos de Facebook llegan solo hasta el {{ \Carbon\Carbon::parse($r['facebook']['actualizado'])->format('d/m/Y') }}: la cuenta publicitaria no se está sincronizando, el gasto real del periodo puede ser mayor.</p>
+        @endif
         <p class="sub">Facebook al {{ \Carbon\Carbon::parse($r['facebook']['actualizado'])->format('d/m/Y') }}: alcance {{ number_format($r['facebook']['alcance']) }} · impresiones {{ number_format($r['facebook']['impresiones']) }} · clics {{ number_format($r['facebook']['clics']) }} · resultados {{ number_format($r['facebook']['resultados']) }}.</p>
     @endif
 
@@ -105,6 +121,29 @@
             @endforeach
         </table>
     @endif
+
+    <p class="fuentes"><b>De dónde salen los datos:</b> gasto, alcance, impresiones y clics de Facebook / Instagram vienen de Meta Ads (conexión automática);
+        las personas que se unieron al grupo, del registro diario de marketing; interesados, contactados e inscritos, del embudo de ventas (CRM);
+        y lo cobrado, de los pagos registrados en caja para esos inscritos.</p>
+
+    <table class="firma">
+        <tr>
+            <td>
+                <div class="linea">
+                    <div class="nombre">{{ $autor }}</div>
+                    <div class="cargo">{{ $cargo ?: 'Marketing' }}</div>
+                    <div class="cargo">Elaborado el {{ $generado->format('d/m/Y') }}</div>
+                </div>
+            </td>
+            <td>
+                <div class="linea">
+                    <div class="nombre">&nbsp;</div>
+                    <div class="cargo">Revisado por Dirección</div>
+                    <div class="cargo">Fecha: ____/____/________</div>
+                </div>
+            </td>
+        </tr>
+    </table>
 
     <div class="pie">Generado el {{ $generado->format('d/m/Y H:i') }} por {{ $autor }} · Sistema CENEFCO. Este informe queda guardado en el historial de la campaña.</div>
 </body>

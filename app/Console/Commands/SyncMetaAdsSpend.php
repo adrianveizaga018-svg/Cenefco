@@ -55,8 +55,13 @@ class SyncMetaAdsSpend extends Command
         // Pre-cargar los estados de todas las cuentas involucradas para no hacer 1 petición por campaña
         $statusesPorCuenta = [];
         $insightsPorCuenta = [];
+        $monedaPorCuenta = [];
         $cuentasUnicas = $campanas->pluck('cuenta_externa_id')->filter()->unique();
         foreach ($cuentasUnicas as $cId) {
+            $monedaPorCuenta[$cId] = $metaAds->getAccountCurrency($cId);
+            if ($monedaPorCuenta[$cId] === null) {
+                $this->warn("No se pudo leer la cuenta {$cId}: revisa que el usuario del sistema tenga permiso ads_read sobre ella.");
+            }
             $statusesPorCuenta[$cId] = $metaAds->getAccountCampaignStatuses($cId);
             // Una sola consulta trae las métricas de todas las campañas de la cuenta:
             // pedirlas una por una agotaba el límite de consultas de Meta ("User request limit reached")
@@ -77,11 +82,16 @@ class SyncMetaAdsSpend extends Command
                 ?? $metaAds->getCampaignInsights($campana->id_campana_externa, $this->option('desde') ?: null, $this->option('hasta') ?: null);
 
             if ($insights !== null) {
-                // Suponemos que la cuenta de Meta devuelve en dólares y la TC es aprox 7. 
-                // En un sistema real se puede configurar dinámicamente en .env
-                $tipoCambio = env('TIPO_CAMBIO_USD_BOB', 6.96);
-                $spendUsd = $insights['spend'];
-                $spendBob = $spendUsd * $tipoCambio;
+                // Meta devuelve el gasto en la moneda de la cuenta: solo se convierte si factura en dólares
+                $tipoCambio = (float) env('TIPO_CAMBIO_USD_BOB', 6.96);
+                $moneda = $monedaPorCuenta[$campana->cuenta_externa_id] ?? null;
+                if ($moneda === 'BOB') {
+                    $spendBob = round((float) $insights['spend'], 2);
+                    $spendUsd = $tipoCambio > 0 ? round($spendBob / $tipoCambio, 2) : $spendBob;
+                } else {
+                    $spendUsd = round((float) $insights['spend'], 2);
+                    $spendBob = round($spendUsd * $tipoCambio, 2);
+                }
 
                 $updateData = [
                     'presupuesto_usd' => $spendUsd,

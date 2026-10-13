@@ -110,6 +110,39 @@ class MetaAdsService
     }
 
     /**
+     * Moneda en la que factura la cuenta publicitaria (BOB, USD...). Meta devuelve el gasto en esa moneda.
+     * Null si no se pudo consultar (sin token o sin permiso sobre la cuenta).
+     */
+    public function getAccountCurrency(string $accountId): ?string
+    {
+        if (empty($this->accessToken) || empty($accountId)) {
+            return null;
+        }
+
+        if (!str_starts_with($accountId, 'act_')) {
+            $accountId = 'act_' . $accountId;
+        }
+
+        try {
+            $response = Http::withoutVerifying()
+                ->timeout(30)
+                ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
+                ->get("https://graph.facebook.com/v19.0/{$accountId}", [
+                    'access_token' => $this->accessToken,
+                    'fields' => 'currency',
+                ]);
+
+            if ($response->successful()) {
+                return $response->json('currency');
+            }
+            Log::warning("MetaAdsService: no se pudo leer la cuenta {$accountId}", ['error' => $response->json('error.message')]);
+        } catch (\Exception $e) {
+            Log::error("MetaAdsService: Error al consultar la moneda de la cuenta", ['err' => $e->getMessage()]);
+        }
+        return null;
+    }
+
+    /**
      * Obtiene el estado actual de todas las campañas de una cuenta.
      */
     public function getAccountCampaignStatuses(string $accountId): array

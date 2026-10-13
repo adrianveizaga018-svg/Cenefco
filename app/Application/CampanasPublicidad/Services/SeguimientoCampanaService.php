@@ -176,8 +176,20 @@ class SeguimientoCampanaService
         })->filter()->values()->all();
 
         $autor = $usuario ? trim(($usuario->nombre ?? '').' '.($usuario->apellido ?? '')) : 'Sistema';
-        $pdf = Pdf::loadView('informes.campana', ['r' => $resumen, 'flyers' => $flyers, 'autor' => $autor, 'generado' => now()])
-            ->setPaper('a4');
+        $cargo = $usuario && method_exists($usuario, 'roles') ? $usuario->roles()->pluck('nombre')->join(', ') : '';
+        $logo = resource_path('informes/cenefco-logo.png');
+        $numero = str_pad((string) (DB::table('campana_informes')->where('campana_publicidad_id', $idCampana)->count() + 1), 3, '0', STR_PAD_LEFT);
+
+        $pdf = Pdf::loadView('informes.campana', [
+            'r'        => $resumen,
+            'flyers'   => $flyers,
+            'autor'    => $autor,
+            'cargo'    => $cargo,
+            'generado' => now(),
+            'numero'   => "{$idCampana}-{$numero}",
+            'titulo'   => $this->sinEmojis($resumen['campana']['nombre']),
+            'logo'     => is_file($logo) ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($logo)) : null,
+        ])->setPaper('a4');
 
         $archivo = "campanas/{$idCampana}/informes/informe-{$resumen['periodo']['desde']}-a-{$resumen['periodo']['hasta']}-".now()->format('YmdHis').'.pdf';
         Storage::disk('public')->put($archivo, $pdf->output());
@@ -193,6 +205,14 @@ class SeguimientoCampanaService
         ]);
 
         return $this->informes($idCampana, $id)[0];
+    }
+
+    /** La fuente del PDF no tiene emojis (🟢⛽...): saldrían como cuadros vacíos. */
+    private function sinEmojis(string $texto): string
+    {
+        $limpio = preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FE0F}\x{200D}\x{20E3}]/u', '', $texto);
+
+        return trim(preg_replace('/\s{2,}/u', ' ', $limpio ?? $texto)) ?: $texto;
     }
 
     public function informes(int $idCampana, ?int $soloId = null): array
