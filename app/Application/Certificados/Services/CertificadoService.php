@@ -525,8 +525,11 @@ class CertificadoService
         string $nombreCompleto,
         string $nombrePrograma,
         string $ci,
+        ?int $idInscripcion = null,
     ): object {
         $plantilla = DB::table('t_cert_plantilla')->find($plantillaId);
+        // Con la inscripción, el certificado aparece en "Mis certificados" del estudiante y en su ficha
+        $inscripcion = $idInscripcion ? DB::table('t_inscripcion')->where('id_ins', $idInscripcion)->first(['id_us', 'id_imp']) : null;
         if (! $plantilla) {
             throw new \RuntimeException('Plantilla no encontrada.');
         }
@@ -656,8 +659,8 @@ class CertificadoService
         $certId = DB::table('t_certificado')->insertGetId([
             'lista_aprobado_id'      => null,
             'plantilla_id'           => $plantilla->id,
-            'usuario_id'             => 0,
-            'imparte_id'             => 0,
+            'usuario_id'             => (int) ($inscripcion->id_us ?? 0),
+            'imparte_id'             => (int) ($inscripcion->id_imp ?? 0),
             'nombre_en_certificado'  => $nombreCompleto,
             'programa_en_certificado'=> $nombrePrograma,
             'condicion'              => 'participante',

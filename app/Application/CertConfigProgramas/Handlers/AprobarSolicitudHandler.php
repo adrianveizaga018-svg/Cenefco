@@ -39,6 +39,7 @@ class AprobarSolicitudHandler
                     nombreCompleto: $solicitud->usuario_nombre,
                     nombrePrograma: $item->nombre_cert,
                     ci:             $solicitud->usuario_ci,
+                    idInscripcion:  $solicitud->inscripcion_id,
                 );
                 $certId = $cert->id;
             }

@@ -43,6 +43,7 @@ class CrearSolicitudesHandler
                             nombreCompleto: $command->usuario_nombre,
                             nombrePrograma: $gratuito->nombre_cert,
                             ci:             $command->usuario_ci,
+                            idInscripcion:  $command->inscripcion_id,
                         );
                         $certId  = $cert->id;
                         $certUrl = $cert->archivo_url;
