@@ -161,7 +161,7 @@ class EloquentCursoRepository implements CursoRepositoryInterface
     private function buildDtoConCuotas(object $row): CursoDTO
     {
         $tareas_catalogo_ids = DB::table('tareas_academicas')
-            ->where('id_programa', $row->id_programa)
+            ->where('programa_id', $row->id_programa)
             ->whereNotNull('catalogo_id')
             ->pluck('catalogo_id')
             ->all();
