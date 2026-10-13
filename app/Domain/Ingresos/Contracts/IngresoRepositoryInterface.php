@@ -9,5 +9,5 @@ interface IngresoRepositoryInterface
     
     public function paginate(PaginationDTO $pagination, ?string $desde, ?string $hasta): array;
 
-    public function resumen(): array;
+    public function resumen(?int $anio = null, ?int $mes = null): array;
 }

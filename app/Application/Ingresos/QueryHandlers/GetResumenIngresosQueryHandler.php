@@ -13,6 +13,6 @@ class GetResumenIngresosQueryHandler
 
     public function handle(GetResumenIngresosQuery $query): array
     {
-        return $this->repository->resumen();
+        return $this->repository->resumen($query->anio, $query->mes);
     }
 }

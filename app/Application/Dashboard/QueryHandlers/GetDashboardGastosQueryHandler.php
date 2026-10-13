@@ -20,7 +20,7 @@ class GetDashboardGastosQueryHandler
 
     public function handle(GetDashboardGastosQuery $query): array
     {
-        $resumenIngresos = $this->resumenIngresosHandler->handle(new GetResumenIngresosQuery());
+        $resumenIngresos = $this->resumenIngresosHandler->handle(new GetResumenIngresosQuery($query->anio, $query->mes));
         $resumenGastos   = $this->resumenGastosHandler->handle(new GetResumenMesQuery($query->anio, $query->mes));
         $pendientes      = $this->pendientesHandler->handle(new GetGastosPendientesDelMesQuery($query->anio, $query->mes));
 

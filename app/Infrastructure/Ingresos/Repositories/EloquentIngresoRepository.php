@@ -65,9 +65,9 @@ class EloquentIngresoRepository implements IngresoRepositoryInterface
         return ['data' => $data, 'total' => $total, 'total_periodo' => $totalPeriodo];
     }
 
-    public function resumen(): array
+    public function resumen(?int $anio = null, ?int $mes = null): array
     {
-        $ahora     = now();
+        $ahora     = $anio && $mes ? now()->setDate($anio, $mes, 1) : now();
         $inicioMes = $ahora->copy()->startOfMonth()->toDateString();
         $finMes    = $ahora->copy()->endOfMonth()->toDateString();
         $inicioAno = $ahora->copy()->startOfYear()->toDateString();
