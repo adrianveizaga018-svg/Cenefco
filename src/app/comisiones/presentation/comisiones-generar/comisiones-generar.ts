@@ -9,6 +9,14 @@ import { ToastService } from '../../../common/application/services/toast.service
 import { ComisionService } from '../../application/services/comision.service';
 import { ComisionSugerida } from '../../domain/models/comision.model';
 import { VendedorService } from '../../../vendedores/application/services/vendedor.service';
+import { TablaComisionesService } from '../../application/services/tabla-comisiones.service';
+import { AuthService } from '../../../auth/application/services/auth.service';
+import { ComisionLiquidacionDetalle } from '../../domain/models/comision.model';
+import Swal from 'sweetalert2';
+
+/** Los nombres los escriben los propios estudiantes: se escapan antes de ponerlos en HTML. */
+const esc = (texto: string | null | undefined): string =>
+  (texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 @Component({
   selector: 'app-comisiones-generar',
@@ -20,6 +28,10 @@ export class ComisionesGenerar implements OnInit {
   private vendedorSvc = inject(VendedorService);
   private toast       = inject(ToastService);
   private router       = inject(Router);
+  private tablaSvc     = inject(TablaComisionesService);
+
+  /** Acordar montos (ventas negociadas) es de Administración / Contabilidad */
+  readonly puedeAcordar = inject(AuthService).hasPermission('comisiones.configurar');
 
   vendedorOptions = signal<SelectOption[]>([]);
   vendedorId      = signal<number | null>(null);
@@ -78,6 +90,32 @@ export class ComisionesGenerar implements OnInit {
         this.calculando.set(false);
         this.buscado.set(true);
       },
+    });
+  }
+
+  /** Monto acordado para una venta negociada (o corregir el de la tabla), con su motivo. */
+  async acordar(venta: ComisionLiquidacionDetalle): Promise<void> {
+    const { value } = await Swal.fire({
+      title: 'Comisión acordada',
+      html: `<p class="text-sm text-start mb-3">${esc(venta.estudiante ?? 'Inscripción #' + venta.id_ins)}<br><span class="text-xs">${esc(venta.programa)} · ${esc(venta.regla)}</span></p>
+        <label class="block text-start text-xs mb-1" for="acuerdo-monto">Monto de la comisión (Bs.)</label>
+        <input id="acuerdo-monto" type="number" min="0" step="0.01" class="swal2-input !m-0 !w-full" value="${venta.comision_monto ?? ''}">
+        <label class="block text-start text-xs mt-3 mb-1" for="acuerdo-motivo">Motivo (queda registrado)</label>
+        <textarea id="acuerdo-motivo" class="swal2-textarea !m-0 !w-full" placeholder="Ej. Negociado con dirección: 10 % del contado">${esc(venta.motivo_acuerdo)}</textarea>`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const monto = (document.getElementById('acuerdo-monto') as HTMLInputElement).value;
+        const motivo = (document.getElementById('acuerdo-motivo') as HTMLTextAreaElement).value.trim();
+        if (monto === '' || Number(monto) < 0) { Swal.showValidationMessage('Escribe el monto acordado.'); return false; }
+        if (motivo.length < 3) { Swal.showValidationMessage('Escribe el motivo del acuerdo.'); return false; }
+        return { monto: Number(monto), motivo };
+      },
+    });
+    if (!value) return;
+
+    this.tablaSvc.acordar({ id_ins: venta.id_ins, monto: value.monto, vendedor_id: null, motivo: value.motivo }).subscribe({
+      next: () => { this.toast.success('Comisión acordada', `Bs. ${value.monto.toFixed(2)}`); this.calcular(); },
+      error: (err) => this.toast.error('No se pudo guardar', err?.error?.message ?? 'Inténtalo de nuevo.'),
     });
   }
 

@@ -1,0 +1,121 @@
+<main>
+  <app-page-title title="Ranking de ventas" subtitle="Ventas" />
+
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap items-end justify-between gap-3">
+      <label class="grid gap-1 text-xs font-medium text-default-600" for="ranking-mes">Mes
+        <input id="ranking-mes" type="month" class="form-input" [ngModel]="mes()" (ngModelChange)="mes.set($event); cargar()">
+      </label>
+      <p class="text-xs text-default-500 max-w-md">
+        Se ordena por lo recaudado en el mes de tus ventas; a igualdad, por ventas cerradas (con al menos 50 % pagado).
+        El 1 de cada mes se anuncia el podio y se felicita a los tres primeros.
+      </p>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <p class="text-center text-default-500 py-10">Cargando...</p>
+  } @else if (datos(); as d) {
+    @if (yo(); as y) {
+      <div class="card mb-5 border-s-4 border-primary">
+        <div class="card-body flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <p class="text-base font-semibold text-default-900">
+            @if (y.puesto) { Vas {{ y.puesto }}° {{ medalla(y.puesto) }} } @else { Todavía sin ventas este mes }
+          </p>
+          <p>Recaudado: <b>Bs {{ y.recaudado | number:'1.2-2' }}</b> · Ventas: <b>{{ y.ventas }}</b></p>
+          @if (delante(); as dl) {
+            <p class="text-primary font-medium">Te faltan Bs {{ dl.falta | number:'1.2-2' }} para alcanzar a {{ dl.nombre }}.</p>
+          }
+          @if (y.meta) {
+            <div class="flex items-center gap-2 min-w-48">
+              <span class="text-xs text-default-500">Meta</span>
+              <div class="flex-1 h-2 rounded-full bg-default-200"><div class="h-2 rounded-full bg-primary" [style.width.%]="y.progreso_meta"></div></div>
+              <span class="text-xs font-semibold">{{ y.progreso_meta }} %</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Podio -->
+    <div class="card mb-5">
+      <div class="card-header"><h2 class="card-title">Podio de {{ nombreMes(d.periodo) }}{{ d.cerrado ? '' : ' (en curso)' }}</h2></div>
+      <div class="card-body">
+        @if (podio().length === 0) {
+          <p class="text-center text-default-500 py-8">Todavía no hay ventas este mes. ¡El primero en vender se sube al podio!</p>
+        } @else {
+          <div class="flex items-end justify-center gap-3 sm:gap-6 pt-4">
+            @for (p of podio(); track p.vendedor_id) {
+              <div class="flex flex-col items-center w-28 sm:w-40 text-center">
+                <span class="text-3xl" aria-hidden="true">{{ medalla(p.puesto) }}</span>
+                <span class="mt-1 size-12 rounded-full bg-primary/10 text-primary font-bold inline-flex items-center justify-center overflow-hidden"
+                  [class.ring-4]="p.es_yo" [class.ring-amber-400]="p.es_yo">
+                  @if (p.foto) { <img [src]="p.foto" [alt]="p.nombre" class="size-full object-cover"> } @else { {{ iniciales(p.nombre) }} }
+                </span>
+                <span class="mt-1.5 text-sm font-semibold text-default-900 leading-tight">{{ p.nombre }}</span>
+                <span class="text-xs text-default-500">Bs {{ p.recaudado | number:'1.0-0' }} · {{ p.ventas }} venta(s)</span>
+                <div class="mt-2 w-full rounded-t-lg flex items-start justify-center pt-2 text-2xl font-black text-white {{ alto(p.puesto) }}"
+                  [class.bg-amber-400]="p.puesto === 1" [class.bg-slate-400]="p.puesto === 2" [class.bg-orange-400]="p.puesto === 3">{{ p.puesto }}</div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Tabla completa -->
+    <div class="card mb-5">
+      <div class="card-header"><h2 class="card-title">Todos los vendedores</h2><span class="text-xs text-default-500">Total del equipo: Bs {{ d.total | number:'1.2-2' }}</span></div>
+      <div class="card-body overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-xs uppercase text-default-500 border-b border-default-200">
+              <th class="text-start font-semibold py-2 w-12">#</th>
+              <th class="text-start font-semibold py-2">Vendedor</th>
+              <th class="text-end font-semibold py-2">Ventas</th>
+              <th class="text-end font-semibold py-2">Recaudado</th>
+              <th class="text-start font-semibold py-2 ps-4 w-48">Meta</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of d.ranking; track f.vendedor_id) {
+              <tr class="border-b border-default-100" [class.bg-primary/5]="f.es_yo" [class.font-semibold]="f.es_yo">
+                <td class="py-2">{{ f.puesto ?? '—' }} {{ medalla(f.puesto) }}</td>
+                <td class="py-2">{{ f.nombre }}{{ f.es_yo ? ' (tú)' : '' }}</td>
+                <td class="py-2 text-end">{{ f.ventas }}</td>
+                <td class="py-2 text-end">Bs {{ f.recaudado | number:'1.2-2' }}</td>
+                <td class="py-2 ps-4">
+                  @if (f.meta) {
+                    <div class="flex items-center gap-2">
+                      <div class="flex-1 h-1.5 rounded-full bg-default-200"><div class="h-1.5 rounded-full bg-primary" [style.width.%]="f.progreso_meta"></div></div>
+                      <span class="text-xs">{{ f.progreso_meta }} %</span>
+                    </div>
+                  } @else { <span class="text-xs text-default-400">Sin meta</span> }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="py-6 text-center text-default-500">No hay vendedores activos.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    @if (d.historial.length) {
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Podios anteriores</h2></div>
+        <div class="card-body grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          @for (h of d.historial; track h.periodo) {
+            <div class="rounded-lg border border-default-200 p-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-default-500 mb-1.5">{{ nombreMes(h.periodo) }}</p>
+              @for (p of h.podio; track p.puesto) {
+                <p class="text-sm">{{ medalla(p.puesto) }} {{ p.nombre }} <span class="text-xs text-default-500">· Bs {{ p.recaudado | number:'1.0-0' }}</span></p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</main>

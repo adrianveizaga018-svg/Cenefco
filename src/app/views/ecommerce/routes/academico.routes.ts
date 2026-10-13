@@ -206,6 +206,7 @@ export const ACADEMICO_ROUTES: Routes = [
 
     { path: 'cenefco/comisiones',            component: ComisionesHistorial, data: { title: 'Comisiones a Vendedores' } },
     { path: 'cenefco/comisiones/generar',    component: ComisionesGenerar,   data: { title: 'Generar Comisión' } },
+    { path: 'cenefco/comisiones-tabla',      loadComponent: () => import('../../../comisiones/presentation/tabla-comisiones/tabla-comisiones').then(m => m.TablaComisionesComponent), data: { title: 'Tabla de comisiones' } },
 
     { path: 'cenefco/compromisos-cobro',     component: CompromisosCobro,    data: { title: 'Compromisos de Cobro' } },
 

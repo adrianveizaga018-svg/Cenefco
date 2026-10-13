@@ -58,7 +58,7 @@
     <div class="card-body">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div class="p-3 rounded-lg border border-default-200">
-          <p class="text-xs text-default-500 uppercase tracking-wide">Inscritos elegibles</p>
+          <p class="text-xs text-default-500 uppercase tracking-wide">Ventas que comisionan</p>
           <p class="text-lg font-semibold text-default-800 mt-1">{{ s.total_inscritos }}</p>
         </div>
         <div class="p-3 rounded-lg border border-success/30 bg-success/5">
@@ -70,26 +70,37 @@
       @if (s.inscritos.length === 0) {
       <div class="flex flex-col items-center justify-center py-10 text-default-400">
         <div class="size-10 mb-2 opacity-40"><ng-icon name="lucideInbox"></ng-icon></div>
-        <p class="text-sm">No hay inscritos con pago verificado sin liquidar para este vendedor en el rango elegido.</p>
+        <p class="text-sm">No hay ventas con al menos el 50 % pagado y sin liquidar para este vendedor en el rango elegido.</p>
       </div>
       } @else {
       <div class="overflow-x-auto mb-4">
         <table class="min-w-full divide-y divide-default-200">
           <thead class="bg-default-100">
             <tr class="text-xs font-semibold text-default-500 uppercase tracking-wide">
-              <th class="px-3.5 py-2.5 text-start">Inscripción</th>
-              <th class="px-3.5 py-2.5 text-start">Categoría</th>
-              <th class="px-3.5 py-2.5 text-start">Fecha depósito</th>
+              <th class="px-3.5 py-2.5 text-start">Venta</th>
+              <th class="px-3.5 py-2.5 text-start">Regla</th>
+              <th class="px-3.5 py-2.5 text-start">Comisiona desde</th>
               <th class="px-3.5 py-2.5 text-end">Comisión</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-default-200">
             @for (i of s.inscritos; track i.id_ins) {
             <tr class="text-sm">
-              <td class="px-3.5 py-2 text-default-600">#{{ i.id_ins }}</td>
-              <td class="px-3.5 py-2 text-default-600">{{ i.categoria_nombre ?? '(Sin categoría)' }}</td>
+              <td class="px-3.5 py-2 text-default-700">
+                <span class="font-medium">{{ i.estudiante || ('Inscripción #' + i.id_ins) }}</span>
+                <span class="block text-xs text-default-500">{{ i.programa }} · Bs. {{ i.pagado | number:'1.2-2' }} de {{ i.precio | number:'1.2-2' }}</span>
+              </td>
+              <td class="px-3.5 py-2 text-default-600 text-xs">
+                {{ i.regla }}
+                @if (i.motivo_acuerdo) { <span class="block text-default-400" [title]="i.motivo_acuerdo">“{{ i.motivo_acuerdo | slice:0:60 }}”</span> }
+              </td>
               <td class="px-3.5 py-2 text-default-500">{{ i.fecha_deposito | slice:0:10 }}</td>
-              <td class="px-3.5 py-2 text-end font-medium text-default-800">Bs. {{ i.comision_monto | number:'1.2-2' }}</td>
+              <td class="px-3.5 py-2 text-end font-medium text-default-800">
+                Bs. {{ i.comision_monto | number:'1.2-2' }}
+                @if (puedeAcordar) {
+                  <button type="button" class="block ms-auto text-xs font-normal text-primary hover:underline" (click)="acordar(i)">Cambiar</button>
+                }
+              </td>
             </tr>
             }
           </tbody>
@@ -112,6 +123,38 @@
         Generar liquidación
         }
       </button>
+      }
+
+      @if (s.pendientes?.length) {
+        <div class="mt-6 rounded-lg border border-warning/40 bg-warning/5 p-4">
+          <h6 class="font-semibold text-default-800">Ventas esperando que se acuerde la comisión ({{ s.pendientes!.length }})</h6>
+          <p class="text-xs text-default-500 mt-0.5 mb-3">
+            Diplomados, congresos y otros productos que se negocian, o programas sin tipo de producto o con un precio fuera de la tabla.
+            No entran en la liquidación hasta que Administración o Contabilidad acuerde el monto.
+          </p>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <tbody class="divide-y divide-default-200">
+                @for (p of s.pendientes!; track p.id_ins) {
+                  <tr>
+                    <td class="py-2 pe-3">
+                      <span class="font-medium text-default-800">{{ p.estudiante || ('Inscripción #' + p.id_ins) }}</span>
+                      <span class="block text-xs text-default-500">{{ p.programa }} · Bs. {{ p.pagado | number:'1.2-2' }} de {{ p.precio | number:'1.2-2' }}</span>
+                    </td>
+                    <td class="py-2 pe-3 text-xs text-warning">{{ p.regla }}</td>
+                    <td class="py-2 text-end">
+                      @if (puedeAcordar) {
+                        <button type="button" class="btn btn-sm bg-primary text-white" (click)="acordar(p)">Acordar monto</button>
+                      } @else {
+                        <span class="text-xs text-default-400">Lo acuerda Administración</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
       }
     </div>
   </div>

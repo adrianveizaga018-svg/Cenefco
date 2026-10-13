@@ -40,6 +40,11 @@ export const DASHBOARDS_ROUTES: Routes = [
         data: { title: 'Mis tareas de hoy' }
     },
     {
+        path: 'crm/ranking',
+        loadComponent: () => import('../../crm/presentation/ranking/ranking').then(m => m.RankingVentasComponent),
+        data: { title: 'Ranking de ventas' }
+    },
+    {
         path: 'crm/tablero',
         loadComponent: () => import('../../crm/presentation/tablero/tablero').then(m => m.TableroCrmComponent),
         data: { title: 'Tablero de ventas' }

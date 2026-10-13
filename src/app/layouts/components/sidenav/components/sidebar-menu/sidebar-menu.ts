@@ -110,6 +110,7 @@ export class SidebarMenu implements OnInit, OnDestroy {
     { type: 'item', label: 'Mis tareas de hoy',         icon: 'lucideListChecks',      color: 'text-indigo-700',  link: '/crm/tareas', permission: 'crm.ver' },
     { type: 'item', label: 'Embudo de ventas',          icon: 'lucideKanban',          color: 'text-indigo-600',  link: '/crm/embudo', permission: 'crm.ver' },
     { type: 'item', label: 'Tablero de ventas',         icon: 'lucideGauge',           color: 'text-indigo-500',  link: '/crm/tablero', permission: 'crm.ver' },
+    { type: 'item', label: 'Ranking del mes',           icon: 'lucideTrophy',          color: 'text-amber-500',   link: '/crm/ranking', permission: 'crm.ver' },
 
     { type: 'title', label: 'Marketing' },
     { type: 'item', label: 'Campañas Publicitarias',  icon: 'lucideMegaphone',      color: 'text-pink-600',    link: '/cenefco/campanas-publicidad', permission: 'campanas.ver' },
@@ -140,6 +141,7 @@ export class SidebarMenu implements OnInit, OnDestroy {
       children: [
         { type: 'item', label: 'Vendedores',              icon: 'lucideUserRoundCog',   color: 'text-orange-500',  link: '/cenefco/vendedores', permission: 'ventas.ver' },
         { type: 'item', label: 'Comisiones',              icon: 'lucideBadgeDollarSign', color: 'text-orange-600', link: '/cenefco/comisiones', permission: 'comisiones.ver' },
+        { type: 'item', label: 'Tabla de comisiones',     icon: 'lucideTable2',         color: 'text-orange-500', link: '/cenefco/comisiones-tabla', permission: 'comisiones.ver' },
         { type: 'item', label: 'Compromisos de Cobro',    icon: 'lucideCalendarClock',  color: 'text-teal-500',   link: '/cenefco/compromisos-cobro', permission: 'compromisos-cobro.ver' },
         { type: 'item', label: 'Tipos de Banco',          icon: 'lucideLandmark',       color: 'text-emerald-500', link: '/cenefco/tipos-banco', permission: 'pagos.ver' },
       ]

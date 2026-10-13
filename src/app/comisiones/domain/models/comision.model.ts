@@ -1,12 +1,26 @@
 export type EstadoComision = 'calculado' | 'aprobado' | 'pagado' | 'anulado';
 
+/** Estado de la comisión de una venta según la tabla de comisiones. */
+export type EstadoComisionVenta = 'tabla' | 'acordada' | 'por_negociar' | 'sin_tipo' | 'fuera_de_tabla';
+
 export interface ComisionLiquidacionDetalle {
   id_ins:           number;
   id_pago:          number;
+  /** Tipo de producto de la tabla de comisiones */
   categoria_id:     number | null;
   categoria_nombre: string | null;
-  comision_monto:   number;
+  /** null mientras no se acuerde (negociación, sin tipo o fuera de la tabla) */
+  comision_monto:   number | null;
   fecha_deposito:   string;
+  estado_comision?: EstadoComisionVenta | null;
+  regla?:           string | null;
+  precio?:          number | null;
+  pagado?:          number | null;
+  estudiante?:      string | null;
+  programa?:        string | null;
+  vendedor_id?:     number | null;
+  vendedor_nombre?: string | null;
+  motivo_acuerdo?:  string | null;
 }
 
 export interface ComisionLiquidacion {
@@ -48,6 +62,8 @@ export interface ComisionSugerida {
   total_inscritos:  number;
   monto_comision:   number;
   inscritos:        ComisionLiquidacionDetalle[];
+  /** Ventas del periodo que esperan un monto acordado */
+  pendientes?:      ComisionLiquidacionDetalle[];
 }
 
 export interface CrearComisionPayload {
