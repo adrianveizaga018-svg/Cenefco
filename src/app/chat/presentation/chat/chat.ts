@@ -50,6 +50,8 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   conversaciones = signal<Conversacion[]>([]);
   administra     = signal(false);
+  sinConexion    = signal(false);
+  directorioListo = signal(false);
   filtro         = signal('');
   activa         = signal<number | null>(null);
   hilo           = signal<HiloChat | null>(null);
@@ -125,6 +127,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   cargarLista(primeraVez = false): void {
     this.chat.conversaciones().subscribe({
       next: (res) => {
+        this.sinConexion.set(false);
         this.conversaciones.set(res.data);
         this.administra.set(res.administra);
         if (primeraVez) {
@@ -133,7 +136,7 @@ export class ChatComponent implements OnInit, OnDestroy {
           if (abrir) this.abrir(abrir.id);
         }
       },
-      error: (err: HttpErrorResponse) => { if (primeraVez) this.toast.error('No se pudo abrir el chat', extractErrorMessage(err, 'Inténtalo de nuevo.')); },
+      error: (err: HttpErrorResponse) => { this.sinConexion.set(true); if (primeraVez) this.toast.error('No se pudo abrir el chat', extractErrorMessage(err, 'Inténtalo de nuevo.')); },
     });
   }
 
@@ -370,7 +373,8 @@ export class ChatComponent implements OnInit, OnDestroy {
     const conv = this.actual();
     this.grupoNombre.set(tipo === 'gestionar' ? conv?.nombre ?? '' : '');
     this.grupoDesc.set(tipo === 'gestionar' ? conv?.descripcion ?? '' : '');
-    this.chat.directorio().subscribe({ next: d => this.directorio.set(d), error: () => {} });
+    this.directorioListo.set(false);
+    this.chat.directorio().subscribe({ next: d => { this.directorio.set(d); this.directorioListo.set(true); }, error: () => this.directorioListo.set(true) });
   }
 
   escribirA(p: PersonaChat): void {

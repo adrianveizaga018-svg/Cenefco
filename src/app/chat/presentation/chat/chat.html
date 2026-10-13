@@ -57,7 +57,14 @@
             </span>
           </button>
         } @empty {
-          <p class="px-4 py-10 text-center text-sm text-default-500">Todavía no tienes conversaciones. Escribe a alguien con el botón de arriba.</p>
+          @if (sinConexion()) {
+            <div class="px-4 py-10 text-center text-sm text-default-500 grid gap-2 justify-items-center">
+              <p>No se pudo conectar con el servidor del chat.</p>
+              <button type="button" class="text-xs font-semibold text-primary hover:underline" (click)="cargarLista(true)">Reintentar</button>
+            </div>
+          } @else {
+            <p class="px-4 py-10 text-center text-sm text-default-500">Todavía no tienes conversaciones. Escribe a alguien con el botón de arriba.</p>
+          }
         }
       }
     </div>
@@ -245,7 +252,11 @@
               </label></li>
             }
           } @empty {
-            <li class="text-sm text-default-500 px-2 py-4">No hay personas que coincidan.</li>
+            <li class="text-sm text-default-500 px-2 py-4">
+              @if (!directorioListo()) { Cargando... }
+              @else if (!directorio().length) { Todavía no hay otras personas del personal con acceso al chat. Crea sus cuentas en Usuarios con un rol del personal (Operador, coordinador, docente o Admin). }
+              @else { No hay personas que coincidan. }
+            </li>
           }
         </ul>
       </div>
