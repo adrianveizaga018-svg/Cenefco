@@ -3,24 +3,32 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { DashboardStats } from '../../domain/models/dashboard.model';
+import { AuthService } from '../../../auth/application/services/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  /** Solo pide el contador si el rol puede verlo: los demás quedan en 0 sin errores 403 en consola. */
+  private contador<T>(permiso: string, pedido: () => Observable<T>, vacio: T): Observable<T> {
+    return this.auth.hasPermission(permiso) ? pedido().pipe(catchError(() => of(vacio))) : of(vacio);
+  }
 
   getStats(): Observable<DashboardStats> {
     return forkJoin({
-      inscripciones: this.http.get<{ total: number }>('/api/v1/inscripciones', {
+      inscripciones: this.contador('inscripciones.ver', () => this.http.get<{ total: number }>('/api/v1/inscripciones', {
         params: { pageSize: '1', pageIndex: '1', conInactivos: 'false' }
-      }).pipe(catchError(() => of({ total: 0 }))),
-      cursos: this.http.get<{ total: number }>('/api/v1/cursos', {
+      }), { total: 0 }),
+      cursos: this.contador('programas.ver', () => this.http.get<{ total: number }>('/api/v1/cursos', {
         params: { pageSize: '1', pageIndex: '1' }
-      }).pipe(catchError(() => of({ total: 0 }))),
-      docentes: this.http.get<{ total: number }>('/api/v1/docentes-perfil', {
+      }), { total: 0 }),
+      docentes: this.contador('docentes.ver', () => this.http.get<{ total: number }>('/api/v1/docentes-perfil', {
         params: { pageSize: '1', pageIndex: '1' }
-      }).pipe(catchError(() => of({ total: 0 }))),
-      cursos_migrados: this.http.get<{ total_cursos: number; total_participantes: number; total_conversaciones_whatsapp: number }>('/api/v1/cursos-migrados/stats')
-        .pipe(catchError(() => of({ total_cursos: 0, total_participantes: 0, total_conversaciones_whatsapp: 0 }))),
+      }), { total: 0 }),
+      cursos_migrados: this.contador('cursos_migrados.ver',
+        () => this.http.get<{ total_cursos: number; total_participantes: number; total_conversaciones_whatsapp: number }>('/api/v1/cursos-migrados/stats'),
+        { total_cursos: 0, total_participantes: 0, total_conversaciones_whatsapp: 0 }),
     }).pipe(
       map(r => ({
         resumen: {

@@ -66,7 +66,4 @@ export class CategoriaProgramaService {
     return this.http.post<void>(`${this.baseUrl}/${categoriaId}/campos/reorder`, { items });
   }
 
-  seedCampos(categoriaId: number): Observable<{ insertados: number; data: CategoriaCampo[] }> {
-    return this.http.post<{ insertados: number; data: CategoriaCampo[] }>(`${this.baseUrl}/${categoriaId}/campos/seed`, {});
-  }
 }

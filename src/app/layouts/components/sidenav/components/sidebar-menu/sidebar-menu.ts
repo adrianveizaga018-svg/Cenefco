@@ -64,7 +64,7 @@ export class SidebarMenu implements OnInit, OnDestroy {
       children: [
         { type: 'item', label: 'Programas / Cursos',   icon: 'lucideBookOpen',      color: 'text-blue-500',   link: '/cenefco/cursos', permission: 'programas.ver' },
         { type: 'item', label: 'Versiones / Imparticiones', icon: 'lucideCalendarRange', color: 'text-blue-400', link: '/cenefco/programas-academicos', permission: 'programas.ver' },
-        { type: 'item', label: 'Planes de Pago',       icon: 'lucideWallet',        color: 'text-emerald-500', link: '/cenefco/planes-academicos', permission: 'programas.ver' },
+        { type: 'item', label: 'Planes de Pago',       icon: 'lucideWallet',        color: 'text-emerald-500', link: '/cenefco/planes-academicos', permission: 'planes.ver' },
         { type: 'item', label: 'Áreas',                icon: 'lucideShapes',        color: 'text-violet-500', link: '/cenefco/areas', permission: 'programas.ver' },
         { type: 'item', label: 'Categorías / Tipos',   icon: 'lucideLayoutGrid',    color: 'text-sky-500',    link: '/cenefco/categorias-programa', permission: 'programas.ver' },
         { type: 'item', label: 'Cursos Migrados',       icon: 'lucideArchive',       color: 'text-indigo-500', link: '/cenefco/cursos-migrados', permission: 'cursos_migrados.ver' },
@@ -127,7 +127,7 @@ export class SidebarMenu implements OnInit, OnDestroy {
     },
     { type: 'item', label: 'Estudiantes',                icon: 'lucideUserSearch',     color: 'text-indigo-600',  link: '/cenefco/estudiantes', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Inscripciones',              icon: 'lucideClipboardCheck', color: 'text-teal-600',    link: '/cenefco/inscripciones', permission: 'inscripciones.ver' },
-    { type: 'item', label: 'Pago de Cuotas',             icon: 'lucideReceiptText',    color: 'text-sky-600',     link: '/caja/pago-cuota', permission: 'inscripciones.ver' },
+    { type: 'item', label: 'Pago de Cuotas',             icon: 'lucideReceiptText',    color: 'text-sky-600',     link: '/caja/pago-cuota', permission: 'inscripciones.crear' },
     { type: 'item', label: 'Verificar pagos',            icon: 'lucideFileCheck',      color: 'text-emerald-600', link: '/caja/comprobantes', permission: 'inscripciones.crear' },
     { type: 'item', label: 'Devoluciones',               icon: 'lucideUndo2',          color: 'text-amber-600',   link: '/cenefco/devoluciones', permission: 'inscripciones.ver' },
     { type: 'item', label: 'Dashboard Cobranzas',        icon: 'lucideTrendingUp',     color: 'text-emerald-600', link: '/cobranzas/dashboard', permission: 'pagos.ver' },
@@ -381,6 +381,8 @@ export class SidebarMenu implements OnInit, OnDestroy {
         error: () => {},
       });
     }
+    // Solo quien ve las solicitudes pide el contador: para los demás la API responde 403 en cada pantalla
+    if (!this.auth.hasPermission('cert-solicitudes.ver')) return;
     this.certConfigService.getPendientesCount().subscribe({
       next: (res) => {
         const item = this.allMenus
