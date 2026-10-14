@@ -5,6 +5,7 @@ import { NgIcon } from '@ng-icons/core';
 import { switchMap } from 'rxjs/operators';
 import { AuthService } from '../../../../auth/application/services/auth.service';
 import { PostAuthService } from '../../../../auth/application/services/post-auth.service';
+import { mensajeServidor } from '../../../../utils/http-error';
 
 declare var google: any;
 
@@ -251,7 +252,7 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err?.error?.message ?? err?.error?.error ?? 'Error al autenticar con Google.';
+        const msg = mensajeServidor(err, 'Error al autenticar con Google.');
         this.error.set(msg);
       }
     });
@@ -289,7 +290,7 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err?.error?.message ?? err?.error?.error ?? 'Credenciales incorrectas.';
+        const msg = mensajeServidor(err, 'Credenciales incorrectas.');
         this.error.set(msg);
       },
     });
@@ -328,7 +329,7 @@ export class Login implements OnInit, OnDestroy, AfterViewInit {
         this.loading.set(false);
         const errores = err?.error?.errors;
         const primero = errores ? (Object.values(errores)[0] as string[])?.[0] : null;
-        const msg = primero ?? err?.error?.message ?? err?.error?.error ?? 'No se pudo crear la cuenta.';
+        const msg = primero ?? mensajeServidor(err, 'No se pudo crear la cuenta.');
         this.error.set(msg);
       },
     });

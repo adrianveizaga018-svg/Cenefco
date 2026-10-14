@@ -1,10 +1,30 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+const SIN_RESPUESTA_VALIDA = 'El servidor tardó demasiado o respondió con un error. Intenta de nuevo en unos segundos.';
+
+/** Solo textos: si el servidor no mandó JSON, `error.error` es un SyntaxError y no se muestra al usuario. */
 function serverMessage(err: HttpErrorResponse): string | undefined {
-  return err.error?.message ?? err.error?.error;
+  const msg = err.error?.message ?? err.error?.error;
+  return typeof msg === 'string' && msg.trim() ? msg : undefined;
+}
+
+/** La respuesta no era JSON (p. ej. una página de error de PHP por tiempo agotado). */
+function respuestaNoValida(err: HttpErrorResponse): boolean {
+  return err.error?.error instanceof SyntaxError || (typeof err.error === 'string' && err.error.trimStart().startsWith('<'));
+}
+
+/**
+ * Mensaje del servidor si lo hay y es legible; si no, el texto por defecto.
+ * Para formularios que muestran el error tal como lo manda la API (login, registro...).
+ */
+export function mensajeServidor(err: HttpErrorResponse, fallback: string): string {
+  if (respuestaNoValida(err)) return SIN_RESPUESTA_VALIDA;
+  if (err.status === 0) return 'No se pudo conectar con el servidor. Verifica tu conexión.';
+  return serverMessage(err) ?? fallback;
 }
 
 export function extractErrorMessage(err: HttpErrorResponse, fallback = 'Ocurrió un error inesperado. Intente nuevamente.'): string {
+  if (respuestaNoValida(err)) return SIN_RESPUESTA_VALIDA;
   if (err.status === 422) {
     if (err.error?.errors) {
       const firstKey = Object.keys(err.error.errors)[0];
