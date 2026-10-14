@@ -54,9 +54,11 @@ class CobranzaController extends Controller
                 'ic.fecha_vencimiento',
                 'ic.estado',
                 'p.nombre_programa',
-                'pl.titulo as nombre_plan'
+                'pl.titulo as nombre_plan',
+                'pl.qr_image_url'
             )
-            ->get();
+            ->get()
+            ->map(fn ($c) => $this->conQr($c));
 
         return response()->json([
             'estudiante' => $estudiante,
@@ -227,6 +229,8 @@ class CobranzaController extends Controller
         $cuotas = DB::table('t_inscripcion_cuotas as ic')
             ->leftJoin('t_pago as p', 'p.id_pago', '=', 'ic.id_pago')
             ->leftJoin('tipos_banco as tb', 'tb.id', '=', 'p.tipo_banco_id')
+            ->leftJoin('t_inscripcion as ins', 'ins.id_ins', '=', 'ic.id_ins')
+            ->leftJoin('t_plan as pl', 'pl.id_plan', '=', 'ins.id_plan')
             ->where('ic.id_ins', $idIns)
             ->select(
                 'ic.id', 'ic.nro_cuota', 'ic.descripcion',
@@ -236,9 +240,11 @@ class CobranzaController extends Controller
                 'p.fecha_deposito', 'p.comprobante_url',
                 'p.monto_pagado as monto_pagado_real',
                 'tb.nombre as tipo_banco_nombre',
+                'pl.qr_image_url',
             )
             ->orderBy('ic.nro_cuota')
-            ->get();
+            ->get()
+            ->map(fn ($c) => $this->conQr($c));
 
         return response()->json($cuotas);
     }
@@ -348,5 +354,19 @@ class CobranzaController extends Controller
         \App\Application\Crm\Services\CrmService::alInscribir((int) $inscripcion->id_ins);
 
         return $respuesta;
+    }
+
+    /** QR de cobro del plan, listo para mostrarse en el panel (la ruta guardada es relativa al storage). */
+    private function conQr(object $cuota): object
+    {
+        $ruta = trim((string) ($cuota->qr_image_url ?? ''));
+        $cuota->qr_url = match (true) {
+            $ruta === '' => null,
+            str_starts_with($ruta, 'http') => parse_url($ruta, PHP_URL_PATH) ?: $ruta,
+            default => '/storage/'.ltrim(preg_replace('#^/?storage/#', '', $ruta), '/'),
+        };
+        unset($cuota->qr_image_url);
+
+        return $cuota;
     }
 }
