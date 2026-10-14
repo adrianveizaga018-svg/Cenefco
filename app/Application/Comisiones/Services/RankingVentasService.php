@@ -35,7 +35,7 @@ class RankingVentasService
         $pagos = DB::table('t_pago')->where('estado', 1)->whereNotNull('id_ins')
             ->where(fn ($q) => $q->whereNull('estado_verificacion')->orWhere('estado_verificacion', '!=', InscripcionCuotasService::COMPROBANTE_ESTUDIANTE))
             ->whereBetween('fecha_deposito', [$desde, $hasta])
-            ->groupBy('id_ins')->selectRaw('id_ins, SUM(monto_pagado) as total')->pluck('total', 'id_ins');
+            ->groupBy('id_ins')->selectRaw('id_ins, '.SqlCompat::sumaMonto('monto_pagado').' as total')->pluck('total', 'id_ins');
         foreach ($pagos as $idIns => $total) {
             if ($vendedor = $this->comisiones->vendedorDe((int) $idIns)) {
                 $recaudado[$vendedor] = ($recaudado[$vendedor] ?? 0) + (float) $total;

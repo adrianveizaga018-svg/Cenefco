@@ -18,7 +18,7 @@ class DashboardGerencialController extends Controller
         $ingresos = DB::table('t_pago')
             ->whereBetween('fecha_deposito', [$desde, $hasta])
             ->where('estado', 1)
-            ->sum('monto_pagado');
+            ->sum(DB::raw(\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado')));
 
         // 2. Inscripciones concretadas
         $inscripciones = DB::table('t_inscripcion')
@@ -57,13 +57,14 @@ class DashboardGerencialController extends Controller
             ->where('estado', 'pendiente')
             ->count();
 
-        // 8. Ingresos ultimos 6 meses (grafico barras) - SQLite compatible
+        // 8. Ingresos últimos 6 meses (gráfico de barras), en cualquier motor
+        $mesExpr = \App\Shared\Kernel\Support\SqlCompat::dateFormat('fecha_deposito', '%Y-%m');
         $ingresosPorMes = DB::table('t_pago')
-            ->select(DB::raw("strftime('%Y-%m', fecha_deposito) as mes"), DB::raw('SUM(monto_pagado) as total'))
+            ->select(DB::raw("{$mesExpr} as mes"), DB::raw(\App\Shared\Kernel\Support\SqlCompat::sumaMonto('monto_pagado').' as total'))
             ->where('estado', 1)
-            ->whereRaw("fecha_deposito >= date('now', '-5 months', 'start of month')")
-            ->groupBy('mes')
-            ->orderBy('mes')
+            ->where('fecha_deposito', '>=', now()->subMonths(5)->startOfMonth()->toDateString())
+            ->groupByRaw($mesExpr)
+            ->orderByRaw($mesExpr)
             ->get();
 
         // 9. Leads por estado (grafico dona)
@@ -78,7 +79,7 @@ class DashboardGerencialController extends Controller
             ->join('t_inscripcion as i', 'p.id_ins', '=', 'i.id_ins')
             ->join('t_imparte as imp', 'i.id_imp', '=', 'imp.id_imp')
             ->join('t_programa as prog', 'imp.id_mat', '=', 'prog.id_programa')
-            ->select('prog.nombre_programa', DB::raw('SUM(p.monto_pagado) as total_ingresos'), DB::raw('COUNT(DISTINCT i.id_ins) as total_inscritos'))
+            ->select('prog.nombre_programa', DB::raw(\App\Shared\Kernel\Support\SqlCompat::sumaMonto('p.monto_pagado').' as total_ingresos'), DB::raw('COUNT(DISTINCT i.id_ins) as total_inscritos'))
             ->where('p.estado', 1)
             ->whereBetween('p.fecha_deposito', [$desde, $hasta])
             ->groupBy('prog.id_programa', 'prog.nombre_programa')

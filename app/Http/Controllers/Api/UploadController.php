@@ -32,7 +32,14 @@ class UploadController extends Controller
     public function file(UploadFileRequest $request): JsonResponse
     {
         $file = $request->file('file');
-        $path = $file->storeAs('uploads/files', Str::uuid().'.'.$file->getClientOriginalExtension(), 'public');
+        // La extensión sale del contenido real, no del nombre que manda el cliente: un "algo.php"
+        // con cabecera de PDF pasaba la validación y quedaba guardado como .php en la carpeta pública
+        $permitidas = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'mp3', 'mp4', 'wav', 'ogg', 'jpg', 'jpeg', 'png', 'webp'];
+        $extension = strtolower((string) $file->extension());
+        if (! in_array($extension, $permitidas, true)) {
+            return response()->json(['message' => 'Tipo de archivo no permitido.'], 422);
+        }
+        $path = $file->storeAs('uploads/files', Str::uuid().'.'.$extension, 'public');
 
         return response()->json(['url' => '/storage/'.$path], 201);
     }

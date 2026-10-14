@@ -16,6 +16,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Ids numéricos: un valor como "abc" responde 404 en vez de un error 500 por el tipo int del controlador
+        foreach (['id', 'eventoId', 'categoriaId', 'programaId'] as $parametro) {
+            \Illuminate\Support\Facades\Route::pattern($parametro, '[0-9]+');
+        }
+
         if ($this->app->environment('local', 'testing')) {
             Model::preventLazyLoading();
         }

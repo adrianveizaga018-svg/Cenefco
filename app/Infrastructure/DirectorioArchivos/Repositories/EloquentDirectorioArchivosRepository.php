@@ -19,7 +19,7 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
             ->where('estado', 1)
             ->whereNotNull('documentos')
             ->whereRaw("jsonb_typeof(documentos) = 'object'")
-            ->whereRaw("documentos <> '{}'::jsonb")
+            ->whereRaw(\App\Shared\Kernel\Support\SqlCompat::jsonNoVacio('documentos'))
             ->groupBy('id_imp');
 
         $q = DB::table('t_imparte as imp')
@@ -83,7 +83,7 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
             ->where('ins.estado', 1)
             ->whereNotNull('ins.documentos')
             ->whereRaw("jsonb_typeof(ins.documentos) = 'object'")
-            ->whereRaw("ins.documentos <> '{}'::jsonb")
+            ->whereRaw(\App\Shared\Kernel\Support\SqlCompat::jsonNoVacio('ins.documentos'))
             ->select([
                 'ins.id_ins', 'ins.id_us', 'ins.fecha_ins',
                 'u.ci',
@@ -147,7 +147,7 @@ class EloquentDirectorioArchivosRepository implements DirectorioArchivosReposito
         return new ArchivoParticipanteDTO(
             id_ins: (int) $row->id_ins,
             id_us: (int) $row->id_us,
-            nombre_completo: $row->nombre_completo,
+            nombre_completo: $row->estudiante_nombre,
             ci: $row->ci,
             curso_nombre: $row->curso_nombre,
             archivos: array_filter($docs),

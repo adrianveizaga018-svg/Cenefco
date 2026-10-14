@@ -340,6 +340,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(\App\Domain\ArchivosAcademicos\Contracts\ArchivoAcademicoRepositoryInterface::class,              \App\Infrastructure\ArchivosAcademicos\Repositories\EloquentArchivoAcademicoRepository::class);
         $this->app->bind(\App\Domain\BloquesAjustables\Contracts\BloquesAjustableRepositoryInterface::class,               \App\Infrastructure\BloquesAjustables\Repositories\EloquentBloquesAjustableRepository::class);
         $this->app->bind(\App\Domain\BloquesPlantilla\Contracts\BloquePlantillaRepositoryInterface::class,                 \App\Infrastructure\BloquesPlantilla\Repositories\EloquentBloquePlantillaRepository::class);
+        $this->app->bind(\App\Domain\BloquesAjustables\Contracts\BloqueAjustableRepositoryInterface::class, \App\Infrastructure\BloquesAjustables\Repositories\EloquentBloqueAjustableRepository::class);
         $this->app->bind(\App\Domain\SeccionesBloque\Contracts\SeccionBloqueRepositoryInterface::class,                   \App\Infrastructure\SeccionesBloque\Repositories\EloquentSeccionBloqueRepository::class);
         $this->app->bind(\App\Domain\PaginasAcademicas\Contracts\PaginaAcademicaRepositoryInterface::class,               \App\Infrastructure\PaginasAcademicas\Repositories\EloquentPaginaAcademicaRepository::class);
         $this->app->bind(\App\Domain\MenusAcademicos\Contracts\MenuAcademicoRepositoryInterface::class,                   \App\Infrastructure\MenusAcademicos\Repositories\EloquentMenuAcademicoRepository::class);

@@ -44,23 +44,22 @@ class EloquentPlanAcademicoRepository implements PlanAcademicoRepositoryInterfac
             // Un plan es inválido si:
             // - costo = 0 Y nro_cuotas > 1 (cuotas sin monto no tiene sentido)
             // Plan gratuito legítimo: costo = 0 Y nro_cuotas <= 1 → válido
-            $q->where(function ($sq) {
-                $sq->where('costo', '>', 0)
-                   ->orWhere(function ($sub) {
+            // costo y nro_cuotas son texto en t_plan: se comparan convertidos (PostgreSQL no compara texto con números)
+            $costo = \App\Shared\Kernel\Support\SqlCompat::castDecimal('costo');
+            $cuotas = \App\Shared\Kernel\Support\SqlCompat::castDecimal('nro_cuotas');
+            $q->where(function ($sq) use ($costo, $cuotas) {
+                $sq->whereRaw("{$costo} > 0")
+                   ->orWhere(function ($sub) use ($costo, $cuotas) {
                        // Gratuito contado: costo 0 pero cuota única
-                       $sub->where(fn ($s) => $s->whereNull('costo')->orWhere('costo', '=', 0))
-                           ->where(fn ($s) => $s->whereNull('nro_cuotas')->orWhere('nro_cuotas', '<=', 1));
+                       $sub->whereRaw("COALESCE({$costo}, 0) = 0")
+                           ->whereRaw("COALESCE({$cuotas}, 1) <= 1");
                    });
             });
-            $q->where(fn ($sq) => $sq
-                ->whereNull('nro_cuotas')
-                ->orWhere('nro_cuotas', '>', 0)
-            );
+            $q->whereRaw("({$cuotas} IS NULL OR {$cuotas} > 0)");
             // Planes de 1 cuota (contado o gratuito) son válidos aunque no tengan filas en t_fechapago
             // Planes de más de 1 cuota deben tener al menos 1 fila en t_fechapago
-            $q->where(function ($sq) {
-                $sq->where('nro_cuotas', '<=', 1)
-                   ->orWhere(fn ($s) => $s->whereNull('nro_cuotas'))
+            $q->where(function ($sq) use ($cuotas) {
+                $sq->whereRaw("COALESCE({$cuotas}, 1) <= 1")
                    ->orWhereExists(function ($ex) {
                        $ex->from('t_fechapago')
                           ->whereColumn('t_fechapago.id_plan', 't_plan.id_plan')

@@ -265,7 +265,7 @@ class EloquentVentaRepository implements VentaRepositoryInterface
                 COUNT(*) as total_registros,
                 COALESCE(SUM(sub.total_a_pagar), 0) as total_a_pagar,
                 COALESCE(SUM(sub.total_pagado), 0) as total_pagado,
-                COALESCE(SUM(GREATEST(sub.total_a_pagar - sub.total_pagado, 0)), 0) as saldo_pendiente,
+                COALESCE(SUM(CASE WHEN sub.total_a_pagar > sub.total_pagado THEN sub.total_a_pagar - sub.total_pagado ELSE 0 END), 0) as saldo_pendiente,
                 SUM(CASE WHEN sub.total_a_pagar > 0 AND sub.total_pagado >= sub.total_a_pagar THEN 1 ELSE 0 END) as pagados,
                 SUM(CASE WHEN sub.total_pagado > 0 AND NOT (sub.total_a_pagar > 0 AND sub.total_pagado >= sub.total_a_pagar) THEN 1 ELSE 0 END) as parciales,
                 SUM(CASE WHEN sub.total_pagado <= 0 THEN 1 ELSE 0 END) as pendientes
@@ -303,7 +303,7 @@ class EloquentVentaRepository implements VentaRepositoryInterface
                 {$expresionAgrupacion} as {$aliasAgrupacion},
                 COUNT(*) as inscritos,
                 COALESCE(SUM(sub.total_pagado), 0) as total_cobrado,
-                COALESCE(SUM(GREATEST(sub.total_a_pagar - sub.total_pagado, 0)), 0) as total_pendiente,
+                COALESCE(SUM(CASE WHEN sub.total_a_pagar > sub.total_pagado THEN sub.total_a_pagar - sub.total_pagado ELSE 0 END), 0) as total_pendiente,
                 COALESCE(SUM(sub.total_a_pagar), 0) as total_plan,
                 SUM(CASE WHEN sub.total_a_pagar > 0 AND sub.total_pagado >= sub.total_a_pagar THEN 1 ELSE 0 END) as pagados,
                 SUM(CASE WHEN sub.total_pagado > 0 AND NOT (sub.total_a_pagar > 0 AND sub.total_pagado >= sub.total_a_pagar) THEN 1 ELSE 0 END) as parciales,

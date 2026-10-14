@@ -22,8 +22,8 @@ class EloquentCursoRepository implements CursoRepositoryInterface
                 DB::raw('MIN(titulo_plan) as plan_titulo'),
                 DB::raw('MIN(titulo) as plan_titulo_alt'),
                 DB::raw('MIN(nro_cuotas) as plan_nro_cuotas'),
-                DB::raw('MIN(costo) as plan_costo'),
-                DB::raw('MIN(costo_por_cuota) as plan_costo_cuota'),
+                DB::raw('MIN('.\App\Shared\Kernel\Support\SqlCompat::castDecimal('costo').') as plan_costo'),
+                DB::raw('MIN('.\App\Shared\Kernel\Support\SqlCompat::castDecimal('costo_por_cuota').') as plan_costo_cuota'),
             )
             ->groupBy('id_plan');
 

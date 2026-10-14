@@ -126,7 +126,7 @@ class SeguimientoCampanaService
         $idsIns = (clone $leads)->whereNotNull('id_ins')->pluck('id_ins')->all();
         $cobrado = $idsIns ? round((float) DB::table('t_pago')->whereIn('id_ins', $idsIns)->where('estado', 1)
             ->where(fn ($q) => $q->whereNull('estado_verificacion')->orWhere('estado_verificacion', '!=', InscripcionCuotasService::COMPROBANTE_ESTUDIANTE))
-            ->whereBetween('fecha_deposito', [$d, $h])->sum('monto_pagado'), 2) : 0.0;
+            ->whereBetween('fecha_deposito', [$d, $h])->sum(DB::raw(\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado'))), 2) : 0.0;
 
         return [
             'campana' => [

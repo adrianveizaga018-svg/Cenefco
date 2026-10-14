@@ -38,6 +38,8 @@ return [
             ],
         ],
     ],
+    'publico_en_produccion' => env('L5_SWAGGER_PUBLICO', false),
+
     'defaults' => [
         'routes' => [
             
@@ -47,11 +49,12 @@ return [
             'oauth2_callback' => 'api/oauth2-callback',
 
             
+            // En producción la documentación no se publica (salvo L5_SWAGGER_PUBLICO=true)
             'middleware' => [
-                'api' => [],
-                'asset' => [],
-                'docs' => [],
-                'oauth2_callback' => [],
+                'api' => [\App\Http\Middleware\SoloFueraDeProduccion::class],
+                'asset' => [\App\Http\Middleware\SoloFueraDeProduccion::class],
+                'docs' => [\App\Http\Middleware\SoloFueraDeProduccion::class],
+                'oauth2_callback' => [\App\Http\Middleware\SoloFueraDeProduccion::class],
             ],
 
             

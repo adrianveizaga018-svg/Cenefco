@@ -295,7 +295,7 @@ class ChatService
             ->where('u.id', '!=', $user->id)
             ->when($texto, fn ($q) => $q->where(fn ($w) => $w->whereRaw('LOWER(u.nombre) LIKE ?', ['%'.mb_strtolower($texto).'%'])
                 ->orWhereRaw('LOWER(u.apellido) LIKE ?', ['%'.mb_strtolower($texto).'%'])))
-            ->orderBy('u.nombre')->limit(200)
+            ->orderBy('nombre')->limit(200) // por el alias: con DISTINCT, PostgreSQL solo ordena por columnas seleccionadas
             ->get(['u.id', DB::raw(SqlCompat::trimConcat("COALESCE(u.nombre,'')", "' '", "COALESCE(u.apellido,'')").' as nombre'), 'u.avatar_url'])
             ->unique('id')->values()->all();
     }

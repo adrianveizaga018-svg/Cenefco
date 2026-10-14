@@ -88,7 +88,7 @@ class TableroCrmService
             ->where('estado', 1)
             ->where(fn ($q) => $q->whereNull('estado_verificacion')->orWhere('estado_verificacion', '!=', InscripcionCuotasService::COMPROBANTE_ESTUDIANTE))
             ->whereBetween('fecha_deposito', [$desde->toDateString(), $hasta->toDateString()])
-            ->sum('monto_pagado'), 2);
+            ->sum(DB::raw(\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado'))), 2);
     }
 
     /** Horas promedio entre que llega el interesado y su primer contacto registrado. */

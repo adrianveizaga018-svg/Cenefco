@@ -111,7 +111,7 @@ class InscripcionCuotasService
                 ->whereIn('id_fechapago', DB::table('t_fechapago')->where('id_plan', $ins->id_plan)->select('id_fechapago')))))
             ->where('estado', 1)
             ->where(fn ($q) => $q->whereNull('estado_verificacion')->orWhere('estado_verificacion', '!=', self::COMPROBANTE_ESTUDIANTE))
-            ->sum(DB::raw('COALESCE(monto_pagado, 0) + COALESCE(monto_descuento_extra, 0)')), 2);
+            ->sum(DB::raw('COALESCE('.\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado').', 0) + COALESCE('.\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_descuento_extra').', 0)')), 2);
     }
 
     private function cuotas(int $idIns): Collection

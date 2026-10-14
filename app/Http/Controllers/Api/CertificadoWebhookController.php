@@ -20,8 +20,9 @@ class CertificadoWebhookController extends Controller
     public function recibirLote(Request $request): JsonResponse
     {
         // Validar token secreto compartido entre Django y Laravel
-        $secret = config('certificados_externos.webhook_secret');
-        if ($secret && $request->header('X-Webhook-Secret') !== $secret) {
+        // Sin clave configurada el webhook queda cerrado: antes aceptaba cualquier llamada
+        $secret = (string) config('certificados_externos.webhook_secret');
+        if ($secret === '' || ! hash_equals($secret, (string) $request->header('X-Webhook-Secret'))) {
             return response()->json(['message' => 'No autorizado.'], 401);
         }
 

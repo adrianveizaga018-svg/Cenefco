@@ -25,7 +25,7 @@ final class PlanGratuito
         return ! DB::table('t_fechapago')
             ->where('id_plan', $idPlan)
             ->where('estado', 1)
-            ->where('monto_a_pagar', '>', 0)
+            ->whereRaw(SqlCompat::castDecimal('monto_a_pagar').' > 0')
             ->exists();
     }
 

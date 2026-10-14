@@ -328,8 +328,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('permiso:contenido.eliminar');
     Route::post('/categorias-programa/{categoriaId}/campos/reorder', [\App\Http\Controllers\Api\CategoriaCampoController::class, 'reorder'])
         ->middleware('permiso:contenido.editar');
-    Route::post('/categorias-programa/{categoriaId}/campos/seed', [\App\Http\Controllers\Api\CategoriaCampoController::class, 'seedDefaults'])
-        ->middleware('permiso:contenido.editar');
 
     Route::get('/tipos-programa', [\App\Http\Controllers\Api\CategoriaProgramaController::class, 'indexComoTipos'])
         ->middleware('permiso:programas.ver');
@@ -1267,7 +1265,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('permiso:docentes.crear');
     Route::get('/sueldos-docentes/{id}', [\App\Http\Controllers\Api\SueldoDocenteController::class, 'show'])
         ->middleware('permiso:docentes.ver');
-    Route::match(['put','post'], '/sueldos-docentes/{id}', [\App\Http\Controllers\Api\SueldoDocenteController::class, 'update']);
+    Route::match(['put','post'], '/sueldos-docentes/{id}', [\App\Http\Controllers\Api\SueldoDocenteController::class, 'update'])
+        ->middleware('permiso:docentes.editar');
     Route::delete('/sueldos-docentes/{id}', [\App\Http\Controllers\Api\SueldoDocenteController::class, 'destroy'])
         ->middleware('permiso:docentes.eliminar');
     Route::post('/sueldos-docentes/{id}/pagos/lote', [\App\Http\Controllers\Api\SueldoDocenteController::class, 'storePagoLote'])
@@ -1654,11 +1653,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/secretarias/{id}', [\App\Http\Controllers\Api\SecretariaController::class, 'destroy'])
         ->middleware('permiso:secretarias.eliminar');
 
-    Route::apiResource('autoridades', \App\Http\Controllers\Api\AutoridadController::class);
+    // Antes sin permiso: cualquier sesión (incluso un estudiante) podía modificarlas
+    Route::get('/autoridades', [\App\Http\Controllers\Api\AutoridadController::class, 'index'])->middleware('permiso:contenido.ver');
+    Route::post('/autoridades', [\App\Http\Controllers\Api\AutoridadController::class, 'store'])->middleware('permiso:contenido.crear');
+    Route::get('/autoridades/{autoridade}', [\App\Http\Controllers\Api\AutoridadController::class, 'show'])->middleware('permiso:contenido.ver');
+    Route::put('/autoridades/{autoridade}', [\App\Http\Controllers\Api\AutoridadController::class, 'update'])->middleware('permiso:contenido.editar');
+    Route::delete('/autoridades/{autoridade}', [\App\Http\Controllers\Api\AutoridadController::class, 'destroy'])->middleware('permiso:contenido.eliminar');
 
     Route::get('/organigrama/latest', [\App\Http\Controllers\Api\OrganigramaController::class, 'latest'])
         ->middleware('permiso:secretarias.ver');
-    Route::apiResource('organigramas', \App\Http\Controllers\Api\OrganigramaController::class);
+    Route::get('/organigramas', [\App\Http\Controllers\Api\OrganigramaController::class, 'index'])->middleware('permiso:secretarias.ver');
+    Route::post('/organigramas', [\App\Http\Controllers\Api\OrganigramaController::class, 'store'])->middleware('permiso:secretarias.crear');
+    Route::put('/organigramas/{organigrama}', [\App\Http\Controllers\Api\OrganigramaController::class, 'update'])->middleware('permiso:secretarias.editar');
+    Route::delete('/organigramas/{organigrama}', [\App\Http\Controllers\Api\OrganigramaController::class, 'destroy'])->middleware('permiso:secretarias.eliminar');
 
     Route::get('/tipos-norma', [\App\Http\Controllers\Api\TipoNormaController::class, 'index'])
         ->middleware('permiso:transparencia.ver');

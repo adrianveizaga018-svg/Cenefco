@@ -36,7 +36,8 @@ class VisitaController extends Controller
             dispositivo:  $dispositivo,
             navegador:    $navegador,
             so:           $so,
-            duracion_seg: $request->duracion_seg ? (int) $request->duracion_seg : null,
+            // Una pestaña olvidada abierta no es una visita de horas: se tope a 2 horas
+            duracion_seg: $request->duracion_seg ? min(7200, max(0, (int) $request->duracion_seg)) : null,
         ));
 
         return response()->json($dto, 201);

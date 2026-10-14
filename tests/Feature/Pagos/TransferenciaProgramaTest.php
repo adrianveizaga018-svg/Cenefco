@@ -40,13 +40,13 @@ class TransferenciaProgramaTest extends TestCase
     public function test_a_un_plan_mas_caro_traslada_lo_pagado_y_queda_debiendo_la_diferencia(): void
     {
         [$idImp, $idPlan] = $this->destino(3000, [1500, 1500]);
-        $totalAntes = (float) DB::table('t_pago')->where('estado', 1)->sum('monto_pagado');
+        $totalAntes = (float) DB::table('t_pago')->where('estado', 1)->sum(DB::raw(\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado')));
 
         $res = $this->transferencias->ejecutar($this->idIns, $idImp, $idPlan, 'Prefiere el otro programa', 1);
         $nueva = (int) $res['id_ins_destino'];
 
         $this->assertSame(0, (int) DB::table('t_inscripcion')->where('id_ins', $this->idIns)->value('estado'));
-        $this->assertEquals($totalAntes, (float) DB::table('t_pago')->where('estado', 1)->sum('monto_pagado'));
+        $this->assertEquals($totalAntes, (float) DB::table('t_pago')->where('estado', 1)->sum(DB::raw(\App\Shared\Kernel\Support\SqlCompat::castDecimal('monto_pagado'))));
         $this->assertSame(0, DB::table('t_pago')->where('id_ins', $this->idIns)->where('estado', 1)->count());
         $this->assertEquals(2000.0, $this->saldo($nueva));
         $this->assertSame(0, DB::table('web_devolucion')->count());

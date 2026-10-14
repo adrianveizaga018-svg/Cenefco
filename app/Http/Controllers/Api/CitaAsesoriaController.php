@@ -29,14 +29,14 @@ class CitaAsesoriaController extends Controller
         }
 
         $total = $q->count();
-        $data  = $q->orderByDesc('fecha_solicitud')->offset(($page - 1) * $size)->limit($size)->get();
+        $data  = $q->select('*', 'id as id_cita_asesoria')->orderByDesc('fecha_solicitud')->orderByDesc('id')->offset(($page - 1) * $size)->limit($size)->get();
 
         return response()->json(['data' => $data, 'total' => $total]);
     }
 
     public function show(int $id): JsonResponse
     {
-        $row = DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->first();
+        $row = $this->cita($id);
         if (! $row) {
             abort(404, 'Cita de asesoría no encontrada');
         }
@@ -59,16 +59,23 @@ class CitaAsesoriaController extends Controller
         ]);
         $data['fecha_solicitud'] = now();
         $data['estado']          = $data['estado'] ?? 'pendiente';
+        // Columnas del diseño original de la tabla
+        $data['nombre_solicitante']   = trim($data['nombres'].' '.($data['apellidos'] ?? ''));
+        $data['email_solicitante']    = $data['email'] ?? null;
+        $data['telefono_solicitante'] = $data['celular'] ?? null;
+        $data['fecha_hora']           = isset($data['fecha_preferida']) ? trim($data['fecha_preferida'].' '.($data['hora_preferida'] ?? '00:00')) : null;
+        $data['created_at']           = now();
+        $data['updated_at']           = now();
 
         $id  = DB::table('web_cita_asesoria')->insertGetId($data);
-        $row = DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->first();
+        $row = $this->cita($id);
 
         return response()->json($row, 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $row = DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->first();
+        $row = $this->cita($id);
         if (! $row) {
             abort(404, 'Cita de asesoría no encontrada');
         }
@@ -85,18 +92,24 @@ class CitaAsesoriaController extends Controller
             'estado'          => ['nullable', 'string', 'max:50'],
             'observacion'     => ['nullable', 'string'],
         ]);
-        DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->update($data);
+        DB::table('web_cita_asesoria')->where('id', $id)->update($data);
 
-        return response()->json(DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->first());
+        return response()->json($this->cita($id));
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $deleted = DB::table('web_cita_asesoria')->where('id_cita_asesoria', $id)->delete();
+        $deleted = DB::table('web_cita_asesoria')->where('id', $id)->delete();
         if (! $deleted) {
             abort(404, 'Cita de asesoría no encontrada');
         }
 
         return response()->json(null, 204);
+    }
+
+    /** La tabla usa `id`; la pantalla espera `id_cita_asesoria`. */
+    private function cita(int $id): ?object
+    {
+        return DB::table('web_cita_asesoria')->select('*', 'id as id_cita_asesoria')->where('id', $id)->first();
     }
 }

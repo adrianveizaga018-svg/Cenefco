@@ -13,6 +13,11 @@ class ValidarPortalKey
         $keyEsperada = config('services.portal.api_key');
 
         if (empty($keyEsperada)) {
+            // Sin clave configurada: abierto solo en desarrollo. En producción se cierra en vez de quedar público.
+            if (app()->environment('production')) {
+                return response()->json(['error' => 'Portal no configurado (falta PORTAL_API_KEY).'], 503);
+            }
+
             return $next($request);
         }
 

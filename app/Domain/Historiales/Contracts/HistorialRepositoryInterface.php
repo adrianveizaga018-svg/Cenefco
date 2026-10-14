@@ -10,5 +10,6 @@ interface HistorialRepositoryInterface
     public function findById(int $id): mixed;
     public function create(array $data): mixed;
     public function update(int $id, array $data): void;
-    public function softDelete(int $id): void;
+    /** Baja lógica (estado = 0). */
+    public function delete(int $id): void;
 }

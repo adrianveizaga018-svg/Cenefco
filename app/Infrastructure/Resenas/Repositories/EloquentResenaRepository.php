@@ -105,7 +105,6 @@ class EloquentResenaRepository implements ResenaRepositoryInterface
                   ->whereRaw('u.id_us_reg = (SELECT MIN(u2.id_us_reg) FROM t_usuario u2 WHERE u2.id_us = u.id_us)');
             })
             ->where('la.imparte_id', $programa->id_imp)
-            ->where(fn ($q) => $q->where('la.anulado', 0)->orWhereNull('la.anulado'))
             ->select('u.id_us', 'u.nombre', 'u.appaterno', 'u.apmaterno', 'u.email')
             ->orderBy('u.appaterno')
             ->orderBy('u.nombre')

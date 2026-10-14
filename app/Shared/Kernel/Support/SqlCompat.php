@@ -21,6 +21,14 @@ final class SqlCompat
      * Pass column references or literal strings. Literals must be quoted inside the call.
      * Example: SqlCompat::concat("COALESCE(vend.nombre,'')", "' '", "COALESCE(vend.apellido,'')")
      */
+    /** Condición "la columna JSON tiene algo" (no es nula ni un objeto vacío), en cualquier motor. */
+    public static function jsonNoVacio(string $column): string
+    {
+        return self::isPgsql()
+            ? "{$column} IS NOT NULL AND {$column}::jsonb <> '{}'::jsonb"
+            : "{$column} IS NOT NULL AND TRIM({$column}) NOT IN ('', '{}', '[]', 'null')";
+    }
+
     public static function concat(string ...$parts): string
     {
         if (self::isSqlite()) {
@@ -58,7 +66,16 @@ final class SqlCompat
 
     public static function castDecimal(string $column, string $precision = '12,2'): string
     {
-        return "CAST({$column} AS DECIMAL({$precision}))";
+        // Los montos heredados son texto y pueden venir vacíos: en PostgreSQL CAST('' AS DECIMAL) es un error
+        return self::isPgsql()
+            ? "CAST(NULLIF(TRIM(CAST({$column} AS TEXT)), '') AS DECIMAL({$precision}))"
+            : "CAST({$column} AS DECIMAL({$precision}))";
+    }
+
+    /** Suma de un monto guardado como texto (0 si no hay filas), en cualquier motor. */
+    public static function sumaMonto(string $column): string
+    {
+        return 'COALESCE(SUM('.self::castDecimal($column).'), 0)';
     }
 
     public static function year(string $column): string
