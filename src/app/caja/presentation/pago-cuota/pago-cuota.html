@@ -193,6 +193,18 @@
           </div>
         </div>
 
+        @if (formPago.get('metodo_pago')?.value === 'qr') {
+          @if (cuotaSeleccionada()?.qr_url) {
+            <div class="rounded-lg border border-default-200 p-3 text-center">
+              <p class="text-xs text-default-500 mb-2">Muestra este QR al estudiante para que pague Bs. {{ formPago.get('monto_pagado')?.value | number:'1.2-2' }}</p>
+              <img [src]="cuotaSeleccionada().qr_url" alt="QR de cobro del plan" class="mx-auto max-h-56 rounded">
+              <a [href]="cuotaSeleccionada().qr_url" target="_blank" rel="noopener" download class="inline-block mt-2 text-xs font-semibold text-primary hover:underline">Abrir / descargar QR</a>
+            </div>
+          } @else {
+            <p class="text-xs rounded bg-warning/10 text-warning px-3 py-2">El plan de pago de esta inscripción no tiene QR cargado. Súbelo en Planes de Pago.</p>
+          }
+        }
+
         @if (formPago.get('metodo_pago')?.value === 'deposito' || formPago.get('metodo_pago')?.value === 'transferencia') {
           <div>
             <label class="block text-xs font-semibold text-default-600 mb-1.5 uppercase tracking-wide">Banco Destino *</label>
